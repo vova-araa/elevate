@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, Image as ImageIcon, Video, FileText, File, Sparkles,
   Clock, CheckCircle2, ShieldCheck, AlertTriangle, Plus, X, Trash2, Briefcase,
+  CalendarDays, Inbox,
 } from "lucide-react";
+import { ApprovalQueue } from "@/components/client-portal/approval-queue";
 
 export const Route = createFileRoute("/_authenticated/client/calendar")({ component: ClientCalendar });
 
@@ -34,13 +36,44 @@ const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
 function ClientCalendar() {
   const qc = useQueryClient();
-  const { role } = useAuth();
+  const { user, role } = useAuth();
   const isAdmin = role === "admin";
   const [month, setMonth] = useState(() => { const n = new Date(); n.setDate(1); return n; });
   const [selected, setSelected] = useState<Date>(new Date());
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
+  const [view, setView] = useState<"calendar" | "approvals">("calendar");
 
   const [adding, setAdding] = useState(false);
+
+  // Klantkoppeling van de ingelogde gebruiker (voor de approval-flow)
+  const { data: membership } = useQuery({
+    queryKey: ["my-client", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("client_members")
+        .select("client_id, clients(name)")
+        .eq("user_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const myClientId = (membership as any)?.client_id as string | undefined;
+
+  const { data: draftCount } = useQuery({
+    queryKey: ["client-draft-count", myClientId],
+    enabled: !!myClientId,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("scheduled_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", myClientId!)
+        .eq("status", "draft")
+        .is("deleted_at", null);
+      return count ?? 0;
+    },
+  });
 
   const { data } = useQuery({
     queryKey: ["client-cal"],
@@ -128,24 +161,65 @@ function ClientCalendar() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Planning</p>
-          <h1 className="font-display text-5xl mt-2">Kalender</h1>
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Kalender</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Klik op een dag voor de deliverables. Statusbadges tonen meteen wat er nog open staat.
+            {view === "calendar"
+              ? "Klik op een dag voor de deliverables. Statusbadges tonen meteen wat er nog open staat."
+              : "Beoordeel de concept-posts van je team: keur goed of vraag een wijziging."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-            className="rounded-full glass p-2 hover:bg-gold/10"><ChevronLeft className="h-4 w-4" /></button>
-          <div className="font-display text-xl w-44 text-center capitalize">
-            {month.toLocaleDateString("nl-NL", { month: "long", year: "numeric" })}
+        {view === "calendar" && (
+          <div className="flex items-center gap-2">
+            <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+              className="rounded-full glass p-2 min-h-11 min-w-11 grid place-items-center hover:bg-gold/10" aria-label="Vorige maand"><ChevronLeft className="h-4 w-4" /></button>
+            <div className="font-display text-lg sm:text-xl w-36 sm:w-44 text-center capitalize">
+              {month.toLocaleDateString("nl-NL", { month: "long", year: "numeric" })}
+            </div>
+            <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+              className="rounded-full glass p-2 min-h-11 min-w-11 grid place-items-center hover:bg-gold/10" aria-label="Volgende maand"><ChevronRight className="h-4 w-4" /></button>
+            <button onClick={() => { const n = new Date(); n.setDate(1); setMonth(n); setSelected(new Date()); }}
+              className="rounded-full glass px-3 py-1.5 min-h-11 text-sm hover:bg-gold/10">Vandaag</button>
           </div>
-          <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-            className="rounded-full glass p-2 hover:bg-gold/10"><ChevronRight className="h-4 w-4" /></button>
-          <button onClick={() => { const n = new Date(); n.setDate(1); setMonth(n); setSelected(new Date()); }}
-            className="rounded-full glass px-3 py-1.5 text-sm hover:bg-gold/10">Vandaag</button>
-        </div>
+        )}
       </div>
 
+      {/* Tabs: kalender / ter goedkeuring */}
+      {myClientId && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setView("calendar")}
+            className={cn(
+              "min-h-11 rounded-full border px-4 text-sm inline-flex items-center gap-2 transition",
+              view === "calendar"
+                ? "bg-gold/15 text-gold border-gold/40"
+                : "border-border/40 text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <CalendarDays className="h-4 w-4" /> Kalender
+          </button>
+          <button
+            onClick={() => setView("approvals")}
+            className={cn(
+              "min-h-11 rounded-full border px-4 text-sm inline-flex items-center gap-2 transition",
+              view === "approvals"
+                ? "bg-gold/15 text-gold border-gold/40"
+                : "border-border/40 text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Inbox className="h-4 w-4" /> Ter goedkeuring
+            {(draftCount ?? 0) > 0 && (
+              <span className="rounded-full bg-gold text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 min-w-5 text-center">
+                {draftCount}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {view === "approvals" && myClientId ? (
+        <ApprovalQueue clientId={myClientId} />
+      ) : (
+      <>
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi label="Te leveren" value={monthTotals.pending} tone="amber" Icon={Clock} />
@@ -351,6 +425,8 @@ function ClientCalendar() {
           </div>
         </aside>
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -40,19 +40,19 @@ function ClientUploads() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Beeld & video</p>
-          <h1 className="font-display text-5xl mt-2">Uploads</h1>
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Uploads</h1>
         </div>
         {members && members.length > 1 && (
-          <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="rounded-lg bg-input/60 hairline px-4 py-2 text-sm">
+          <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full sm:w-auto min-h-11 rounded-lg bg-input/60 hairline px-4 py-2 text-sm">
             {members.map((m: any) => <option key={m.client_id} value={m.client_id}>{m.clients?.name}</option>)}
           </select>
         )}
       </div>
 
-      <label className="glass-strong block rounded-2xl border-2 border-dashed border-gold/30 p-10 text-center cursor-pointer hover:border-gold/60">
+      <label className="glass-strong block rounded-2xl border-2 border-dashed border-gold/30 p-6 sm:p-10 text-center cursor-pointer hover:border-gold/60">
         <Plus className="h-6 w-6 mx-auto text-gold" />
         <div className="mt-2 text-sm">Sleep of klik om beeld of video toe te voegen</div>
         <input type="file" multiple accept="image/*,video/*" onChange={handleFile} className="hidden" />

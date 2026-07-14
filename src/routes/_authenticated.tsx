@@ -139,6 +139,7 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
         { to: "/client/roadmap", label: "Stappenplan", icon: Compass },
         { to: "/client/tasks", label: "Taken", icon: ListChecks },
         { to: "/client/uploads", label: "Uploads", icon: Upload },
+        { to: "/client/reports", label: "Rapporten", icon: BarChart3 },
         { to: "/client/messages", label: "Berichten", icon: MessageSquare },
       ],
     },

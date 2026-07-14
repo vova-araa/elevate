@@ -51,7 +51,7 @@ export function ClientRoadmap() {
       <div className="space-y-8">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Jouw traject</p>
-          <h1 className="font-display text-5xl mt-2">Stappenplan</h1>
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Stappenplan</h1>
         </div>
         <div className="glass-strong rounded-2xl p-10 text-center text-sm text-muted-foreground">
           Stappenplan laden…
@@ -80,7 +80,7 @@ export function ClientRoadmap() {
         const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
         return (
-          <div key={r.id} className="glass-strong rounded-2xl p-6 md:p-8">
+          <div key={r.id} className="glass-strong rounded-2xl p-4 sm:p-6 md:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="font-display text-3xl">{r.title}</h2>
