@@ -34,7 +34,7 @@ import {
   Circle,
   type LucideIcon,
 } from "lucide-react";
-import type { Tables, Enums } from "@/integrations/supabase/types";
+import type { Tables, TablesUpdate, Enums } from "@/integrations/supabase/types";
 import { exportReportPdf, exportAllReportsPdf } from "@/lib/report-pdf";
 import { MessagesThread } from "@/components/messages-thread";
 import { ClientTimeline } from "@/components/client-timeline";
@@ -477,7 +477,7 @@ function DealsPanel({ clientId }: { clientId: string }) {
   });
   const empty = {
     title: "",
-    stage: "lead" as const,
+    stage: "lead" as Enums<"deal_stage">,
     value_cents: 0,
     probability: 50,
     expected_close_date: "",
@@ -510,12 +510,11 @@ function DealsPanel({ clientId }: { clientId: string }) {
 
   const totalPipe =
     (data ?? [])
-      .filter((d: any) => !["won", "lost"].includes(d.stage))
-      .reduce((a: number, d: any) => a + (d.value_cents ?? 0), 0) / 100;
+      .filter((d) => !["won", "lost"].includes(d.stage))
+      .reduce((a, d) => a + (d.value_cents ?? 0), 0) / 100;
   const totalWon =
-    (data ?? [])
-      .filter((d: any) => d.stage === "won")
-      .reduce((a: number, d: any) => a + (d.value_cents ?? 0), 0) / 100;
+    (data ?? []).filter((d) => d.stage === "won").reduce((a, d) => a + (d.value_cents ?? 0), 0) /
+    100;
 
   return (
     <div className="space-y-5">
@@ -540,7 +539,7 @@ function DealsPanel({ clientId }: { clientId: string }) {
           <select
             className={inp}
             value={f.stage}
-            onChange={(e) => setF({ ...f, stage: e.target.value as any })}
+            onChange={(e) => setF({ ...f, stage: e.target.value as Enums<"deal_stage"> })}
           >
             {DEAL_STAGES.map((s) => (
               <option key={s} value={s}>
@@ -587,8 +586,8 @@ function DealsPanel({ clientId }: { clientId: string }) {
             </div>
             <div className="space-y-2">
               {data
-                ?.filter((d: any) => d.stage === stage)
-                .map((d: any) => (
+                ?.filter((d) => d.stage === stage)
+                .map((d) => (
                   <div key={d.id} className="rounded-lg bg-surface-elevated/60 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -612,7 +611,7 @@ function DealsPanel({ clientId }: { clientId: string }) {
                     </div>
                     <select
                       value={d.stage}
-                      onChange={(e) => setStage(d.id, e.target.value as any)}
+                      onChange={(e) => setStage(d.id, e.target.value as Enums<"deal_stage">)}
                       className="mt-2 w-full text-[10px] rounded bg-gold/10 px-2 py-1 text-gold"
                     >
                       {DEAL_STAGES.map((s) => (
@@ -648,7 +647,7 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
   });
   const empty = {
     title: "",
-    report_type: "monthly" as const,
+    report_type: "monthly" as Enums<"report_type">,
     period_start: "",
     period_end: "",
     summary: "",
@@ -670,13 +669,13 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
     await supabase.from("reports").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["reports", clientId] });
   }
-  function exportOne(r: any) {
+  function exportOne(r: Tables<"reports">) {
     exportReportPdf(clientName, r);
     toast.success("PDF gedownload");
   }
   function exportAll() {
     if (!data?.length) return;
-    exportAllReportsPdf(clientName, data as any);
+    exportAllReportsPdf(clientName, data);
     toast.success("PDF met alle rapportages gedownload");
   }
   return (
@@ -692,7 +691,7 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
           <select
             className={inp}
             value={f.report_type}
-            onChange={(e) => setF({ ...f, report_type: e.target.value as any })}
+            onChange={(e) => setF({ ...f, report_type: e.target.value as Enums<"report_type"> })}
           >
             <option value="monthly">Maandelijks</option>
             <option value="campaign">Campagne</option>
@@ -738,7 +737,7 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
         </div>
       )}
       <div className="space-y-3">
-        {data?.map((r: any) => (
+        {data?.map((r) => (
           <div key={r.id} className="glass rounded-2xl p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -804,7 +803,7 @@ function StrategyPanel({ clientId }: { clientId: string }) {
     setF(empty);
     qc.invalidateQueries({ queryKey: ["strategy", clientId] });
   }
-  async function togglePin(id: string, pinned: boolean) {
+  async function togglePin(id: string, pinned: boolean | null) {
     await supabase.from("strategy_notes").update({ pinned: !pinned }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["strategy", clientId] });
   }
@@ -852,7 +851,7 @@ function StrategyPanel({ clientId }: { clientId: string }) {
         <button className={btnGold}>Opslaan</button>
       </SectionForm>
       <div className="grid gap-3 md:grid-cols-2">
-        {data?.map((n: any) => (
+        {data?.map((n) => (
           <div key={n.id} className={cn("glass rounded-2xl p-5", n.pinned && "gold-ring")}>
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -913,8 +912,8 @@ function ContentPanel({ clientId }: { clientId: string }) {
   });
   const empty = {
     title: "",
-    channel: "instagram" as const,
-    status: "idea" as const,
+    channel: "instagram" as Enums<"content_channel">,
+    status: "idea" as Enums<"content_status">,
     scheduled_at: "",
     concept: "",
     copy: "",
@@ -950,7 +949,7 @@ function ContentPanel({ clientId }: { clientId: string }) {
           <select
             className={inp}
             value={f.channel}
-            onChange={(e) => setF({ ...f, channel: e.target.value as any })}
+            onChange={(e) => setF({ ...f, channel: e.target.value as Enums<"content_channel"> })}
           >
             <option value="instagram">Instagram</option>
             <option value="tiktok">TikTok</option>
@@ -965,7 +964,7 @@ function ContentPanel({ clientId }: { clientId: string }) {
           <select
             className={inp}
             value={f.status}
-            onChange={(e) => setF({ ...f, status: e.target.value as any })}
+            onChange={(e) => setF({ ...f, status: e.target.value as Enums<"content_status"> })}
           >
             {CONTENT_STATUS.map((s) => (
               <option key={s} value={s}>
@@ -1008,8 +1007,8 @@ function ContentPanel({ clientId }: { clientId: string }) {
             </div>
             <div className="space-y-2">
               {data
-                ?.filter((c: any) => c.status === s)
-                .map((c: any) => (
+                ?.filter((c) => c.status === s)
+                .map((c) => (
                   <div key={c.id} className="rounded-lg bg-surface-elevated/60 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -1035,7 +1034,7 @@ function ContentPanel({ clientId }: { clientId: string }) {
                     )}
                     <select
                       value={c.status}
-                      onChange={(e) => setStatus(c.id, e.target.value as any)}
+                      onChange={(e) => setStatus(c.id, e.target.value as Enums<"content_status">)}
                       className="mt-2 w-full text-[10px] rounded bg-gold/10 px-2 py-1 text-gold"
                     >
                       {CONTENT_STATUS.map((x) => (
@@ -1140,7 +1139,7 @@ function EvaluationPanel({ clientId }: { clientId: string }) {
         <button className={btnGold}>Evaluatie opslaan</button>
       </SectionForm>
       <div className="space-y-3">
-        {data?.map((e: any) => (
+        {data?.map((e) => (
           <div key={e.id} className="glass rounded-2xl p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -1238,7 +1237,7 @@ const DELIVERABLE_OPTIONS = [
 
 const STATUS_META: Record<
   string,
-  { label: string; icon: any; color: string; bg: string; border: string }
+  { label: string; icon: LucideIcon; color: string; bg: string; border: string }
 > = {
   pending: {
     label: "In afwachting",
@@ -1301,13 +1300,13 @@ function RoadmapAdmin({ clientId }: { clientId: string }) {
     deliverable_type: string | null,
   ) {
     if (!title.trim()) return;
-    const order = roadmaps?.find((r: any) => r.id === roadmap_id)?.roadmap_steps?.length ?? 0;
+    const order = roadmaps?.find((r) => r.id === roadmap_id)?.roadmap_steps?.length ?? 0;
     await supabase.from("roadmap_steps").insert({
       roadmap_id,
       title,
       due_date,
       description: description || null,
-      deliverable_type: deliverable_type as any,
+      deliverable_type: deliverable_type as Enums<"deliverable_type"> | null,
       status: "pending",
       step_order: order,
     });
@@ -1318,7 +1317,7 @@ function RoadmapAdmin({ clientId }: { clientId: string }) {
   async function updateStepStatus(id: string, status: string) {
     await supabase
       .from("roadmap_steps")
-      .update({ status: status as any })
+      .update({ status: status as Enums<"step_status"> })
       .eq("id", id);
     qc.invalidateQueries({ queryKey: ["roadmaps", clientId] });
   }
@@ -1326,7 +1325,7 @@ function RoadmapAdmin({ clientId }: { clientId: string }) {
   async function updateRoadmapStatus(id: string, status: string) {
     await supabase
       .from("roadmaps")
-      .update({ status: status as any })
+      .update({ status: status as Enums<"roadmap_status"> })
       .eq("id", id);
     qc.invalidateQueries({ queryKey: ["roadmaps", clientId] });
     toast.success("Status gewijzigd");
@@ -1367,11 +1366,9 @@ function RoadmapAdmin({ clientId }: { clientId: string }) {
         </button>
       </div>
 
-      {roadmaps?.map((r: any) => {
-        const steps = [...(r.roadmap_steps ?? [])].sort(
-          (a: any, b: any) => a.step_order - b.step_order,
-        );
-        const completed = steps.filter((s: any) => s.status === "completed").length;
+      {roadmaps?.map((r) => {
+        const steps = [...(r.roadmap_steps ?? [])].sort((a, b) => a.step_order - b.step_order);
+        const completed = steps.filter((s) => s.status === "completed").length;
         const total = steps.length;
         const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
         const rmStatus = ROADMAP_STATUS_OPTIONS.find((o) => o.value === r.status);
@@ -1421,7 +1418,7 @@ function RoadmapAdmin({ clientId }: { clientId: string }) {
 
             {/* Steps */}
             <div className="mt-6 space-y-3">
-              {steps.map((s: any) => (
+              {steps.map((s) => (
                 <RoadmapStepRow
                   key={s.id}
                   step={s}
@@ -1443,7 +1440,7 @@ function RoadmapStepRow({
   onStatusChange,
   onDelete,
 }: {
-  step: any;
+  step: Tables<"roadmap_steps">;
   onStatusChange: (status: string) => void;
   onDelete: () => void;
 }) {
@@ -1466,7 +1463,7 @@ function RoadmapStepRow({
         title: draft.title,
         description: draft.description || null,
         due_date: draft.due_date || null,
-        deliverable_type: draft.deliverable_type as any,
+        deliverable_type: draft.deliverable_type as Enums<"deliverable_type">,
       })
       .eq("id", step.id);
     setEditing(false);
@@ -1499,7 +1496,12 @@ function RoadmapStepRow({
         <select
           className={inp}
           value={draft.deliverable_type}
-          onChange={(e) => setDraft({ ...draft, deliverable_type: e.target.value })}
+          onChange={(e) =>
+            setDraft({
+              ...draft,
+              deliverable_type: e.target.value as typeof draft.deliverable_type,
+            })
+          }
         >
           {DELIVERABLE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -1708,7 +1710,7 @@ function CalendarAdmin({ clientId }: { clientId: string }) {
         </button>
       </div>
       <div className="space-y-2">
-        {data?.map((c: any) => (
+        {data?.map((c) => (
           <div key={c.id} className="glass rounded-xl p-4 flex items-center justify-between">
             <div>
               <div className="text-sm font-medium">{c.title}</div>
@@ -1795,7 +1797,7 @@ function UploadsView({ clientId }: { clientId: string }) {
         />
       </label>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {data?.map((u: any) => (
+        {data?.map((u) => (
           <UploadTile key={u.id} u={u} />
         ))}
         {data?.length === 0 && (
@@ -1806,7 +1808,7 @@ function UploadsView({ clientId }: { clientId: string }) {
   );
 }
 
-function UploadTile({ u }: { u: any }) {
+function UploadTile({ u }: { u: Tables<"uploads"> }) {
   const { data } = supabase.storage.from("client-uploads").getPublicUrl(u.file_path);
   const url = data.publicUrl;
   const isVideo = u.file_type?.startsWith("video/");
@@ -1897,8 +1899,8 @@ function TasksView({ clientId, admin = false }: { clientId: string; admin?: bool
             <h3 className="font-display text-lg mb-3">{c.label}</h3>
             <div className="space-y-2">
               {data
-                ?.filter((x: any) => x.status === c.k)
-                .map((x: any) => (
+                ?.filter((x) => x.status === c.k)
+                .map((x) => (
                   <div key={x.id} className="rounded-lg bg-surface-elevated/60 p-3">
                     <div className="text-sm font-medium">{x.title}</div>
                     <div className="text-xs text-muted-foreground">{x.priority}</div>
@@ -1964,7 +1966,9 @@ const SOCIAL_NETWORKS = [
   },
 ] as const;
 
-function SocialsPanel({ client }: { client: any }) {
+type SocialField = (typeof SOCIAL_NETWORKS)[number]["k"];
+
+function SocialsPanel({ client }: { client: Tables<"clients"> }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -1972,11 +1976,11 @@ function SocialsPanel({ client }: { client: any }) {
 
   const connectedCount = SOCIAL_NETWORKS.filter((s) => client?.[s.k]).length;
 
-  async function save(field: string, value: string | null) {
+  async function save(field: SocialField, value: string | null) {
     setBusy(true);
     const { error } = await supabase
       .from("clients")
-      .update({ [field]: value } as any)
+      .update({ [field]: value } as TablesUpdate<"clients">)
       .eq("id", client.id);
     setBusy(false);
     if (error) return toast.error(error.message);

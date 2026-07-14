@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-r
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import {
   Instagram,
@@ -76,12 +77,15 @@ function EditClient() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const payload: any = { ...f };
-    Object.keys(payload).forEach((k) => {
+    const payload: Record<keyof Form, string | null> = { ...f };
+    (Object.keys(payload) as (keyof Form)[]).forEach((k) => {
       if (payload[k] === "") payload[k] = null;
     });
     payload.name = f.name;
-    const { error } = await supabase.from("clients").update(payload).eq("id", id);
+    const { error } = await supabase
+      .from("clients")
+      .update(payload as TablesUpdate<"clients">)
+      .eq("id", id);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Klant bijgewerkt");
@@ -106,7 +110,7 @@ function EditClient() {
     nav({ to: "/admin/clients" });
   }
 
-  const socials = [
+  const socials: { k: keyof Form; label: string; Icon: typeof Instagram; ph: string }[] = [
     { k: "instagram_url", label: "Instagram", Icon: Instagram, ph: "https://instagram.com/..." },
     { k: "tiktok_url", label: "TikTok", Icon: Music2, ph: "https://tiktok.com/@..." },
     {
@@ -117,7 +121,7 @@ function EditClient() {
     },
     { k: "youtube_url", label: "YouTube", Icon: Youtube, ph: "https://youtube.com/@..." },
     { k: "facebook_url", label: "Facebook", Icon: Facebook, ph: "https://facebook.com/..." },
-  ] as const;
+  ];
 
   if (isLoading) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
 
@@ -135,21 +139,23 @@ function EditClient() {
         <h1 className="font-display text-3xl sm:text-4xl mt-2">{client?.name}</h1>
       </div>
       <form onSubmit={save} className="glass-strong rounded-2xl p-5 sm:p-8 space-y-5">
-        {[
-          { k: "name", label: "Merknaam", required: true },
-          {
-            k: "industry",
-            label: "Industrie",
-            placeholder: "Chocolatier, parfumeur, muziekstudio...",
-          },
-          { k: "website", label: "Website", placeholder: "https://..." },
-        ].map((x: any) => (
+        {(
+          [
+            { k: "name", label: "Merknaam", required: true },
+            {
+              k: "industry",
+              label: "Industrie",
+              placeholder: "Chocolatier, parfumeur, muziekstudio...",
+            },
+            { k: "website", label: "Website", placeholder: "https://..." },
+          ] as { k: keyof Form; label: string; required?: boolean; placeholder?: string }[]
+        ).map((x) => (
           <div key={x.k}>
             <label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
               {x.label}
             </label>
             <input
-              value={(f as any)[x.k]}
+              value={f[x.k]}
               onChange={(e) => setF({ ...f, [x.k]: e.target.value })}
               required={x.required}
               placeholder={x.placeholder}
@@ -175,7 +181,7 @@ function EditClient() {
             <div key={k} className="flex items-center gap-2">
               <Icon className="h-4 w-4 text-gold/80 shrink-0" />
               <input
-                value={(f as any)[k]}
+                value={f[k]}
                 onChange={(e) => setF({ ...f, [k]: e.target.value })}
                 placeholder={`${label} — ${ph}`}
                 className="flex-1 rounded-lg bg-input/60 hairline px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gold/40"

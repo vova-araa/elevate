@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
 import { useState, useEffect } from "react";
@@ -193,7 +194,7 @@ function BrandTab({ clientId }: { clientId: string }) {
     queryFn: async () =>
       (await supabase.from("clients").select("*").eq("id", clientId).maybeSingle()).data,
   });
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<Partial<Tables<"clients">>>({});
   useEffect(() => {
     if (c) setForm(c);
   }, [c]);
@@ -362,7 +363,17 @@ function BrandTab({ clientId }: { clientId: string }) {
   );
 }
 
-function Field({ label, value, onChange, placeholder }: any) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value?: string | null;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
   return (
     <div>
       <label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</label>
@@ -376,6 +387,26 @@ function Field({ label, value, onChange, placeholder }: any) {
   );
 }
 
+type Platform = (typeof PLATFORMS)[number]["k"];
+
+interface PostizIntegrationView {
+  id: string | number;
+  username?: string | null;
+  name?: string | null;
+  platform?: string | null;
+  assignedClientId?: string | null;
+  assignedClientName?: string | null;
+}
+
+interface SyncResult {
+  ok: true;
+  connected: boolean;
+  reason?: string;
+  handle?: string;
+  integrationId?: string;
+  claimable?: { id: string; name: string; picture: string | null }[];
+}
+
 /* ──────────────  SOCIAL (Postiz OAuth)  ────────────── */
 function SocialTab({ clientId }: { clientId: string }) {
   const qc = useQueryClient();
@@ -387,7 +418,7 @@ function SocialTab({ clientId }: { clientId: string }) {
   const listIntegrationsFn = useServerFn(listPostizIntegrations);
   const { data: postizIntegrations, isFetching: refreshing } = useQuery({
     queryKey: ["postiz-integrations"],
-    queryFn: () => listIntegrationsFn(),
+    queryFn: async () => (await listIntegrationsFn()) as PostizIntegrationView[],
     refetchOnWindowFocus: true,
   });
   const [busy, setBusy] = useState<string | null>(null);
@@ -404,10 +435,10 @@ function SocialTab({ clientId }: { clientId: string }) {
     ]);
   }
 
-  async function syncPlatform(platform: string, showToast = true) {
+  async function syncPlatform(platform: Platform, showToast = true) {
     setBusy(platform);
     try {
-      const result: any = await sync({ data: { clientId, platform: platform as any } });
+      const result: SyncResult = await sync({ data: { clientId, platform } });
       await refreshAll();
       if (showToast) {
         toast[result?.connected ? "success" : "info"](
@@ -417,17 +448,17 @@ function SocialTab({ clientId }: { clientId: string }) {
         );
       }
       return result;
-    } catch (e: any) {
-      if (showToast) toast.error(e?.message ?? "Postiz-status ophalen mislukt");
+    } catch (e) {
+      if (showToast) toast.error(e instanceof Error ? e.message : "Postiz-status ophalen mislukt");
     } finally {
       setBusy(null);
     }
   }
 
-  async function connectPlatform(platform: string) {
+  async function connectPlatform(platform: Platform) {
     setBusy(platform);
     try {
-      const { redirectUrl } = await init({ data: { clientId, platform: platform as any } });
+      const { redirectUrl } = await init({ data: { clientId, platform } });
       const opened = window.open(redirectUrl, "_blank", "noopener,noreferrer");
       if (!opened)
         throw new Error(
@@ -438,21 +469,21 @@ function SocialTab({ clientId }: { clientId: string }) {
       [4000, 9000, 18000, 35000].forEach((ms) =>
         window.setTimeout(() => syncPlatform(platform, false), ms),
       );
-    } catch (e: any) {
-      toast.error(e?.message ?? "Koppelen mislukt");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Koppelen mislukt");
     } finally {
       setBusy(null);
     }
   }
 
-  async function remove(conn: any) {
+  async function remove(conn: Tables<"social_connections">) {
     if (!confirm("Verbinding verwijderen?")) return;
     try {
-      await disconnect({ data: { clientId, platform: conn.platform } });
+      await disconnect({ data: { clientId, platform: conn.platform as Platform } });
       await refreshAll();
       toast.success("Losgekoppeld");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Loskoppelen mislukt");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Loskoppelen mislukt");
     }
   }
 
@@ -466,9 +497,11 @@ function SocialTab({ clientId }: { clientId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
-  const integrationsList: any[] = Array.isArray(postizIntegrations) ? postizIntegrations : [];
+  const integrationsList: PostizIntegrationView[] = Array.isArray(postizIntegrations)
+    ? postizIntegrations
+    : [];
   // Per platform: voor déze klant gereserveerd of nog vrij (claimable).
-  const integrationsByPlatform = new Map<string, any[]>();
+  const integrationsByPlatform = new Map<string, PostizIntegrationView[]>();
   for (const i of integrationsList) {
     const platform = String(i.platform ?? "").toLowerCase();
     if (!platform) continue;
@@ -502,7 +535,7 @@ function SocialTab({ clientId }: { clientId: string }) {
       </div>
       <div className="grid sm:grid-cols-2 gap-3">
         {PLATFORMS.map((p) => {
-          const conn = conns?.find((c: any) => c.platform === p.k);
+          const conn = conns?.find((c) => c.platform === p.k);
           const platformIntegrations = integrationsByPlatform.get(p.k) ?? [];
           const ownIntegration = conn?.postiz_integration_id
             ? platformIntegrations.find((i) => String(i.id) === String(conn.postiz_integration_id))
@@ -570,7 +603,7 @@ function SocialTab({ clientId }: { clientId: string }) {
                       {isBusy ? "…" : "Sync"}
                     </button>
                     <button
-                      onClick={() => remove(conn)}
+                      onClick={() => conn && remove(conn)}
                       className="text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -586,11 +619,11 @@ function SocialTab({ clientId }: { clientId: string }) {
                         if (!integrationId) return;
                         setBusy(p.k);
                         try {
-                          await claim({ data: { clientId, platform: p.k as any, integrationId } });
+                          await claim({ data: { clientId, platform: p.k, integrationId } });
                           await refreshAll();
                           toast.success(`${p.label} gekoppeld`);
-                        } catch (err: any) {
-                          toast.error(err?.message ?? "Koppelen mislukt");
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Koppelen mislukt");
                         } finally {
                           setBusy(null);
                         }
@@ -716,7 +749,7 @@ function TeamTab({ clientId }: { clientId: string }) {
           />
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as any)}
+            onChange={(e) => setRole(e.target.value as "admin" | "editor" | "client")}
             className="rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
           >
             <option value="client">Klant viewer</option>
@@ -760,7 +793,9 @@ function TeamTab({ clientId }: { clientId: string }) {
               </div>
               <select
                 value={m.roles[0] || "client"}
-                onChange={(e) => updateRole(m.user_id, e.target.value as any)}
+                onChange={(e) =>
+                  updateRole(m.user_id, e.target.value as "admin" | "editor" | "client")
+                }
                 className="rounded-lg border border-gold/20 bg-background/60 px-2 py-1 text-xs"
               >
                 <option value="client">Klant viewer</option>
@@ -807,7 +842,7 @@ function NotificationsTab() {
     },
   });
 
-  const [form, setForm] = useState<any>({
+  const [form, setForm] = useState<Partial<Tables<"notification_preferences">>>({
     email_enabled: true,
     in_app_enabled: true,
     notify_new_message: true,
@@ -835,7 +870,21 @@ function NotificationsTab() {
     qc.invalidateQueries({ queryKey: ["notif-prefs", user.id] });
   }
 
-  const channels = [
+  type NotifKey = keyof Pick<
+    Tables<"notification_preferences">,
+    | "in_app_enabled"
+    | "email_enabled"
+    | "notify_new_message"
+    | "notify_new_upload"
+    | "notify_planning"
+    | "notify_approval"
+    | "notify_publish"
+    | "notify_failure"
+    | "notify_ai"
+    | "notify_automation"
+    | "notify_task_assigned"
+  >;
+  const channels: { k: NotifKey; label: string; hint: string }[] = [
     {
       k: "in_app_enabled",
       label: "In-app meldingen",
@@ -847,7 +896,7 @@ function NotificationsTab() {
       hint: "Stuur belangrijke meldingen naar mijn e-mail.",
     },
   ];
-  const groups = [
+  const groups: { title: string; items: { k: NotifKey; label: string; hint: string }[] }[] = [
     {
       title: "Berichten & uploads",
       items: [

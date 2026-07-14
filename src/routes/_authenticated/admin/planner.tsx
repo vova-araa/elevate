@@ -3,6 +3,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
 import { publishTikTokPost } from "@/lib/tiktok.functions";
@@ -35,6 +36,7 @@ import {
   Repeat,
   StickyNote,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import {
   PLATFORMS,
@@ -65,6 +67,25 @@ export const Route = createFileRoute("/_authenticated/admin/planner")({
 
 // Platform-, status- en datumhelpers zijn gedeeld met de planner-componenten
 // in src/components/planner/ (PLATFORMS, STATUS_META, toKey, sameDay).
+
+type ScheduledPost = Tables<"scheduled_posts">;
+type FeedPost = Pick<
+  ScheduledPost,
+  | "id"
+  | "platform"
+  | "caption"
+  | "media_path"
+  | "media_type"
+  | "scheduled_at"
+  | "status"
+  | "published_at"
+>;
+
+/** Vorm van de `recurring_rule` JSON-kolom op scheduled_posts. */
+interface RecurringRule {
+  freq: "daily" | "weekly" | "monthly";
+  count: number;
+}
 
 function PlannerPage() {
   const { clientId, view: viewParam, date: dateParam } = Route.useSearch();
@@ -176,8 +197,8 @@ function PlannerPage() {
   });
 
   const byDay = useMemo(() => {
-    const m: Record<string, any[]> = {};
-    (posts ?? []).forEach((p: any) => {
+    const m: Record<string, ScheduledPost[]> = {};
+    (posts ?? []).forEach((p) => {
       const k = toKey(new Date(p.scheduled_at));
       (m[k] ||= []).push(p);
     });
@@ -194,7 +215,7 @@ function PlannerPage() {
   }
 
   async function reschedule(id: string, newDate: Date, keepTime = true) {
-    const orig = (posts ?? []).find((p: any) => p.id === id);
+    const orig = (posts ?? []).find((p) => p.id === id);
     if (!orig) return;
     if (orig.status === "published")
       return toast.error("Gepubliceerde posts kunnen niet verplaatst worden");
@@ -210,9 +231,9 @@ function PlannerPage() {
       range.end.toISOString(),
       feedPlatform,
     ];
-    const prev = qc.getQueryData(key);
-    qc.setQueryData(key, (old: any[] | undefined) =>
-      (old ?? []).map((p: any) => (p.id === id ? { ...p, scheduled_at: next.toISOString() } : p)),
+    const prev = qc.getQueryData<ScheduledPost[]>(key);
+    qc.setQueryData(key, (old: ScheduledPost[] | undefined) =>
+      (old ?? []).map((p) => (p.id === id ? { ...p, scheduled_at: next.toISOString() } : p)),
     );
     const { error } = await supabase
       .from("scheduled_posts")
@@ -237,14 +258,14 @@ function PlannerPage() {
   }
   const publishTikTok = useServerFn(publishTikTokPost);
   async function markPublished(id: string) {
-    const post = (posts ?? []).find((p: any) => p.id === id);
+    const post = (posts ?? []).find((p) => p.id === id);
     if (post?.platform === "tiktok") {
       const t = toast.loading("Publiceren naar TikTok...");
       try {
         await publishTikTok({ data: { postId: id } });
         toast.success("Gepubliceerd op TikTok", { id: t });
-      } catch (e: any) {
-        toast.error(e?.message ?? "Publiceren mislukt", { id: t });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Publiceren mislukt", { id: t });
       }
       qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
       return;
@@ -467,7 +488,7 @@ function PlannerPage() {
           industry={selected?.industry ?? ""}
           defaultDate={composeDate ?? selectedDate}
           editId={editId}
-          existing={editId ? (posts ?? []).find((p: any) => p.id === editId) : null}
+          existing={editId ? ((posts ?? []).find((p) => p.id === editId) ?? null) : null}
           userId={user?.id}
           onClose={() => {
             setComposeOpen(false);
@@ -518,7 +539,18 @@ function MonthView({
   dragId,
   setDragId,
   onOpenPost,
-}: any) {
+}: {
+  cursor: Date;
+  byDay: Record<string, ScheduledPost[]>;
+  selected: Date;
+  brandColor?: string | null;
+  onSelectDay: (d: Date) => void;
+  onDoubleClickDay: (d: Date) => void;
+  onDropPost: (d: Date, id: string) => void;
+  dragId: string | null;
+  setDragId: (id: string | null) => void;
+  onOpenPost: (id: string) => void;
+}) {
   const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
   const offset = (start.getDay() + 6) % 7;
@@ -586,7 +618,7 @@ function MonthView({
                 )}
               </div>
               <div className="mt-1.5 space-y-1">
-                {items.slice(0, 3).map((p: any) => (
+                {items.slice(0, 3).map((p) => (
                   <PostChip
                     key={p.id}
                     post={p}
@@ -624,10 +656,17 @@ function DayView({
   onApprove,
   onPublish,
   onDelete,
-}: any) {
-  const sorted = [...posts].sort(
-    (a: any, b: any) => +new Date(a.scheduled_at) - +new Date(b.scheduled_at),
-  );
+}: {
+  date: Date;
+  posts: ScheduledPost[];
+  brandColor?: string | null;
+  onAdd: () => void;
+  onOpenPost: (id: string) => void;
+  onApprove: (id: string) => void;
+  onPublish: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const sorted = [...posts].sort((a, b) => +new Date(a.scheduled_at) - +new Date(b.scheduled_at));
   return (
     <div className="glass-strong rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
@@ -647,7 +686,7 @@ function DayView({
         </div>
       ) : (
         <div className="space-y-3">
-          {sorted.map((p: any) => (
+          {sorted.map((p) => (
             <PostRow
               key={p.id}
               post={p}
@@ -665,12 +704,26 @@ function DayView({
 }
 
 /* ------------------------------ AGENDA VIEW ------------------------------ */
-function AgendaView({ posts, brandColor, onOpenPost, onApprove, onPublish, onDelete }: any) {
+function AgendaView({
+  posts,
+  brandColor,
+  onOpenPost,
+  onApprove,
+  onPublish,
+  onDelete,
+}: {
+  posts: ScheduledPost[];
+  brandColor?: string | null;
+  onOpenPost: (id: string) => void;
+  onApprove: (id: string) => void;
+  onPublish: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
   const grouped = useMemo(() => {
-    const m = new Map<string, any[]>();
+    const m = new Map<string, ScheduledPost[]>();
     [...posts]
-      .sort((a: any, b: any) => +new Date(a.scheduled_at) - +new Date(b.scheduled_at))
-      .forEach((p: any) => {
+      .sort((a, b) => +new Date(a.scheduled_at) - +new Date(b.scheduled_at))
+      .forEach((p) => {
         const k = toKey(new Date(p.scheduled_at));
         if (!m.has(k)) m.set(k, []);
         m.get(k)!.push(p);
@@ -714,7 +767,21 @@ function AgendaView({ posts, brandColor, onOpenPost, onApprove, onPublish, onDel
   );
 }
 
-function PostRow({ post, brandColor, onOpen, onApprove, onPublish, onDelete }: any) {
+function PostRow({
+  post,
+  brandColor,
+  onOpen,
+  onApprove,
+  onPublish,
+  onDelete,
+}: {
+  post: ScheduledPost;
+  brandColor?: string | null;
+  onOpen: (id: string) => void;
+  onApprove: (id: string) => void;
+  onPublish: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
   const meta = PLATFORMS.find((x) => x.id === post.platform)!;
   const sm = STATUS_META[post.status as PostStatus];
   const mediaUrl = post.media_path
@@ -821,7 +888,18 @@ function ComposeModal({
   onClose,
   onSaved,
   onDelete,
-}: any) {
+}: {
+  clientId: string;
+  clientName: string;
+  industry: string;
+  defaultDate: Date;
+  editId: string | null;
+  existing: ScheduledPost | null;
+  userId?: string;
+  onClose: () => void;
+  onSaved: () => void;
+  onDelete?: () => void;
+}) {
   const [platforms, setPlatforms] = useState<Platform[]>(
     existing ? [existing.platform as Platform] : ["instagram"],
   );
@@ -842,12 +920,11 @@ function ComposeModal({
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const existingRecurringRule = existing?.recurring_rule as RecurringRule | null | undefined;
   const [recurring, setRecurring] = useState<"none" | "daily" | "weekly" | "monthly">(
-    existing?.recurring_rule?.freq ?? "none",
+    existingRecurringRule?.freq ?? "none",
   );
-  const [recurringCount, setRecurringCount] = useState<number>(
-    existing?.recurring_rule?.count ?? 4,
-  );
+  const [recurringCount, setRecurringCount] = useState<number>(existingRecurringRule?.count ?? 4);
   const [showNotes, setShowNotes] = useState<boolean>(!!existing?.notes);
   const captionRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -922,8 +999,8 @@ function ComposeModal({
       setMediaPath(path);
       setMediaType(file.type);
       toast.success("Media geüpload");
-    } catch (e: any) {
-      toast.error("Upload mislukt: " + e.message);
+    } catch (e) {
+      toast.error("Upload mislukt: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setUploading(false);
     }
@@ -945,8 +1022,8 @@ function ComposeModal({
       const tags = (res.hashtags ?? []).join(" ");
       setCaption(text + (tags ? `\n\n${tags}` : ""));
       toast.success("Caption gegenereerd");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setAiLoading(false);
     }
@@ -991,7 +1068,7 @@ function ComposeModal({
       } else if (queueIt) {
         // Add to queue — queue dispatcher assigns real time later
         const placeholder = new Date(scheduledAt || Date.now()).toISOString();
-        const rows = platforms.map((p) => ({
+        const rows: TablesInsert<"scheduled_posts">[] = platforms.map((p) => ({
           client_id: clientId,
           platform: p,
           caption: caption || null,
@@ -1003,13 +1080,17 @@ function ComposeModal({
           is_queued: true,
           created_by: userId ?? null,
         }));
-        const { error } = await supabase.from("scheduled_posts").insert(rows as any);
+        const { error } = await supabase.from("scheduled_posts").insert(rows);
         if (error) throw error;
       } else {
         const base = new Date(scheduledAt);
         const dates = expandRecurring(base);
         // For each platform × each date
-        const rows: any[] = [];
+        const rows: (TablesInsert<"scheduled_posts"> & {
+          _isParent: boolean;
+          _idx: number;
+          _platform: Platform;
+        })[] = [];
         for (const p of platforms) {
           const parentId: string | null = null;
           for (let i = 0; i < dates.length; i++) {
@@ -1033,7 +1114,7 @@ function ComposeModal({
         }
         // Insert all without parent_recurring_id linkage (simple model)
         const insertRows = rows.map(({ _isParent, _idx, _platform, ...r }) => r);
-        const { error } = await supabase.from("scheduled_posts").insert(insertRows as any);
+        const { error } = await supabase.from("scheduled_posts").insert(insertRows);
         if (error) throw error;
       }
       const msg = queueIt
@@ -1045,8 +1126,8 @@ function ComposeModal({
             : `${platforms.length} post${platforms.length > 1 ? "s" : ""} aangemaakt`;
       toast.success(msg);
       onSaved();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }
@@ -1186,7 +1267,7 @@ function ComposeModal({
                   <span className="text-[10px] uppercase tracking-wider text-gold/70 inline-flex items-center gap-1">
                     <Zap className="h-3 w-3" /> Beste tijd
                   </span>
-                  {bestTimes.map((bt: any, i: number) => (
+                  {bestTimes.map((bt, i) => (
                     <button
                       key={i}
                       type="button"
@@ -1451,7 +1532,15 @@ function FeedPreviewPanel({
   open,
   setOpen,
   onOpenPost,
-}: any) {
+}: {
+  clientName: string;
+  platform: Platform | "all";
+  setPlatform: (p: Platform | "all") => void;
+  posts: FeedPost[];
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  onOpenPost: (id: string) => void;
+}) {
   const isAll = platform === "all";
   const meta = isAll ? null : PLATFORMS.find((p) => p.id === platform)!;
   const label = isAll ? "Alle kanalen" : meta!.label;
@@ -1468,7 +1557,7 @@ function FeedPreviewPanel({
     isAll || platform === "instagram" || platform === "tiktok"
       ? "grid-cols-3"
       : "grid-cols-2 md:grid-cols-3";
-  const options: Array<{ id: Platform | "all"; label: string; Icon: any }> = [
+  const options: Array<{ id: Platform | "all"; label: string; Icon: LucideIcon }> = [
     { id: "all", label: "Alle", Icon: Layers },
     ...PLATFORMS.map((p) => ({ id: p.id, label: p.label, Icon: p.Icon })),
   ];
@@ -1528,7 +1617,7 @@ function FeedPreviewPanel({
         ) : (
           <>
             <div className={cn("grid gap-1 rounded-xl overflow-hidden hairline", cols)}>
-              {posts.map((p: any) => (
+              {posts.map((p) => (
                 <FeedTile key={p.id} post={p} ratio={ratio} onOpen={() => onOpenPost(p.id)} />
               ))}
             </div>
@@ -1542,7 +1631,7 @@ function FeedPreviewPanel({
   );
 }
 
-function FeedTile({ post, ratio, onOpen }: any) {
+function FeedTile({ post, ratio, onOpen }: { post: FeedPost; ratio: string; onOpen: () => void }) {
   const mediaUrl = post.media_path
     ? supabase.storage.from("client-uploads").getPublicUrl(post.media_path).data.publicUrl
     : null;
