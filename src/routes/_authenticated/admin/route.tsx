@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminTopbar } from "@/components/admin-topbar";
+import { CommandPalette } from "@/components/command-palette";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileFab } from "@/components/mobile-fab";
 import { useUIStore } from "@/lib/stores/ui-store";
@@ -65,6 +66,7 @@ function AdminLayout() {
       </div>
       <MobileBottomNav />
       <MobileFab />
+      <CommandPalette />
     </div>
   );
 }

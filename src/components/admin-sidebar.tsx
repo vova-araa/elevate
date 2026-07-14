@@ -126,7 +126,7 @@ export function AdminSidebar() {
     {
       label: "AI tools",
       items: [
-        { to: "/admin/ai", label: "AI Assistent", icon: Sparkles, badge: aiBadgeDismissed ? undefined : { value: "Nieuw", tone: "green" } },
+        { to: "/admin/ai", label: "AI Studio", icon: Sparkles, badge: aiBadgeDismissed ? undefined : { value: "Nieuw", tone: "green" } },
         { to: "/admin/besttime", label: "Best time", icon: Clock },
       ],
     },

@@ -13,10 +13,17 @@ import { CAPTION_LIMITS, DAY_LABELS_LONG } from "@/lib/social-constants";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
 import {
   ChevronLeft, ChevronRight, Plus, X, Upload, Sparkles, Trash2, Loader2,
-  Instagram, Music2, Linkedin, Youtube, Facebook, Calendar as CalIcon,
+  Calendar as CalIcon,
   Clock, CheckCircle2, AlertCircle, Send, Image as ImageIcon, Video as VideoIcon,
   CalendarDays, LayoutGrid, ListChecks, Eye, Layers, Repeat, StickyNote, Zap,
 } from "lucide-react";
+import {
+  PLATFORMS, STATUS_META, GOLD_FALLBACK, toKey, sameDay,
+  type Platform, type PostStatus,
+} from "@/components/planner/planner-shared";
+import { PostChip } from "@/components/planner/post-chip";
+import { WeekView } from "@/components/planner/week-view";
+import { ClientLegend } from "@/components/planner/client-legend";
 
 const searchSchema = z.object({
   clientId: z.string().uuid().optional(),
@@ -29,27 +36,8 @@ export const Route = createFileRoute("/_authenticated/admin/planner")({
   component: PlannerPage,
 });
 
-type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
-type PostStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
-
-const PLATFORMS: { id: Platform; label: string; Icon: any; ratio: string; color: string }[] = [
-  { id: "instagram", label: "Instagram", Icon: Instagram, ratio: "4 / 5", color: "from-pink-500 to-orange-400" },
-  { id: "tiktok", label: "TikTok", Icon: Music2, ratio: "9 / 16", color: "from-fuchsia-500 to-cyan-400" },
-  { id: "linkedin", label: "LinkedIn", Icon: Linkedin, ratio: "1.91 / 1", color: "from-sky-600 to-sky-400" },
-  { id: "youtube", label: "YouTube", Icon: Youtube, ratio: "16 / 9", color: "from-red-600 to-red-400" },
-  { id: "facebook", label: "Facebook", Icon: Facebook, ratio: "1.91 / 1", color: "from-blue-600 to-blue-400" },
-];
-
-const STATUS_META: Record<PostStatus, { label: string; cls: string; dot: string }> = {
-  draft:      { label: "Wacht op goedkeuring", cls: "border-amber-400/40 text-amber-300 bg-amber-500/10", dot: "bg-amber-400" },
-  scheduled:  { label: "Goedgekeurd / Ingepland", cls: "border-sky-400/40 text-sky-300 bg-sky-500/10", dot: "bg-sky-400" },
-  publishing: { label: "Bezig met publiceren",  cls: "border-violet-400/40 text-violet-300 bg-violet-500/10", dot: "bg-violet-400" },
-  published:  { label: "Gepubliceerd",           cls: "border-emerald-400/40 text-emerald-300 bg-emerald-500/10", dot: "bg-emerald-400" },
-  failed:     { label: "Mislukt",                cls: "border-red-400/40 text-red-300 bg-red-500/10", dot: "bg-red-400" },
-};
-
-const toKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+// Platform-, status- en datumhelpers zijn gedeeld met de planner-componenten
+// in src/components/planner/ (PLATFORMS, STATUS_META, toKey, sameDay).
 
 function PlannerPage() {
   const { clientId, view: viewParam, date: dateParam } = Route.useSearch();
@@ -162,11 +150,22 @@ function PlannerPage() {
   async function reschedule(id: string, newDate: Date, keepTime = true) {
     const orig = (posts ?? []).find((p: any) => p.id === id);
     if (!orig) return;
+    if (orig.status === "published") return toast.error("Gepubliceerde posts kunnen niet verplaatst worden");
     const o = new Date(orig.scheduled_at);
     const next = new Date(newDate);
     if (keepTime) next.setHours(o.getHours(), o.getMinutes(), 0, 0);
+    if (next.toISOString() === orig.scheduled_at) return;
+    // Optimistische update — meteen verplaatsen in de UI, terugdraaien bij fout
+    const key = ["scheduled-posts", activeId, range.start.toISOString(), range.end.toISOString(), feedPlatform];
+    const prev = qc.getQueryData(key);
+    qc.setQueryData(key, (old: any[] | undefined) =>
+      (old ?? []).map((p: any) => (p.id === id ? { ...p, scheduled_at: next.toISOString() } : p)),
+    );
     const { error } = await supabase.from("scheduled_posts").update({ scheduled_at: next.toISOString() }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      qc.setQueryData(key, prev);
+      return toast.error(error.message);
+    }
     toast.success("Verplaatst");
     qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
   }
@@ -197,11 +196,12 @@ function PlannerPage() {
     qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
   }
   async function removePost(id: string) {
-    if (!confirm("Naar prullenbak verplaatsen? (30 dagen herstelbaar)")) return;
+    if (!confirm("Naar prullenbak verplaatsen? (30 dagen herstelbaar)")) return false;
     const { error } = await supabase.from("scheduled_posts").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return false; }
     toast.success("Naar prullenbak");
     qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
+    return true;
   }
 
   function openCompose(date?: Date, id?: string) {
@@ -273,6 +273,13 @@ function PlannerPage() {
         </div>
       </div>
 
+      {/* Legenda: klanten met brand_color, klikbaar om te filteren */}
+      <ClientLegend
+        clients={clients}
+        activeId={activeId}
+        onSelect={(id: string) => navigate({ to: "/admin/planner", search: { clientId: id, view } })}
+      />
+
       {/* Feed preview per account */}
       <FeedPreviewPanel
         clientName={selected?.name ?? ""}
@@ -287,6 +294,7 @@ function PlannerPage() {
       {/* Main view */}
       {view === "month" && (
         <MonthView cursor={cursor} byDay={byDay} selected={selectedDate}
+          brandColor={selected?.brand_color}
           onSelectDay={(d: Date) => { setSelectedDate(d); }}
           onDoubleClickDay={(d: Date) => openCompose(d)}
           onDropPost={(d: Date, id: string) => reschedule(id, d)}
@@ -295,19 +303,22 @@ function PlannerPage() {
       )}
       {view === "week" && (
         <WeekView cursor={cursor} byDay={byDay}
-          onClickSlot={(d: Date) => openCompose(d)}
+          brandColor={selected?.brand_color}
+          onClickDay={(d: Date) => openCompose(d)}
           onDropPost={(d: Date, id: string) => reschedule(id, d)}
           dragId={dragId} setDragId={setDragId}
           onOpenPost={(id: string) => openCompose(undefined, id)} />
       )}
       {view === "day" && (
         <DayView date={cursor} posts={byDay[toKey(cursor)] ?? []}
+          brandColor={selected?.brand_color}
           onAdd={() => openCompose(cursor)}
           onOpenPost={(id: string) => openCompose(undefined, id)}
           onApprove={approve} onPublish={markPublished} onDelete={removePost} />
       )}
       {view === "agenda" && (
         <AgendaView posts={posts ?? []}
+          brandColor={selected?.brand_color}
           onOpenPost={(id: string) => openCompose(undefined, id)}
           onApprove={approve} onPublish={markPublished} onDelete={removePost} />
       )}
@@ -323,6 +334,7 @@ function PlannerPage() {
           userId={user?.id}
           onClose={() => { setComposeOpen(false); setEditId(null); }}
           onSaved={() => { setComposeOpen(false); setEditId(null); qc.invalidateQueries({ queryKey: ["scheduled-posts"] }); }}
+          onDelete={editId ? async () => { if (await removePost(editId)) { setComposeOpen(false); setEditId(null); } } : undefined}
         />
       )}
     </div>
@@ -338,7 +350,7 @@ function periodLabel(d: Date, view: string) {
 }
 
 /* ------------------------------ MONTH VIEW ------------------------------ */
-function MonthView({ cursor, byDay, selected, onSelectDay, onDoubleClickDay, onDropPost, dragId, setDragId, onOpenPost }: any) {
+function MonthView({ cursor, byDay, selected, brandColor, onSelectDay, onDoubleClickDay, onDropPost, dragId, setDragId, onOpenPost }: any) {
   const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
   const offset = (start.getDay() + 6) % 7;
@@ -379,20 +391,11 @@ function MonthView({ cursor, byDay, selected, onSelectDay, onDoubleClickDay, onD
                 {items.length > 0 && <span className="text-[10px] text-gold/80">{items.length}</span>}
               </div>
               <div className="mt-1.5 space-y-1">
-                {items.slice(0, 3).map((p: any) => {
-                  const meta = PLATFORMS.find((x) => x.id === p.platform)!;
-                  const sm = STATUS_META[p.status as PostStatus];
-                  return (
-                    <button key={p.id}
-                      draggable
-                      onDragStart={() => setDragId(p.id)}
-                      onClick={(e) => { e.stopPropagation(); onOpenPost(p.id); }}
-                      className={cn("w-full text-left text-[10px] rounded px-1.5 py-1 truncate inline-flex items-center gap-1 border", sm.cls)}>
-                      <meta.Icon className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{new Date(p.scheduled_at).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })} {p.caption?.slice(0, 24) || "Geen caption"}</span>
-                    </button>
-                  );
-                })}
+                {items.slice(0, 3).map((p: any) => (
+                  <PostChip key={p.id} post={p} brandColor={brandColor}
+                    onDragStart={() => setDragId(p.id)} onDragEnd={() => setDragId(null)}
+                    onOpen={() => onOpenPost(p.id)} />
+                ))}
                 {items.length > 3 && <div className="text-[10px] text-muted-foreground pl-1">+{items.length - 3} meer</div>}
               </div>
             </div>
@@ -404,76 +407,11 @@ function MonthView({ cursor, byDay, selected, onSelectDay, onDoubleClickDay, onD
 }
 
 /* ------------------------------ WEEK VIEW ------------------------------ */
-function WeekView({ cursor, byDay, onClickSlot, onDropPost, dragId, setDragId, onOpenPost }: any) {
-  const start = new Date(cursor);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-  start.setHours(0, 0, 0, 0);
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start); d.setDate(start.getDate() + i); return d;
-  });
-  const hours = Array.from({ length: 17 }, (_, i) => i + 6); // 6:00 – 22:00
-  const today = new Date();
-
-  return (
-    <div className="glass-strong rounded-2xl p-2 overflow-x-auto">
-      <div className="grid min-w-[820px]" style={{ gridTemplateColumns: "56px repeat(7, minmax(0,1fr))" }}>
-        <div />
-        {days.map((d) => (
-          <div key={toKey(d)} className={cn("text-center pb-2 text-xs", sameDay(d, today) && "text-gold")}>
-            <div className="uppercase tracking-wider text-[10px] text-muted-foreground">{d.toLocaleDateString("nl-NL", { weekday: "short" })}</div>
-            <div className="font-display text-lg">{d.getDate()}</div>
-          </div>
-        ))}
-        {hours.map((h) => (
-          <RowHour key={h} h={h}
-            days={days} byDay={byDay}
-            onClickSlot={onClickSlot} onDropPost={onDropPost}
-            dragId={dragId} setDragId={setDragId}
-            onOpenPost={onOpenPost}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RowHour({ h, days, byDay, onClickSlot, onDropPost, dragId, setDragId, onOpenPost }: any) {
-  return (
-    <>
-      <div className="text-[10px] text-muted-foreground text-right pr-2 pt-1 border-t border-border/20">{String(h).padStart(2,"0")}:00</div>
-      {days.map((d: Date) => {
-        const k = toKey(d);
-        const items = (byDay[k] || []).filter((p: any) => new Date(p.scheduled_at).getHours() === h);
-        const slot = new Date(d); slot.setHours(h, 0, 0, 0);
-        return (
-          <div key={k + h}
-            onClick={() => onClickSlot(slot)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); if (dragId) { onDropPost(slot, dragId); setDragId(null); } }}
-            className="border-t border-l border-border/20 min-h-12 p-1 hover:bg-gold/5 cursor-pointer">
-            {items.map((p: any) => {
-              const meta = PLATFORMS.find((x) => x.id === p.platform)!;
-              const sm = STATUS_META[p.status as PostStatus];
-              return (
-                <button key={p.id}
-                  draggable
-                  onDragStart={(e) => { e.stopPropagation(); setDragId(p.id); }}
-                  onClick={(e) => { e.stopPropagation(); onOpenPost(p.id); }}
-                  className={cn("w-full text-left text-[10px] rounded px-1.5 py-1 mb-1 truncate inline-flex items-center gap-1 border", sm.cls)}>
-                  <meta.Icon className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{new Date(p.scheduled_at).toLocaleTimeString("nl-NL",{hour:"2-digit",minute:"2-digit"})}</span>
-                </button>
-              );
-            })}
-          </div>
-        );
-      })}
-    </>
-  );
-}
+// De week-weergave (7 kolommen, posts per dag gestapeld, drag & drop)
+// staat in src/components/planner/week-view.tsx.
 
 /* ------------------------------ DAY VIEW ------------------------------ */
-function DayView({ date, posts, onAdd, onOpenPost, onApprove, onPublish, onDelete }: any) {
+function DayView({ date, posts, brandColor, onAdd, onOpenPost, onApprove, onPublish, onDelete }: any) {
   const sorted = [...posts].sort((a: any, b: any) => +new Date(a.scheduled_at) - +new Date(b.scheduled_at));
   return (
     <div className="glass-strong rounded-2xl p-6">
@@ -489,7 +427,7 @@ function DayView({ date, posts, onAdd, onOpenPost, onApprove, onPublish, onDelet
         </div>
       ) : (
         <div className="space-y-3">
-          {sorted.map((p: any) => <PostRow key={p.id} post={p} onOpen={onOpenPost} onApprove={onApprove} onPublish={onPublish} onDelete={onDelete} />)}
+          {sorted.map((p: any) => <PostRow key={p.id} post={p} brandColor={brandColor} onOpen={onOpenPost} onApprove={onApprove} onPublish={onPublish} onDelete={onDelete} />)}
         </div>
       )}
     </div>
@@ -497,7 +435,7 @@ function DayView({ date, posts, onAdd, onOpenPost, onApprove, onPublish, onDelet
 }
 
 /* ------------------------------ AGENDA VIEW ------------------------------ */
-function AgendaView({ posts, onOpenPost, onApprove, onPublish, onDelete }: any) {
+function AgendaView({ posts, brandColor, onOpenPost, onApprove, onPublish, onDelete }: any) {
   const grouped = useMemo(() => {
     const m = new Map<string, any[]>();
     [...posts].sort((a: any, b: any) => +new Date(a.scheduled_at) - +new Date(b.scheduled_at))
@@ -522,7 +460,7 @@ function AgendaView({ posts, onOpenPost, onApprove, onPublish, onDelete }: any) 
               {d.toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"})}
             </div>
             <div className="space-y-3">
-              {items.map((p) => <PostRow key={p.id} post={p} onOpen={onOpenPost} onApprove={onApprove} onPublish={onPublish} onDelete={onDelete} />)}
+              {items.map((p) => <PostRow key={p.id} post={p} brandColor={brandColor} onOpen={onOpenPost} onApprove={onApprove} onPublish={onPublish} onDelete={onDelete} />)}
             </div>
           </div>
         );
@@ -531,12 +469,13 @@ function AgendaView({ posts, onOpenPost, onApprove, onPublish, onDelete }: any) 
   );
 }
 
-function PostRow({ post, onOpen, onApprove, onPublish, onDelete }: any) {
+function PostRow({ post, brandColor, onOpen, onApprove, onPublish, onDelete }: any) {
   const meta = PLATFORMS.find((x) => x.id === post.platform)!;
   const sm = STATUS_META[post.status as PostStatus];
   const mediaUrl = post.media_path ? supabase.storage.from("client-uploads").getPublicUrl(post.media_path).data.publicUrl : null;
   return (
-    <div className="glass rounded-xl p-4 flex gap-4 items-start">
+    <div className="glass rounded-xl p-4 flex gap-4 items-start"
+      style={{ borderLeft: `3px solid ${brandColor || GOLD_FALLBACK}` }}>
       <div className="shrink-0">
         {mediaUrl ? (
           post.media_type?.startsWith("video") ? (
@@ -580,7 +519,7 @@ function PostRow({ post, onOpen, onApprove, onPublish, onDelete }: any) {
 }
 
 /* ------------------------------ COMPOSE MODAL ------------------------------ */
-function ComposeModal({ clientId, clientName, industry, defaultDate, editId, existing, userId, onClose, onSaved }: any) {
+function ComposeModal({ clientId, clientName, industry, defaultDate, editId, existing, userId, onClose, onSaved, onDelete }: any) {
   const [platforms, setPlatforms] = useState<Platform[]>(existing ? [existing.platform as Platform] : ["instagram"]);
   const [caption, setCaption] = useState<string>(existing?.caption ?? "");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
@@ -797,7 +736,17 @@ function ComposeModal({ clientId, clientName, industry, defaultDate, editId, exi
         className="w-full max-w-5xl max-h-[92vh] overflow-y-auto glass-strong rounded-2xl border border-gold/20 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="text-xs uppercase tracking-[0.22em] text-gold/80">{editId ? "Post bewerken" : "Nieuwe post"}</div>
+            <div className="text-xs uppercase tracking-[0.22em] text-gold/80 inline-flex items-center gap-2">
+              {editId ? "Post bewerken" : "Nieuwe post"}
+              {existing && (() => {
+                const sm = STATUS_META[existing.status as PostStatus];
+                return (
+                  <span className={cn("text-[10px] normal-case tracking-normal rounded-full px-2 py-0.5 inline-flex items-center gap-1 border", sm.cls)}>
+                    <span className={cn("h-1.5 w-1.5 rounded-full", sm.dot)} /> {sm.label}
+                  </span>
+                );
+              })()}
+            </div>
             <h2 className="font-display text-3xl mt-1">{clientName}</h2>
           </div>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-accent/40"><X className="h-5 w-5" /></button>
@@ -984,6 +933,12 @@ function ComposeModal({ clientId, clientName, industry, defaultDate, editId, exi
 
         {/* Footer */}
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2 pt-4 border-t border-border/30">
+          {editId && onDelete && (
+            <button onClick={onDelete} disabled={saving}
+              className="mr-auto rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60">
+              <Trash2 className="h-4 w-4" /> Verwijder
+            </button>
+          )}
           <button onClick={onClose} className="rounded-full glass px-4 py-2 text-sm hover:bg-accent/30">Annuleren</button>
           {!editId && (
             <button onClick={() => save("draft", true)} disabled={saving || overHard}
