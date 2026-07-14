@@ -34,9 +34,8 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      // Grote hoeveelheid bestaande `any`s uit de oorspronkelijke codebase;
-      // als warning zichtbaar houden zonder de build te blokkeren.
-      "@typescript-eslint/no-explicit-any": "warn",
+      // Codebase is any-vrij; houd het zo — nieuwe `any` blokkeert de lint.
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
   eslintPluginPrettier,

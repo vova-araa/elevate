@@ -46,8 +46,9 @@ function ClientMessages() {
     );
   }
 
-  const clientId = (membership as any).client_id as string;
-  const clientName = (membership as any).clients?.name as string | undefined;
+  const m = membership as { client_id: string; clients?: { name?: string } | null };
+  const clientId = m.client_id;
+  const clientName = m.clients?.name;
 
   return (
     <div className="space-y-6 max-w-3xl">

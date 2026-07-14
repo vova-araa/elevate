@@ -35,9 +35,9 @@ function CallbackPage() {
         toast.success(`${platform[0].toUpperCase() + platform.slice(1)} succesvol gekoppeld!`);
         messageRef.current = `Verbonden als ${res.handle}`;
         setTimeout(() => navigate({ to: "/client/channels" }), 600);
-      } catch (e: any) {
+      } catch (e) {
         stateRef.current = "error";
-        messageRef.current = e?.message ?? "Koppeling mislukt";
+        messageRef.current = e instanceof Error ? e.message : "Koppeling mislukt";
         toast.error("Koppeling mislukt — probeer opnieuw");
       }
     })();

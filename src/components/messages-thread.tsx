@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Send, AlertCircle, CalendarClock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 type Props = {
   clientId: string;
@@ -37,15 +38,17 @@ const PRIO_COLORS: Record<string, string> = {
   urgent: "text-red-400 bg-red-500/10",
 };
 
+type Message = Tables<"messages">;
+
 export function MessagesThread({ clientId, clientName, asRole }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { data: messages } = useQuery({
+  const { data: messages } = useQuery<Message[]>({
     queryKey: ["messages", clientId],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("messages")
         .select("*")
         .eq("client_id", clientId)
@@ -82,17 +85,17 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
   async function send() {
     if (!body.trim()) return;
     setSending(true);
-    const payload: any = {
+    const payload: TablesInsert<"messages"> = {
       client_id: clientId,
       sender_id: user?.id ?? null,
       sender_role: asRole,
       body: body.trim(),
       subject: subject.trim() || null,
       priority,
-      deliverable_type: deliverable || null,
+      deliverable_type: (deliverable || null) as TablesInsert<"messages">["deliverable_type"],
       due_date: dueDate || null,
     };
-    const { error } = await (supabase as any).from("messages").insert(payload);
+    const { error } = await supabase.from("messages").insert(payload);
     setSending(false);
     if (error) {
       toast.error("Versturen mislukt: " + error.message);
@@ -120,7 +123,7 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
             Nog geen berichten — start het gesprek hieronder.
           </div>
         )}
-        {messages?.map((m: any) => {
+        {messages?.map((m: Message) => {
           const mine = m.sender_id === user?.id;
           return (
             <div key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
@@ -199,7 +202,7 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
           )}
           <select
             value={priority}
-            onChange={(e) => setPriority(e.target.value as any)}
+            onChange={(e) => setPriority(e.target.value as "low" | "medium" | "high" | "urgent")}
             className={cn(
               "rounded-lg bg-background/60 hairline px-3 py-2 text-sm",
               asRole === "client" && "md:col-span-3",

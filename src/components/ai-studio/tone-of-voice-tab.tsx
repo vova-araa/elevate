@@ -45,7 +45,7 @@ export function ToneOfVoiceTab({ clients }: { clients: StudioClient[] }) {
       toast.success("Tone-of-voice profiel opgeslagen");
       qc.invalidateQueries({ queryKey: ["tone-of-voice", clientId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Opslaan mislukt"),
+    onError: (e: Error) => toast.error(e.message || "Opslaan mislukt"),
   });
 
   const suggest = useMutation({
@@ -58,7 +58,7 @@ export function ToneOfVoiceTab({ clients }: { clients: StudioClient[] }) {
       setExamples(r.examples);
       toast.success("AI-voorstel geladen — controleer en sla op");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Voorstel genereren mislukt"),
+    onError: (e: Error) => toast.error(e.message || "Voorstel genereren mislukt"),
   });
 
   const selectedClient = clients.find((c) => c.id === clientId);

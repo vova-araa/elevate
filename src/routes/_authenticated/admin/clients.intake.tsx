@@ -17,6 +17,7 @@ import {
   Sparkles,
   Users,
   FileText,
+  type LucideIcon,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -681,7 +682,7 @@ function PlatformBlock({
   onChange,
 }: {
   label: string;
-  Icon: any;
+  Icon: LucideIcon;
   stats: PlatformStats;
   onChange: (p: PlatformStats) => void;
 }) {

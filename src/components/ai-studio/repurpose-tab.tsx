@@ -30,7 +30,7 @@ export function RepurposeTab({ clients }: { clients: StudioClient[] }) {
   const generate = useMutation({
     mutationFn: async () =>
       repurposeFn({ data: { source: source.trim(), platforms, clientId, language } }),
-    onError: (e: any) => toast.error(e?.message ?? "Hergebruiken mislukt"),
+    onError: (e: Error) => toast.error(e.message ?? "Hergebruiken mislukt"),
   });
 
   const togglePlatform = (id: StudioPlatform) =>

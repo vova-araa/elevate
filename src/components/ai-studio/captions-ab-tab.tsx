@@ -46,7 +46,7 @@ export function CaptionsAbTab({ clients }: { clients: StudioClient[] }) {
         data: { briefing: briefing.trim(), clientId, tone, platforms, language, variantCount },
       }),
     onSuccess: () => setSavedKeys(new Set()),
-    onError: (e: any) => toast.error(e?.message ?? "Genereren mislukt"),
+    onError: (e: Error) => toast.error(e.message || "Genereren mislukt"),
   });
 
   const save = useMutation({
@@ -58,7 +58,7 @@ export function CaptionsAbTab({ clients }: { clients: StudioClient[] }) {
       setSavedKeys((prev) => new Set(prev).add(`${v.platform}-${v.variant}`));
       toast.success("Variant bewaard in AI-generaties");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Bewaren mislukt"),
+    onError: (e: Error) => toast.error(e.message || "Bewaren mislukt"),
   });
 
   const togglePlatform = (id: StudioPlatform) =>

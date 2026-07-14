@@ -64,7 +64,7 @@ function TrashPage() {
       )}
 
       <div className="space-y-3">
-        {data?.map((p: any) => {
+        {data?.map((p) => {
           const left = daysLeft(p.deleted_at);
           return (
             <div

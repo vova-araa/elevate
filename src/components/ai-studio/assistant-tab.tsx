@@ -21,12 +21,21 @@ import { uploadPostizMediaFromUrl } from "@/lib/postiz.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
 import { cn } from "@/lib/utils";
+import type { JsonValue } from "@/lib/ai-provider.server";
 
 type Msg = {
   role: "user" | "assistant";
   content: string;
-  actions?: { tool: string; result: any }[];
+  actions?: { tool: string; result: JsonValue }[];
 };
+
+function isJsonRecord(value: JsonValue): value is { [key: string]: JsonValue } {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 const QUICK = [
   {
@@ -79,8 +88,11 @@ export function AssistantTab() {
       const { data } = supabase.storage.from("client-uploads").getPublicUrl(path);
       let postizId: string | undefined;
       try {
-        const r: any = await uploadFn({ data: { url: data.publicUrl, filename: file.name } });
-        postizId = r?.[0]?.id ?? r?.id;
+        const r: unknown = await uploadFn({ data: { url: data.publicUrl, filename: file.name } });
+        const first: unknown = Array.isArray(r) ? r[0] : undefined;
+        const firstId = isRecord(first) && typeof first.id === "string" ? first.id : undefined;
+        const topId = isRecord(r) && typeof r.id === "string" ? r.id : undefined;
+        postizId = firstId ?? topId;
       } catch {
         /* postiz upload optional here — compose will retry */
       }
@@ -90,7 +102,7 @@ export function AssistantTab() {
       setMedia((prev) => [...prev, m]);
       toast.success(`${m.name} geladen`);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Upload mislukt"),
+    onError: (e: Error) => toast.error(e.message || "Upload mislukt"),
   });
 
   const handleFiles = (files: FileList | null) => {
@@ -115,21 +127,20 @@ export function AssistantTab() {
       const history = [...messages, { role: "user" as const, content: text }];
       setMessages(history);
       setInput("");
-      const res: any = await assistant({
+      return assistant({
         data: {
           messages: history.map((m) => ({ role: m.role, content: m.content })),
           clientId: activeClient?.id ?? null,
         },
       });
-      return res;
     },
-    onSuccess: (r: any) => {
+    onSuccess: (r) => {
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: r.reply ?? "Klaar.", actions: r.actions },
       ]);
     },
-    onError: (e: any) => toast.error(e?.message ?? "AI fout"),
+    onError: (e: Error) => toast.error(e.message || "AI fout"),
   });
 
   const submit = () => {
@@ -194,7 +205,10 @@ export function AssistantTab() {
                       <Sparkles className="h-3 w-3 text-gold" />
                       <span className="font-medium">{a.tool}</span>
                       <span className="text-muted-foreground">
-                        · {a.result?.ok ? "✓ klaar" : `fout: ${a.result?.error}`}
+                        ·{" "}
+                        {isJsonRecord(a.result) && a.result.ok
+                          ? "✓ klaar"
+                          : `fout: ${isJsonRecord(a.result) ? String(a.result.error) : ""}`}
                       </span>
                     </div>
                   ))}

@@ -6,10 +6,18 @@ import { toast } from "sonner";
 import { Plus, Loader2, Trash2, Send, Webhook, CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 import { testWebhook } from "@/lib/automation-admin.functions";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/webhooks")({
   component: WebhooksPage,
 });
+
+type WebhookEndpointWithClient = Tables<"webhook_endpoints"> & {
+  clients: Pick<Tables<"clients">, "name"> | null;
+};
+type WebhookDeliveryWithEndpoint = Tables<"webhook_deliveries"> & {
+  webhook_endpoints: Pick<Tables<"webhook_endpoints">, "name"> | null;
+};
 
 const EVENTS = [
   "post.created",
@@ -59,7 +67,7 @@ function WebhooksPage() {
     await supabase.from("webhook_endpoints").update({ is_active: !is_active }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["webhooks"] });
   }
-  async function runTest(ep: any) {
+  async function runTest(ep: WebhookEndpointWithClient) {
     setTesting(ep.id);
     const res = await testFn({ data: { url: ep.url, secret: ep.secret ?? undefined } });
     setTesting(null);
@@ -89,7 +97,7 @@ function WebhooksPage() {
       {isLoading && <Loader2 className="h-6 w-6 animate-spin text-gold" />}
 
       <div className="grid gap-3">
-        {(endpoints ?? []).map((e: any) => (
+        {(endpoints ?? []).map((e: WebhookEndpointWithClient) => (
           <div key={e.id} className="glass-strong rounded-xl p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -155,7 +163,7 @@ function WebhooksPage() {
         <div>
           <h2 className="font-display text-2xl mb-3">Recente leveringen</h2>
           <div className="space-y-1.5">
-            {deliveries.map((d: any) => (
+            {deliveries.map((d: WebhookDeliveryWithEndpoint) => (
               <div
                 key={d.id}
                 className="text-xs glass rounded-lg p-2 flex items-center justify-between gap-2"
@@ -279,7 +287,7 @@ function WebhookModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setForm({ ...form, client_id: e.target.value })}
             >
               <option value="">— Alle klanten —</option>
-              {(clients ?? []).map((c: any) => (
+              {(clients ?? []).map((c: Pick<Tables<"clients">, "id" | "name">) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

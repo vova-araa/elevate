@@ -13,6 +13,7 @@ import {
   Loader2,
   Link2,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/client/channels")({
 
 type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 
-const PLATFORMS: { id: Platform; label: string; Icon: any; tint: string }[] = [
+const PLATFORMS: { id: Platform; label: string; Icon: LucideIcon; tint: string }[] = [
   {
     id: "instagram",
     label: "Instagram",
@@ -104,7 +105,7 @@ function ChannelsPage() {
   const [confirm, setConfirm] = useState<Platform | null>(null);
 
   const syncAfterConnect = async (platform: Platform, notify = false) => {
-    const result: any = await sync({ data: { platform } });
+    const result = await sync({ data: { platform } });
     await refetch();
     if (notify)
       toast[result?.connected ? "success" : "info"](
@@ -126,7 +127,7 @@ function ChannelsPage() {
       }
       return { ...res, platform };
     },
-    onSuccess: (res: any) => {
+    onSuccess: (res) => {
       setConfirm(null);
       if (res?.external) {
         toast.info(
@@ -139,7 +140,7 @@ function ChannelsPage() {
         navigate({ to: res.redirectUrl });
       }
     },
-    onError: (e: any) => toast.error(e?.message ?? "Verbinden mislukt"),
+    onError: (e: Error) => toast.error(e.message ?? "Verbinden mislukt"),
   });
 
   const disconnectMut = useMutation({
@@ -148,10 +149,10 @@ function ChannelsPage() {
       toast.success("Ontkoppeld");
       refetch();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Mislukt"),
+    onError: (e: Error) => toast.error(e.message ?? "Mislukt"),
   });
 
-  const channelsByPlatform = new Map((data?.channels ?? []).map((c: any) => [c.platform, c]));
+  const channelsByPlatform = new Map((data?.channels ?? []).map((c) => [c.platform, c]));
 
   return (
     <div className="space-y-5 max-w-5xl">
@@ -178,7 +179,7 @@ function ChannelsPage() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {PLATFORMS.map(({ id, label, Icon, tint }) => {
-          const ch: any = channelsByPlatform.get(id);
+          const ch = channelsByPlatform.get(id);
           const connected = !!ch && ch.status === "active";
           return (
             <div

@@ -18,10 +18,13 @@ import {
   X,
 } from "lucide-react";
 import { PostComments } from "./post-comments";
+import type { LucideIcon } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
+type ScheduledPost = Tables<"scheduled_posts">;
 
-const PLATFORM_META: Record<Platform, { label: string; Icon: any; tint: string }> = {
+const PLATFORM_META: Record<Platform, { label: string; Icon: LucideIcon; tint: string }> = {
   instagram: {
     label: "Instagram",
     Icon: Instagram,
@@ -118,7 +121,7 @@ function DraftCard({
   clientId,
   onApprove,
 }: {
-  post: any;
+  post: ScheduledPost;
   clientId: string;
   onApprove: () => void;
 }) {

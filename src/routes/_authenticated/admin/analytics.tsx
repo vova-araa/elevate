@@ -30,6 +30,7 @@ import {
   Youtube,
   Facebook,
   BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/admin/analytics")({
   component: AnalyticsPage,
 });
 
-const PLATFORM_ICONS: Record<string, any> = {
+const PLATFORM_ICONS: Record<string, LucideIcon> = {
   instagram: Instagram,
   tiktok: Music2,
   linkedin: Linkedin,
@@ -459,7 +460,17 @@ function AnalyticsPage() {
   );
 }
 
-function Kpi({ icon: Icon, label, value, tint }: any) {
+function Kpi({
+  icon: Icon,
+  label,
+  value,
+  tint,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  tint?: string;
+}) {
   return (
     <div className="glass-strong rounded-xl p-4">
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">

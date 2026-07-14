@@ -5,11 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Trash2, Flag, Calendar, ListChecks, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/tasks")({ component: AdminTasks });
 
 type Status = "todo" | "in_progress" | "done";
 type Priority = "low" | "medium" | "high" | "urgent";
+type ClientOption = Pick<Tables<"clients">, "id" | "name">;
+type Task = Tables<"tasks">;
 
 const STATUS_COLS: { k: Status; label: string }[] = [
   { k: "todo", label: "Te doen" },
@@ -45,11 +48,11 @@ function AdminTasks() {
       [],
   });
 
-  const clientName = (id: string) => clients?.find((c: any) => c.id === id)?.name ?? "—";
+  const clientName = (id: string) => clients?.find((c: ClientOption) => c.id === id)?.name ?? "—";
 
   const filtered = useMemo(() => {
     if (!tasks) return [];
-    return filterClient === "all" ? tasks : tasks.filter((t: any) => t.client_id === filterClient);
+    return filterClient === "all" ? tasks : tasks.filter((t: Task) => t.client_id === filterClient);
   }, [tasks, filterClient]);
 
   async function quickAdd() {
@@ -78,7 +81,7 @@ function AdminTasks() {
 
   const counts = useMemo(() => {
     const c = { todo: 0, in_progress: 0, done: 0 } as Record<Status, number>;
-    filtered.forEach((t: any) => {
+    filtered.forEach((t: Task) => {
       c[t.status as Status] = (c[t.status as Status] ?? 0) + 1;
     });
     return c;
@@ -110,7 +113,7 @@ function AdminTasks() {
             className="rounded-lg bg-input/60 hairline px-3 py-2.5 text-sm"
           >
             <option value="">Klant kiezen…</option>
-            {clients?.map((c: any) => (
+            {clients?.map((c: ClientOption) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -150,7 +153,7 @@ function AdminTasks() {
           className="rounded-lg bg-input/60 hairline px-3 py-2 text-sm"
         >
           <option value="all">Alle klanten</option>
-          {clients?.map((c: any) => (
+          {clients?.map((c: ClientOption) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -164,7 +167,7 @@ function AdminTasks() {
       {/* Board */}
       <div className="grid gap-4 md:grid-cols-3">
         {STATUS_COLS.map((col) => {
-          const items = filtered.filter((t: any) => t.status === col.k);
+          const items = filtered.filter((t: Task) => t.status === col.k);
           return (
             <div key={col.k} className="glass rounded-2xl p-3 min-h-[300px]">
               <div className="flex items-center justify-between px-2 mb-3">
@@ -175,7 +178,7 @@ function AdminTasks() {
                 <span className="text-xs text-muted-foreground">{items.length}</span>
               </div>
               <div className="space-y-2">
-                {items.map((t: any) => (
+                {items.map((t: Task) => (
                   <div
                     key={t.id}
                     className="rounded-xl bg-surface-elevated/60 p-3 border border-border/30 hover:border-gold/30 transition"

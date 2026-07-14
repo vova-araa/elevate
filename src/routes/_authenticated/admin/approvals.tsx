@@ -18,14 +18,16 @@ import {
   Filter,
   ListChecks,
   Send,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/approvals")({
   component: ApprovalsPage,
 });
 
-const PLATFORM_ICONS: Record<string, any> = {
+const PLATFORM_ICONS: Record<string, LucideIcon> = {
   instagram: Instagram,
   tiktok: Music2,
   linkedin: Linkedin,
@@ -124,8 +126,8 @@ function ApprovalsPage() {
       .select("user_id")
       .eq("role", "admin");
     const ids = new Set<string>();
-    members?.forEach((m: any) => ids.add(m.user_id));
-    admins?.forEach((a: any) => ids.add(a.user_id));
+    members?.forEach((m: Pick<Tables<"client_members">, "user_id">) => ids.add(m.user_id));
+    admins?.forEach((a: Pick<Tables<"user_roles">, "user_id">) => ids.add(a.user_id));
     const rows = Array.from(ids)
       .filter((id) => id !== user?.id)
       .map((uid) => ({ user_id: uid, type: "approval", title, body, link }));
@@ -306,7 +308,17 @@ function ApprovalsPage() {
   );
 }
 
-function Stat({ icon: Icon, label, value, tint }: any) {
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  tint,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  tint?: string;
+}) {
   return (
     <div className="glass-strong rounded-xl p-4">
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">

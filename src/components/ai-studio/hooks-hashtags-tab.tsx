@@ -79,7 +79,7 @@ export function HooksHashtagsTab() {
   const hooks = useMutation({
     mutationFn: async () =>
       hooksFn({ data: { topic: hookTopic.trim(), platform: hookPlatform, count: hookCount } }),
-    onError: (e: any) => toast.error(e?.message ?? "Hooks genereren mislukt"),
+    onError: (e: Error) => toast.error(e.message || "Hooks genereren mislukt"),
   });
 
   // Hashtags
@@ -97,7 +97,7 @@ export function HooksHashtagsTab() {
           niche: tagNiche.trim() || undefined,
         },
       }),
-    onError: (e: any) => toast.error(e?.message ?? "Hashtags genereren mislukt"),
+    onError: (e: Error) => toast.error(e.message || "Hashtags genereren mislukt"),
   });
 
   const normalizeTag = (t: string) => (t.startsWith("#") ? t : `#${t}`);

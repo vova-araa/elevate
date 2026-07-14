@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
 import { PLATFORMS, STATUS_META, GOLD_FALLBACK, type PostStatus } from "./planner-shared";
 
 /**
@@ -14,7 +15,7 @@ export function PostChip({
   onDragEnd,
   onOpen,
 }: {
-  post: any;
+  post: Tables<"scheduled_posts">;
   brandColor?: string | null;
   variant?: "compact" | "roomy";
   onDragStart: () => void;

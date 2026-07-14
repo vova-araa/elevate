@@ -4,6 +4,9 @@ import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toKey } from "./planner-shared";
 import { PostChip } from "./post-chip";
+import type { Tables } from "@/integrations/supabase/types";
+
+type ScheduledPost = Tables<"scheduled_posts">;
 
 /**
  * Week-weergave zonder uren: 7 kolommen met per dag gestapelde posts,
@@ -21,7 +24,7 @@ export function WeekView({
   onOpenPost,
 }: {
   cursor: Date;
-  byDay: Record<string, any[]>;
+  byDay: Record<string, ScheduledPost[]>;
   brandColor?: string | null;
   onClickDay: (d: Date) => void;
   onDropPost: (d: Date, id: string) => void;
@@ -71,7 +74,7 @@ export function WeekView({
                 </div>
               </div>
               <div className="space-y-1.5 flex-1">
-                {items.map((p: any) => (
+                {items.map((p) => (
                   <PostChip
                     key={p.id}
                     post={p}

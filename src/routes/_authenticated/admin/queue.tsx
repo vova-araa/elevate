@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { DAY_LABELS, DAY_LABELS_LONG } from "@/lib/social-constants";
@@ -116,7 +117,7 @@ function SlotsManager({ clientId }: { clientId: string }) {
       day_of_week: day,
       time_of_day: time + ":00",
       platform,
-    } as any);
+    });
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["queue-slots", clientId] });
     toast.success("Slot toegevoegd");
@@ -129,7 +130,7 @@ function SlotsManager({ clientId }: { clientId: string }) {
 
   const byDay = new Array(7)
     .fill(0)
-    .map((_, i) => (slots ?? []).filter((s: any) => s.day_of_week === i));
+    .map((_, i) => (slots ?? []).filter((s: Tables<"queue_slots">) => s.day_of_week === i));
 
   return (
     <div className="glass-strong rounded-2xl p-5 space-y-4">
@@ -188,7 +189,7 @@ function SlotsManager({ clientId }: { clientId: string }) {
               <div className="text-xs text-muted-foreground italic">Geen slots</div>
             ) : (
               <div className="flex flex-wrap gap-1.5 mt-1">
-                {day.map((s: any) => (
+                {day.map((s: Tables<"queue_slots">) => (
                   <span
                     key={s.id}
                     className="text-xs rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 inline-flex items-center gap-1.5"
@@ -208,7 +209,7 @@ function SlotsManager({ clientId }: { clientId: string }) {
   );
 }
 
-function QueuedDrafts({ clientId, qc }: { clientId: string; qc: any }) {
+function QueuedDrafts({ clientId, qc }: { clientId: string; qc: QueryClient }) {
   const { data: queued } = useQuery({
     queryKey: ["queue-drafts", clientId],
     queryFn: async () =>
@@ -246,13 +247,17 @@ function QueuedDrafts({ clientId, qc }: { clientId: string; qc: any }) {
       .eq("client_id", clientId)
       .is("deleted_at", null)
       .gte("scheduled_at", new Date().toISOString());
-    const taken = new Set((existing ?? []).map((p: any) => new Date(p.scheduled_at).toISOString()));
+    const taken = new Set(
+      (existing ?? []).map((p: Pick<Tables<"scheduled_posts">, "scheduled_at">) =>
+        new Date(p.scheduled_at).toISOString(),
+      ),
+    );
 
     // Find next free slot for each queued post matching platform
     const updates: { id: string; scheduled_at: string }[] = [];
     const now = new Date();
     for (const post of queued) {
-      const matchSlots = slots.filter((s: any) => s.platform === post.platform);
+      const matchSlots = slots.filter((s: Tables<"queue_slots">) => s.platform === post.platform);
       if (matchSlots.length === 0) continue;
       const cursor = new Date(now);
       let found: Date | null = null;
@@ -314,7 +319,7 @@ function QueuedDrafts({ clientId, qc }: { clientId: string; qc: any }) {
         {queued?.length ?? 0} posts wachten. Klik "Verdeel" om ze automatisch in te plannen.
       </p>
       <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin">
-        {queued?.map((p: any) => (
+        {queued?.map((p: Tables<"scheduled_posts">) => (
           <div key={p.id} className="glass rounded-lg p-3 flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gold">{p.platform}</div>
@@ -340,7 +345,15 @@ function QueuedDrafts({ clientId, qc }: { clientId: string; qc: any }) {
   );
 }
 
-function BulkUpload({ clientId, userId, qc }: { clientId: string; userId?: string; qc: any }) {
+function BulkUpload({
+  clientId,
+  userId,
+  qc,
+}: {
+  clientId: string;
+  userId?: string;
+  qc: QueryClient;
+}) {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"queue" | "schedule">("queue");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -369,7 +382,7 @@ function BulkUpload({ clientId, userId, qc }: { clientId: string; userId?: strin
       if (pIdx < 0 || cIdx < 0)
         throw new Error("CSV moet kolommen 'platform' en 'caption' bevatten");
 
-      const rows: any[] = [];
+      const rows: TablesInsert<"scheduled_posts">[] = [];
       for (let i = 1; i < lines.length; i++) {
         const parts = parseCsvLine(lines[i]);
         if (parts.length === 0) continue;
@@ -379,7 +392,7 @@ function BulkUpload({ clientId, userId, qc }: { clientId: string; userId?: strin
         if (!platform) continue;
         rows.push({
           client_id: clientId,
-          platform,
+          platform: platform as Platform,
           caption,
           scheduled_at: sched
             ? new Date(sched).toISOString()
@@ -390,13 +403,13 @@ function BulkUpload({ clientId, userId, qc }: { clientId: string; userId?: strin
         });
       }
       if (rows.length === 0) throw new Error("Geen rijen gevonden");
-      const { error } = await supabase.from("scheduled_posts").insert(rows as any);
+      const { error } = await supabase.from("scheduled_posts").insert(rows);
       if (error) throw error;
       toast.success(`${rows.length} posts geïmporteerd`);
       qc.invalidateQueries({ queryKey: ["queue-drafts", clientId] });
       qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";

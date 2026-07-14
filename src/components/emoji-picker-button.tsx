@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { Smile } from "lucide-react";
+import type { Theme } from "emoji-picker-react";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -31,7 +32,7 @@ export function EmojiPickerButton({ onSelect }: { onSelect: (emoji: string) => v
                 onSelect(e.emoji);
                 setOpen(false);
               }}
-              theme={"dark" as any}
+              theme={"dark" as Theme}
               width={320}
               height={400}
             />

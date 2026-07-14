@@ -1,46 +1,51 @@
-import { Instagram, Music2, Linkedin, Youtube, Facebook } from "lucide-react";
+import { Instagram, Music2, Linkedin, Youtube, Facebook, type LucideIcon } from "lucide-react";
 
 export type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 export type PostStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
 
-export const PLATFORMS: { id: Platform; label: string; Icon: any; ratio: string; color: string }[] =
-  [
-    {
-      id: "instagram",
-      label: "Instagram",
-      Icon: Instagram,
-      ratio: "4 / 5",
-      color: "from-pink-500 to-orange-400",
-    },
-    {
-      id: "tiktok",
-      label: "TikTok",
-      Icon: Music2,
-      ratio: "9 / 16",
-      color: "from-fuchsia-500 to-cyan-400",
-    },
-    {
-      id: "linkedin",
-      label: "LinkedIn",
-      Icon: Linkedin,
-      ratio: "1.91 / 1",
-      color: "from-sky-600 to-sky-400",
-    },
-    {
-      id: "youtube",
-      label: "YouTube",
-      Icon: Youtube,
-      ratio: "16 / 9",
-      color: "from-red-600 to-red-400",
-    },
-    {
-      id: "facebook",
-      label: "Facebook",
-      Icon: Facebook,
-      ratio: "1.91 / 1",
-      color: "from-blue-600 to-blue-400",
-    },
-  ];
+export const PLATFORMS: {
+  id: Platform;
+  label: string;
+  Icon: LucideIcon;
+  ratio: string;
+  color: string;
+}[] = [
+  {
+    id: "instagram",
+    label: "Instagram",
+    Icon: Instagram,
+    ratio: "4 / 5",
+    color: "from-pink-500 to-orange-400",
+  },
+  {
+    id: "tiktok",
+    label: "TikTok",
+    Icon: Music2,
+    ratio: "9 / 16",
+    color: "from-fuchsia-500 to-cyan-400",
+  },
+  {
+    id: "linkedin",
+    label: "LinkedIn",
+    Icon: Linkedin,
+    ratio: "1.91 / 1",
+    color: "from-sky-600 to-sky-400",
+  },
+  {
+    id: "youtube",
+    label: "YouTube",
+    Icon: Youtube,
+    ratio: "16 / 9",
+    color: "from-red-600 to-red-400",
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    Icon: Facebook,
+    ratio: "1.91 / 1",
+    color: "from-blue-600 to-blue-400",
+  },
+];
 
 export const STATUS_META: Record<PostStatus, { label: string; cls: string; dot: string }> = {
   draft: {

@@ -26,6 +26,39 @@ export const Route = createFileRoute("/_authenticated/admin/postiz")({
   component: PostizPage,
 });
 
+/** Subset van de Postiz-integratie zoals die van de server terugkomt. */
+interface PostizIntegrationView {
+  id: string;
+  name?: string | null;
+  identifier?: string | null;
+  providerIdentifier?: string | null;
+  picture?: string | null;
+}
+
+/** Subset van een Postiz-post zoals die van de server terugkomt. */
+interface PostizPostView {
+  id?: string;
+  postId?: string;
+  publishDate?: string;
+  date?: string;
+  scheduledAt?: string;
+  state?: string;
+  status?: string;
+  content?: string;
+  value?: { content?: string }[];
+  providerIdentifier?: string;
+  integration?: { providerIdentifier?: string };
+  releaseURL?: string;
+  releaseUrl?: string;
+}
+
+/** Response van uploadPostizMediaFromUrl (afgeleid van de Postiz upload-API). */
+interface PostizUploadResult {
+  path?: string;
+  url?: string;
+  id?: string;
+}
+
 function PostizPage() {
   const qc = useQueryClient();
   const listIntegrations = useServerFn(listPostizIntegrations);
@@ -72,13 +105,15 @@ function PostizPage() {
         .upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from("client-uploads").getPublicUrl(path);
-      const res: any = await uploadMedia({ data: { url: data.publicUrl, filename: file.name } });
+      const res: PostizUploadResult = await uploadMedia({
+        data: { url: data.publicUrl, filename: file.name },
+      });
       const path2: string | undefined = res?.path || res?.url || data.publicUrl;
       const id: string | undefined = res?.id;
       return id ? { id, path: path2! } : { path: path2! };
     },
     onSuccess: (img) => setImagePaths((p) => [...p, img]),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const submitMut = useMutation({
@@ -103,7 +138,7 @@ function PostizPage() {
       setTagsRaw("");
       qc.invalidateQueries({ queryKey: ["postiz-posts"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const delMut = useMutation({
@@ -112,13 +147,20 @@ function PostizPage() {
       toast.success("Verwijderd");
       qc.invalidateQueries({ queryKey: ["postiz-posts"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const integrationsErr = integrationsQ.error as Error | null;
-  const integrations: any[] = Array.isArray(integrationsQ.data)
-    ? (integrationsQ.data as any[])
-    : ((integrationsQ.data as any)?.integrations ?? []);
+  const integrationsData: unknown = integrationsQ.data;
+  const integrations: PostizIntegrationView[] = Array.isArray(integrationsData)
+    ? (integrationsData as PostizIntegrationView[])
+    : ((integrationsData as { integrations?: PostizIntegrationView[] } | undefined)?.integrations ??
+      []);
+
+  const postsData: unknown = postsQ.data;
+  const postsList: PostizPostView[] = Array.isArray(postsData)
+    ? (postsData as PostizPostView[])
+    : ((postsData as { posts?: PostizPostView[] } | undefined)?.posts ?? []);
 
   return (
     <div className="space-y-6">
@@ -250,7 +292,7 @@ function PostizPage() {
               </label>
               <select
                 value={mode}
-                onChange={(e) => setMode(e.target.value as any)}
+                onChange={(e) => setMode(e.target.value as "schedule" | "now" | "draft")}
                 className="mt-1 w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
               >
                 <option value="schedule">Inplannen</option>
@@ -308,10 +350,7 @@ function PostizPage() {
           {postsQ.isLoading ? (
             <Loader2 className="h-5 w-5 animate-spin text-gold" />
           ) : (
-            <PostsList
-              posts={Array.isArray(postsQ.data) ? postsQ.data : (postsQ.data?.posts ?? [])}
-              onDelete={(id) => delMut.mutate(id)}
-            />
+            <PostsList posts={postsList} onDelete={(id) => delMut.mutate(id)} />
           )}
         </div>
       </div>
@@ -319,7 +358,13 @@ function PostizPage() {
   );
 }
 
-function PostsList({ posts, onDelete }: { posts: any[]; onDelete: (id: string) => void }) {
+function PostsList({
+  posts,
+  onDelete,
+}: {
+  posts: PostizPostView[];
+  onDelete: (id: string) => void;
+}) {
   if (!posts.length) {
     return <p className="text-sm text-muted-foreground">Nog geen posts in deze periode.</p>;
   }

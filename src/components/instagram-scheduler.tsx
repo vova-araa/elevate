@@ -14,6 +14,7 @@ import {
   Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
 
 /**
  * Instagram preview + planner
@@ -37,16 +38,23 @@ const MOCK_FEED = [
   "linear-gradient(135deg,#4a2a2a,#7a3a3a)",
 ];
 
-type Post = {
-  id: string;
-  client_id: string;
-  caption: string | null;
-  media_path: string | null;
-  scheduled_at: string;
-  status: "draft" | "scheduled" | "publishing" | "published" | "failed";
-  platform_post_id: string | null;
-  error_message: string | null;
-};
+type Post = Pick<
+  Tables<"scheduled_posts">,
+  | "id"
+  | "client_id"
+  | "caption"
+  | "media_path"
+  | "scheduled_at"
+  | "status"
+  | "platform_post_id"
+  | "error_message"
+>;
+
+type SocialConnection = Tables<"social_connections">;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export function InstagramScheduler({
   clientId,
@@ -58,12 +66,12 @@ export function InstagramScheduler({
   const qc = useQueryClient();
   const [connecting, setConnecting] = useState(false);
 
-  const { data: connection } = useQuery({
+  const { data: connection } = useQuery<SocialConnection | null>({
     queryKey: ["social-conn", clientId, "instagram"],
     queryFn: async () =>
       (
         await supabase
-          .from("social_connections" as any)
+          .from("social_connections")
           .select("*")
           .eq("client_id", clientId)
           .eq("platform", "instagram")
@@ -74,13 +82,13 @@ export function InstagramScheduler({
   const { data: posts } = useQuery<Post[]>({
     queryKey: ["scheduled-posts", clientId],
     queryFn: async () =>
-      ((
+      (
         await supabase
-          .from("scheduled_posts" as any)
+          .from("scheduled_posts")
           .select("*")
           .eq("client_id", clientId)
           .order("scheduled_at", { ascending: true })
-      ).data ?? []) as any,
+      ).data ?? [],
   });
 
   async function connectInstagram() {
@@ -97,7 +105,7 @@ export function InstagramScheduler({
       setConnecting(false);
       return;
     }
-    const { error } = await supabase.from("social_connections" as any).upsert(
+    const { error } = await supabase.from("social_connections").upsert(
       {
         client_id: clientId,
         platform: "instagram",
@@ -115,10 +123,7 @@ export function InstagramScheduler({
   async function disconnect() {
     if (!connection) return;
     if (!confirm("Instagram loskoppelen? Geplande posts blijven staan.")) return;
-    await supabase
-      .from("social_connections" as any)
-      .delete()
-      .eq("id", (connection as any).id);
+    await supabase.from("social_connections").delete().eq("id", connection.id);
     toast.success("Losgekoppeld");
     qc.invalidateQueries({ queryKey: ["social-conn", clientId, "instagram"] });
   }
@@ -138,8 +143,8 @@ export function InstagramScheduler({
           <div className="font-display text-xl">Instagram</div>
           {connection ? (
             <div className="text-sm text-muted-foreground">
-              @{(connection as any).account_username} — gekoppeld
-              {(connection as any).meta?.pending_oauth && (
+              @{connection.account_username} — gekoppeld
+              {isRecord(connection.meta) && connection.meta.pending_oauth === true && (
                 <span className="ml-2 text-amber-400 text-xs inline-flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" /> wacht op Meta App-review
                 </span>
@@ -288,18 +293,12 @@ function PlannedRow({
 
   async function changeTime(value: string) {
     const iso = new Date(value).toISOString();
-    await supabase
-      .from("scheduled_posts" as any)
-      .update({ scheduled_at: iso })
-      .eq("id", post.id);
+    await supabase.from("scheduled_posts").update({ scheduled_at: iso }).eq("id", post.id);
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
   }
   async function del() {
     if (!confirm("Geplande post verwijderen?")) return;
-    await supabase
-      .from("scheduled_posts" as any)
-      .delete()
-      .eq("id", post.id);
+    await supabase.from("scheduled_posts").delete().eq("id", post.id);
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
   }
   async function swap(otherId: string) {
@@ -307,11 +306,11 @@ function PlannedRow({
     if (!other || other.id === post.id) return;
     // ruil de scheduled_at om
     await supabase
-      .from("scheduled_posts" as any)
+      .from("scheduled_posts")
       .update({ scheduled_at: other.scheduled_at })
       .eq("id", post.id);
     await supabase
-      .from("scheduled_posts" as any)
+      .from("scheduled_posts")
       .update({ scheduled_at: post.scheduled_at })
       .eq("id", other.id);
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
@@ -319,7 +318,7 @@ function PlannedRow({
   }
   async function markPublished() {
     await supabase
-      .from("scheduled_posts" as any)
+      .from("scheduled_posts")
       .update({ status: "published", published_at: new Date().toISOString() })
       .eq("id", post.id);
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
@@ -411,7 +410,7 @@ function NewPostForm({ clientId }: { clientId: string }) {
       return toast.error(upErr.message);
     }
     const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase.from("scheduled_posts" as any).insert({
+    const { error } = await supabase.from("scheduled_posts").insert({
       client_id: clientId,
       caption: caption || null,
       media_path: path,

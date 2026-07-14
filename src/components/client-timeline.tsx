@@ -16,6 +16,8 @@ import {
   Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 type EventKind =
   | "deal"
@@ -40,7 +42,7 @@ type TimelineEvent = {
   action: "created" | "updated";
 };
 
-const KIND_META: Record<EventKind, { label: string; icon: any; color: string }> = {
+const KIND_META: Record<EventKind, { label: string; icon: LucideIcon; color: string }> = {
   deal: {
     label: "Deal",
     icon: Briefcase,
@@ -93,6 +95,55 @@ const KIND_META: Record<EventKind, { label: string; icon: any; color: string }> 
     color: "text-indigo-400 bg-indigo-400/10 border-indigo-400/30",
   },
 };
+
+type DealRow = Pick<
+  Tables<"deals">,
+  "id" | "title" | "stage" | "value_cents" | "created_at" | "updated_at" | "closed_at"
+>;
+type UploadRow = Pick<Tables<"uploads">, "id" | "file_name" | "file_type" | "created_at">;
+type ReportRow = Pick<
+  Tables<"reports">,
+  "id" | "title" | "report_type" | "created_at" | "updated_at"
+>;
+type EvaluationRow = Pick<
+  Tables<"evaluations">,
+  "id" | "title" | "score" | "period_label" | "created_at" | "updated_at"
+>;
+type MessageRow = Pick<
+  Tables<"messages">,
+  "id" | "subject" | "body" | "sender_role" | "priority" | "created_at"
+>;
+type MeetingRow = Pick<
+  Tables<"meetings">,
+  "id" | "title" | "meeting_type" | "scheduled_at" | "created_at" | "updated_at"
+>;
+type StrategyNoteRow = Pick<
+  Tables<"strategy_notes">,
+  "id" | "title" | "category" | "created_at" | "updated_at"
+>;
+type ContentItemRow = Pick<
+  Tables<"content_items">,
+  "id" | "title" | "channel" | "status" | "created_at" | "updated_at"
+>;
+type CalendarItemRow = Pick<
+  Tables<"calendar_items">,
+  "id" | "title" | "status" | "deliverable_type" | "date" | "created_at" | "updated_at"
+>;
+type TaskRow = Pick<
+  Tables<"tasks">,
+  "id" | "title" | "status" | "priority" | "created_at" | "updated_at"
+>;
+type RoadmapStepRow = Pick<
+  Tables<"roadmap_steps">,
+  | "id"
+  | "title"
+  | "status"
+  | "deliverable_type"
+  | "due_date"
+  | "created_at"
+  | "updated_at"
+  | "roadmap_id"
+>;
 
 function fmt(d: string) {
   return new Date(d).toLocaleString("nl-NL", { dateStyle: "medium", timeStyle: "short" });
@@ -208,7 +259,7 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
         }
       };
 
-      deals.data?.forEach((d: any) =>
+      deals.data?.forEach((d: DealRow) =>
         pushPair(
           "deal",
           d.id,
@@ -219,7 +270,7 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
           d.stage,
         ),
       );
-      uploads.data?.forEach((u: any) =>
+      uploads.data?.forEach((u: UploadRow) =>
         evts.push({
           id: `upload:${u.id}`,
           kind: "upload",
@@ -229,10 +280,10 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
           action: "created",
         }),
       );
-      reports.data?.forEach((r: any) =>
+      reports.data?.forEach((r: ReportRow) =>
         pushPair("report", r.id, r.created_at, r.updated_at, r.title, r.report_type, r.report_type),
       );
-      evals.data?.forEach((e: any) =>
+      evals.data?.forEach((e: EvaluationRow) =>
         pushPair(
           "evaluation",
           e.id,
@@ -243,7 +294,7 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
           e.score ? `${e.score}/10` : null,
         ),
       );
-      messages.data?.forEach((m: any) =>
+      messages.data?.forEach((m: MessageRow) =>
         evts.push({
           id: `msg:${m.id}`,
           kind: "message",
@@ -255,7 +306,7 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
           action: "created",
         }),
       );
-      meetings.data?.forEach((m: any) =>
+      meetings.data?.forEach((m: MeetingRow) =>
         pushPair(
           "meeting",
           m.id,
@@ -266,10 +317,10 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
           m.meeting_type,
         ),
       );
-      strategy.data?.forEach((s: any) =>
+      strategy.data?.forEach((s: StrategyNoteRow) =>
         pushPair("strategy", s.id, s.created_at, s.updated_at, s.title, s.category, s.category),
       );
-      content.data?.forEach((c: any) =>
+      content.data?.forEach((c: ContentItemRow) =>
         pushPair(
           "content",
           c.id,
@@ -280,7 +331,7 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
           c.status,
         ),
       );
-      calendar.data?.forEach((c: any) =>
+      calendar.data?.forEach((c: CalendarItemRow) =>
         pushPair(
           "calendar",
           c.id,
@@ -291,7 +342,7 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
           c.status,
         ),
       );
-      tasks.data?.forEach((t: any) =>
+      tasks.data?.forEach((t: TaskRow) =>
         pushPair(
           "task",
           t.id,
@@ -304,13 +355,13 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
       );
 
       // Roadmap steps via parent roadmap ids
-      const rmIds = (roadmaps.data || []).map((r: any) => r.id);
+      const rmIds = (roadmaps.data || []).map((r: Pick<Tables<"roadmaps">, "id">) => r.id);
       if (rmIds.length) {
         const { data: rs } = await supabase
           .from("roadmap_steps")
           .select("id,title,status,deliverable_type,due_date,created_at,updated_at,roadmap_id")
           .in("roadmap_id", rmIds);
-        rs?.forEach((s: any) =>
+        rs?.forEach((s: RoadmapStepRow) =>
           pushPair(
             "step",
             s.id,

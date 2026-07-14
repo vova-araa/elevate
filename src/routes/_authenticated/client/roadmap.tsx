@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Compass, Clock, CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { Compass, Clock, CheckCircle2, Circle, ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
+
+type RoadmapWithSteps = Tables<"roadmaps"> & { roadmap_steps: Tables<"roadmap_steps">[] };
 
 export const Route = createFileRoute("/_authenticated/client/roadmap")({
   component: ClientRoadmap,
@@ -10,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/client/roadmap")({
 
 const STATUS_META: Record<
   string,
-  { label: string; icon: any; color: string; bg: string; border: string }
+  { label: string; icon: LucideIcon; color: string; bg: string; border: string }
 > = {
   pending: {
     label: "In afwachting",
@@ -78,11 +81,9 @@ export function ClientRoadmap() {
         </div>
       )}
 
-      {data?.map((r: any) => {
-        const steps = [...(r.roadmap_steps ?? [])].sort(
-          (a: any, b: any) => a.step_order - b.step_order,
-        );
-        const completed = steps.filter((s: any) => s.status === "completed").length;
+      {data?.map((r: RoadmapWithSteps) => {
+        const steps = [...(r.roadmap_steps ?? [])].sort((a, b) => a.step_order - b.step_order);
+        const completed = steps.filter((s) => s.status === "completed").length;
         const total = steps.length;
         const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -115,7 +116,7 @@ export function ClientRoadmap() {
 
             {/* Timeline */}
             <div className="mt-8 relative pl-6 border-l-2 border-gold/20 space-y-6">
-              {steps.map((s: any, idx: number) => {
+              {steps.map((s, idx: number) => {
                 const meta = STATUS_META[s.status || "pending"] ?? STATUS_META.pending;
                 const Icon = meta.icon;
                 const isLast = idx === steps.length - 1;

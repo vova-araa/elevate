@@ -5,10 +5,19 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { inviteUser, setUserRole, setClientMembership, deleteUser } from "@/lib/admin.functions";
 import { toast } from "sonner";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   component: UsersAdmin,
 });
+
+type Profile = Tables<"profiles">;
+type AppUser = Profile & { roles: string[]; clientIds: string[] };
+type ClientOption = Pick<Tables<"clients">, "id" | "name">;
+
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
 
 function UsersAdmin() {
   const qc = useQueryClient();
@@ -17,7 +26,7 @@ function UsersAdmin() {
   const toggleMember = useServerFn(setClientMembership);
   const removeUser = useServerFn(deleteUser);
 
-  const { data: users } = useQuery({
+  const { data: users } = useQuery<AppUser[]>({
     queryKey: ["all-users"],
     queryFn: async () => {
       const [{ data: profiles }, { data: roles }, { data: members }] = await Promise.all([
@@ -25,16 +34,14 @@ function UsersAdmin() {
         supabase.from("user_roles").select("*"),
         supabase.from("client_members").select("*"),
       ]);
-      return (profiles ?? []).map((p: any) => ({
+      return (profiles ?? []).map((p) => ({
         ...p,
-        roles: (roles ?? []).filter((r: any) => r.user_id === p.id).map((r: any) => r.role),
-        clientIds: (members ?? [])
-          .filter((m: any) => m.user_id === p.id)
-          .map((m: any) => m.client_id),
+        roles: (roles ?? []).filter((r) => r.user_id === p.id).map((r) => r.role),
+        clientIds: (members ?? []).filter((m) => m.user_id === p.id).map((m) => m.client_id),
       }));
     },
   });
-  const { data: clients } = useQuery({
+  const { data: clients } = useQuery<ClientOption[]>({
     queryKey: ["clients-list"],
     queryFn: async () =>
       (await supabase.from("clients").select("id,name").order("name")).data ?? [],
@@ -73,8 +80,8 @@ function UsersAdmin() {
       }
       setF({ email: "", fullName: "", clientId: "", makeAdmin: false });
       qc.invalidateQueries({ queryKey: ["all-users"] });
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
     setBusy(false);
   }
@@ -92,8 +99,8 @@ function UsersAdmin() {
     try {
       await toggleRole({ data: { userId, role, enabled } });
       qc.invalidateQueries({ queryKey: ["all-users"] });
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
   }
 
@@ -102,8 +109,8 @@ function UsersAdmin() {
     try {
       await toggleMember({ data: { userId, clientId, link } });
       qc.invalidateQueries({ queryKey: ["all-users"] });
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
   }
 
@@ -113,12 +120,12 @@ function UsersAdmin() {
       await removeUser({ data: { userId } });
       toast.success("Gebruiker verwijderd");
       qc.invalidateQueries({ queryKey: ["all-users"] });
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
   }
 
-  const filtered = (users ?? []).filter((u: any) => {
+  const filtered = (users ?? []).filter((u) => {
     if (!query) return true;
     const q = query.toLowerCase();
     return (
@@ -155,7 +162,7 @@ function UsersAdmin() {
           className="rounded-lg bg-input/60 hairline px-4 py-3 text-sm"
         >
           <option value="">Geen klant koppelen</option>
-          {clients?.map((c: any) => (
+          {clients?.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -185,7 +192,7 @@ function UsersAdmin() {
       />
 
       <div className="space-y-3">
-        {filtered.map((u: any) => {
+        {filtered.map((u) => {
           const isAdmin = u.roles?.includes("admin");
           const isClient = u.roles?.includes("client");
           return (
@@ -233,7 +240,7 @@ function UsersAdmin() {
                   Gekoppelde klanten
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(clients ?? []).map((c: any) => {
+                  {(clients ?? []).map((c) => {
                     const linked = u.clientIds?.includes(c.id);
                     return (
                       <button

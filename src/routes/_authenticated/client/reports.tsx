@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { ReportCard } from "@/components/client-portal/report-card";
 import { FileBarChart, Loader2 } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/client/reports")({
   component: ClientReports,
@@ -27,7 +28,7 @@ function ClientReports() {
     },
   });
 
-  const clientId = (membership as any)?.client_id as string | undefined;
+  const clientId = (membership as { client_id?: string } | null)?.client_id;
 
   const { data: reports, isLoading: loadingReports } = useQuery({
     queryKey: ["client-reports", clientId],
@@ -44,8 +45,8 @@ function ClientReports() {
 
   // Groepeer per jaar (op basis van period_end, anders created_at), nieuwste eerst.
   const byYear = useMemo(() => {
-    const groups = new Map<number, any[]>();
-    (reports ?? []).forEach((r: any) => {
+    const groups = new Map<number, Tables<"reports">[]>();
+    (reports ?? []).forEach((r) => {
       const year = new Date(r.period_end ?? r.created_at).getFullYear();
       if (!groups.has(year)) groups.set(year, []);
       groups.get(year)!.push(r);
@@ -105,7 +106,7 @@ function ClientReports() {
             </span>
           </div>
           <div className="space-y-4">
-            {items.map((r: any) => (
+            {items.map((r) => (
               <ReportCard key={r.id} report={r} />
             ))}
           </div>

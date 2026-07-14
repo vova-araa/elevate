@@ -4,10 +4,45 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Zap, Loader2, Trash2, Play, Pause, Clock } from "lucide-react";
 import { useState } from "react";
+import type { Database, Json, Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/automations")({
   component: AutomationsPage,
 });
+
+type AutomationRuleWithClient = Tables<"automation_rules"> & {
+  clients: Pick<Tables<"clients">, "name"> | null;
+};
+type AutomationRunWithRule = Tables<"automation_runs"> & {
+  automation_rules: Pick<Tables<"automation_rules">, "name"> | null;
+};
+
+interface RuleFormTriggerConfig {
+  frequency?: string;
+  hour?: number;
+  day_of_week?: number;
+  day_of_month?: number;
+}
+
+interface RuleFormActionConfig {
+  title?: string;
+  body?: string;
+  due_in_days?: number;
+  url?: string;
+  from_status?: string;
+  to_status?: string;
+}
+
+interface RuleForm {
+  name: string;
+  description: string;
+  client_id: string;
+  trigger_type: Database["public"]["Enums"]["automation_trigger"];
+  trigger_config: RuleFormTriggerConfig;
+  action_type: Database["public"]["Enums"]["automation_action"];
+  action_config: RuleFormActionConfig;
+  is_active: boolean;
+}
 
 const TRIGGERS = [
   { value: "schedule", label: "Op tijd (terugkerend)" },
@@ -82,7 +117,7 @@ function AutomationsPage() {
       {isLoading && <Loader2 className="h-6 w-6 animate-spin text-gold" />}
 
       <div className="grid gap-3">
-        {(rules ?? []).map((r: any) => (
+        {(rules ?? []).map((r: AutomationRuleWithClient) => (
           <div
             key={r.id}
             className="glass-strong rounded-xl p-4 flex items-start justify-between gap-4"
@@ -157,7 +192,7 @@ function AutomationsPage() {
             <Clock className="h-4 w-4 text-gold" /> Recente runs
           </h2>
           <div className="space-y-1.5">
-            {runs.map((r: any) => (
+            {runs.map((r: AutomationRunWithRule) => (
               <div
                 key={r.id}
                 className="text-xs glass rounded-lg p-2 flex items-center justify-between gap-2"
@@ -188,7 +223,7 @@ function AutomationsPage() {
 }
 
 function RuleModal({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState<any>({
+  const [form, setForm] = useState<RuleForm>({
     name: "",
     description: "",
     client_id: "",
@@ -213,9 +248,9 @@ function RuleModal({ onClose }: { onClose: () => void }) {
       description: form.description || null,
       client_id: form.client_id || null,
       trigger_type: form.trigger_type,
-      trigger_config: form.trigger_config,
+      trigger_config: form.trigger_config as unknown as Json,
       action_type: form.action_type,
-      action_config: form.action_config,
+      action_config: form.action_config as unknown as Json,
       is_active: form.is_active,
     });
     setSaving(false);
@@ -256,7 +291,7 @@ function RuleModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setForm({ ...form, client_id: e.target.value })}
             >
               <option value="">— Alle klanten —</option>
-              {(clients ?? []).map((c: any) => (
+              {(clients ?? []).map((c: Pick<Tables<"clients">, "id" | "name">) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -269,7 +304,13 @@ function RuleModal({ onClose }: { onClose: () => void }) {
               <select
                 className="input"
                 value={form.trigger_type}
-                onChange={(e) => setForm({ ...form, trigger_type: e.target.value })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    trigger_type: e.target
+                      .value as Database["public"]["Enums"]["automation_trigger"],
+                  })
+                }
               >
                 {TRIGGERS.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -361,7 +402,11 @@ function RuleModal({ onClose }: { onClose: () => void }) {
                 className="input"
                 value={form.action_type}
                 onChange={(e) =>
-                  setForm({ ...form, action_type: e.target.value, action_config: {} })
+                  setForm({
+                    ...form,
+                    action_type: e.target.value as Database["public"]["Enums"]["automation_action"],
+                    action_config: {},
+                  })
                 }
               >
                 {ACTIONS.map((a) => (

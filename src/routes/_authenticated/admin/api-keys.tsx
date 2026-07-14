@@ -6,10 +6,15 @@ import { toast } from "sonner";
 import { Plus, Loader2, Trash2, Key, Copy, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { createApiKey } from "@/lib/automation-admin.functions";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/api-keys")({
   component: ApiKeysPage,
 });
+
+type ApiKeyWithClient = Tables<"api_keys"> & {
+  clients: Pick<Tables<"clients">, "name"> | null;
+};
 
 function ApiKeysPage() {
   const qc = useQueryClient();
@@ -96,7 +101,7 @@ function ApiKeysPage() {
       {isLoading && <Loader2 className="h-6 w-6 animate-spin text-gold" />}
 
       <div className="grid gap-3">
-        {(data ?? []).map((k: any) => (
+        {(data ?? []).map((k: ApiKeyWithClient) => (
           <div
             key={k.id}
             className="glass-strong rounded-xl p-4 flex items-start justify-between gap-4"
@@ -160,11 +165,15 @@ function NewKeyModal({ onClose }: { onClose: (token?: string) => void }) {
     setSaving(true);
     try {
       const res = await createFn({
-        data: { name: form.name, client_id: form.client_id || null, scopes: form.scopes as any },
+        data: {
+          name: form.name,
+          client_id: form.client_id || null,
+          scopes: form.scopes as ("read" | "write")[],
+        },
       });
       onClose(res.token);
-    } catch (e: any) {
-      toast.error(e.message ?? "Fout");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Fout");
     } finally {
       setSaving(false);
     }
@@ -199,7 +208,7 @@ function NewKeyModal({ onClose }: { onClose: (token?: string) => void }) {
               onChange={(e) => setForm({ ...form, client_id: e.target.value })}
             >
               <option value="">— Alle klanten —</option>
-              {(clients ?? []).map((c: any) => (
+              {(clients ?? []).map((c: Pick<Tables<"clients">, "id" | "name">) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

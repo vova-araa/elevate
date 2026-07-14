@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import {
   Search as SearchIcon,
   Loader2,
@@ -10,19 +11,30 @@ import {
   Linkedin,
   Youtube,
   Facebook,
+  type LucideIcon,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/search")({
   component: SearchPage,
 });
 
-const ICONS: Record<string, any> = {
+const ICONS: Record<string, LucideIcon> = {
   instagram: Instagram,
   tiktok: Music2,
   linkedin: Linkedin,
   youtube: Youtube,
   facebook: Facebook,
 };
+
+type SearchPostRow = Pick<
+  Tables<"scheduled_posts">,
+  "id" | "client_id" | "platform" | "caption" | "scheduled_at" | "status" | "notes"
+> & { clients: Pick<Tables<"clients">, "name"> | null };
+
+type SearchUploadRow = Pick<
+  Tables<"uploads">,
+  "id" | "client_id" | "file_name" | "file_type" | "caption" | "created_at"
+> & { clients: Pick<Tables<"clients">, "name"> | null };
 
 function SearchPage() {
   const [q, setQ] = useState("");
@@ -115,13 +127,13 @@ function SearchPage() {
       {(scope === "all" || scope === "posts") && posts && posts.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-xs uppercase tracking-wider text-gold/70">Posts ({posts.length})</h2>
-          {posts.map((p: any) => {
+          {posts.map((p: SearchPostRow) => {
             const Icon = ICONS[p.platform] ?? Instagram;
             return (
               <Link
                 key={p.id}
                 to="/admin/planner"
-                search={{ clientId: p.client_id, view: "agenda" } as any}
+                search={{ clientId: p.client_id, view: "agenda" }}
                 className="block glass rounded-xl p-3 hover:bg-accent/30"
               >
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -146,7 +158,7 @@ function SearchPage() {
           <h2 className="text-xs uppercase tracking-wider text-gold/70">
             Uploads ({uploads.length})
           </h2>
-          {uploads.map((u: any) => (
+          {uploads.map((u: SearchUploadRow) => (
             <div key={u.id} className="glass rounded-xl p-3">
               <div className="text-sm">{u.file_name}</div>
               <div className="text-xs text-muted-foreground">

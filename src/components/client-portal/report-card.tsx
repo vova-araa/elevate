@@ -1,4 +1,5 @@
 import { FileBarChart, Download, Sparkles, CalendarRange } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 /** Vertaal veelvoorkomende metric-keys naar Nederlandse labels. */
 const METRIC_LABELS: Record<string, string> = {
@@ -39,7 +40,7 @@ function formatMetricValue(v: unknown): string {
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
 
-export function ReportCard({ report }: { report: any }) {
+export function ReportCard({ report }: { report: Tables<"reports"> }) {
   const metrics =
     report.metrics && typeof report.metrics === "object" && !Array.isArray(report.metrics)
       ? Object.entries(report.metrics as Record<string, unknown>).filter(

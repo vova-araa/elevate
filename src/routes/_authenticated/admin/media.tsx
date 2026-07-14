@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import {
   Trash2,
@@ -21,6 +22,11 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/media")({
   component: MediaLibrary,
 });
+
+type MediaFolder = Tables<"media_folders">;
+type UploadWithClient = Tables<"uploads"> & {
+  clients: Pick<Tables<"clients">, "name"> | null;
+};
 
 function MediaLibrary() {
   const qc = useQueryClient();
@@ -64,9 +70,9 @@ function MediaLibrary() {
     },
   });
 
-  const currentFolder = folders?.find((f: any) => f.id === folderId);
+  const currentFolder = folders?.find((f: MediaFolder) => f.id === folderId);
 
-  const filtered = (uploads ?? []).filter((u: any) => {
+  const filtered = (uploads ?? []).filter((u: UploadWithClient) => {
     if (q && !u.file_name?.toLowerCase().includes(q.toLowerCase())) return false;
     if (filter === "image") return u.file_type?.startsWith("image/");
     if (filter === "video") return u.file_type?.startsWith("video/");
@@ -87,7 +93,7 @@ function MediaLibrary() {
     qc.invalidateQueries({ queryKey: ["media-folders", clientId] });
   }
 
-  async function renameFolder(f: any) {
+  async function renameFolder(f: MediaFolder) {
     const name = prompt("Nieuwe naam", f.name);
     if (!name?.trim() || name === f.name) return;
     const { error } = await supabase
@@ -98,7 +104,7 @@ function MediaLibrary() {
     qc.invalidateQueries({ queryKey: ["media-folders", clientId] });
   }
 
-  async function deleteFolder(f: any) {
+  async function deleteFolder(f: MediaFolder) {
     if (
       !confirm(
         `Map "${f.name}" verwijderen? Bestanden blijven bewaard en gaan terug naar de hoofdmap.`,
@@ -113,9 +119,9 @@ function MediaLibrary() {
     qc.invalidateQueries({ queryKey: ["admin-media"] });
   }
 
-  async function moveUpload(u: any) {
+  async function moveUpload(u: UploadWithClient) {
     if (!folders || folders.length === 0) return toast.error("Maak eerst een map aan");
-    const options = ["(hoofdmap)", ...folders.map((f: any) => f.name)]
+    const options = ["(hoofdmap)", ...folders.map((f: MediaFolder) => f.name)]
       .map((n, i) => `${i}: ${n}`)
       .join("\n");
     const choice = prompt(`Verplaats naar welke map?\n\n${options}\n\nTyp het nummer:`);
@@ -129,7 +135,7 @@ function MediaLibrary() {
     qc.invalidateQueries({ queryKey: ["admin-media"] });
   }
 
-  async function remove(u: any) {
+  async function remove(u: UploadWithClient) {
     if (!confirm(`"${u.file_name}" definitief verwijderen?`)) return;
     await supabase.storage.from("client-uploads").remove([u.file_path]);
     const { error } = await supabase.from("uploads").delete().eq("id", u.id);
@@ -165,7 +171,7 @@ function MediaLibrary() {
           className="rounded-lg bg-input/60 hairline px-3 py-2 text-sm"
         >
           <option value="">Alle klanten</option>
-          {clients?.map((c: any) => (
+          {clients?.map((c: Pick<Tables<"clients">, "id" | "name">) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -214,7 +220,7 @@ function MediaLibrary() {
           {/* Folders grid - alleen tonen in hoofdmap */}
           {!folderId && folders && folders.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {folders.map((f: any) => (
+              {folders.map((f: MediaFolder) => (
                 <div key={f.id} className="group relative">
                   <button
                     onClick={() => setFolderId(f.id)}
@@ -260,7 +266,7 @@ function MediaLibrary() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {filtered.map((u: any) => (
+          {filtered.map((u: UploadWithClient) => (
             <Tile
               key={u.id}
               u={u}
@@ -274,7 +280,15 @@ function MediaLibrary() {
   );
 }
 
-function Tile({ u, onDelete, onMove }: { u: any; onDelete: () => void; onMove?: () => void }) {
+function Tile({
+  u,
+  onDelete,
+  onMove,
+}: {
+  u: UploadWithClient;
+  onDelete: () => void;
+  onMove?: () => void;
+}) {
   const [url, setUrl] = useState("");
   useEffect(() => {
     supabase.storage

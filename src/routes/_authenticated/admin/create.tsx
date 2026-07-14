@@ -32,6 +32,8 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 const searchSchema = z.object({ clientId: z.string().uuid().optional() });
 
@@ -43,7 +45,25 @@ export const Route = createFileRoute("/_authenticated/admin/create")({
 type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 type Tab = "ideas" | "caption" | "hooks" | "hashtags";
 
-const PLATFORMS: { id: Platform; label: string; Icon: any }[] = [
+type CreateClient = Pick<
+  Tables<"clients">,
+  "id" | "name" | "industry" | "description" | "brand_color"
+>;
+
+type ContentIdea = {
+  title: string;
+  platform: string;
+  format: string;
+  hook: string;
+  description: string;
+  pillar?: string;
+};
+
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+const PLATFORMS: { id: Platform; label: string; Icon: LucideIcon }[] = [
   { id: "instagram", label: "Instagram", Icon: Instagram },
   { id: "tiktok", label: "TikTok", Icon: Music2 },
   { id: "linkedin", label: "LinkedIn", Icon: Linkedin },
@@ -56,7 +76,7 @@ function CreatePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: clients } = useQuery({
+  const { data: clients } = useQuery<CreateClient[]>({
     queryKey: ["create-clients"],
     queryFn: async () =>
       (
@@ -146,14 +166,14 @@ function CreatePage() {
 }
 
 /* ----------------------------- Ideas Tab ----------------------------- */
-function IdeasTab({ client, userId }: { client: any; userId?: string }) {
+function IdeasTab({ client, userId }: { client: CreateClient; userId?: string }) {
   const [platforms, setPlatforms] = useState<Platform[]>(["instagram", "tiktok", "linkedin"]);
   const [audience, setAudience] = useState("");
   const [pillars, setPillars] = useState("");
   const [goal, setGoal] = useState("");
   const [count, setCount] = useState(8);
   const [loading, setLoading] = useState(false);
-  const [ideas, setIdeas] = useState<any[]>([]);
+  const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const ideasFn = useServerFn(generateContentIdeas);
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
 
@@ -174,8 +194,8 @@ function IdeasTab({ client, userId }: { client: any; userId?: string }) {
       });
       setIdeas(res.ideas);
       if (res.ideas.length === 0) toast.error("Geen ideeën gegenereerd, probeer opnieuw.");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -189,16 +209,16 @@ function IdeasTab({ client, userId }: { client: any; userId?: string }) {
       const caption = `${idea.hook}\n\n${idea.description}`;
       const { error } = await supabase.from("scheduled_posts").insert({
         client_id: client.id,
-        platform: idea.platform,
+        platform: idea.platform as TablesInsert<"scheduled_posts">["platform"],
         caption,
         scheduled_at: new Date(date).toISOString(),
         status: "draft",
         created_by: userId ?? null,
-      } as any);
+      });
       if (error) throw error;
       toast.success("Toegevoegd aan Planner als concept");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     } finally {
       setSchedulingId(null);
     }
@@ -371,7 +391,7 @@ function IdeasTab({ client, userId }: { client: any; userId?: string }) {
 }
 
 /* ----------------------------- Caption Tab ----------------------------- */
-function CaptionTab({ client, userId }: { client: any; userId?: string }) {
+function CaptionTab({ client, userId }: { client: CreateClient; userId?: string }) {
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [brief, setBrief] = useState("");
   const [tone, setTone] = useState("");
@@ -395,8 +415,8 @@ function CaptionTab({ client, userId }: { client: any; userId?: string }) {
       });
       setCaption(res.caption);
       setHashtags(res.hashtags);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -413,11 +433,11 @@ function CaptionTab({ client, userId }: { client: any; userId?: string }) {
         scheduled_at: new Date(when).toISOString(),
         status: "draft",
         created_by: userId ?? null,
-      } as any);
+      });
       if (error) throw error;
       toast.success("Gepland als concept");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     } finally {
       setScheduling(false);
     }
@@ -568,8 +588,8 @@ function HooksTab() {
     try {
       const res = await hooksFn({ data: { topic, platform, count } });
       setHooks(res.hooks);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -669,8 +689,8 @@ function HashtagsTab() {
     try {
       const res = await hashFn({ data: { topic, platform, niche: niche || undefined } });
       setGroups(res);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -798,7 +818,7 @@ function HashGroup({ label, tags, tone }: { label: string; tags: string[]; tone:
   );
 }
 
-function Field({ label, children }: { label: string; children: any }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">

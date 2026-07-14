@@ -118,7 +118,15 @@ function ReachPage() {
   );
 }
 
-function StatCard({ label, value, small }: { label: string; value: any; small?: boolean }) {
+function StatCard({
+  label,
+  value,
+  small,
+}: {
+  label: string;
+  value: string | number;
+  small?: boolean;
+}) {
   return (
     <div className="rounded-lg bg-surface p-3.5">
       <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>

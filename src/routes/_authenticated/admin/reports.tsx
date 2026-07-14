@@ -45,8 +45,8 @@ function ReportsPage() {
       if (error) throw error;
       toast.success("Rapport aangemaakt");
       refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Mislukt");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Mislukt");
     } finally {
       setBusy(false);
     }

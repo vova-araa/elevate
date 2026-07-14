@@ -33,8 +33,8 @@ function ClientTasks() {
             <h3 className="font-display text-lg mb-3">{c.label}</h3>
             <div className="space-y-2">
               {data
-                ?.filter((x: any) => x.status === c.k)
-                .map((x: any) => (
+                ?.filter((x) => x.status === c.k)
+                .map((x) => (
                   <div key={x.id} className="rounded-lg bg-surface-elevated/60 p-3">
                     <div className="text-sm font-medium">{x.title}</div>
                     {x.description && (

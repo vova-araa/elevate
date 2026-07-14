@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Loader2, MessageSquare, Search } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
 
 const searchSchema = z.object({ clientId: z.string().uuid().optional() });
 
@@ -38,7 +39,8 @@ function AdminMessages() {
     },
   });
 
-  const lastByClient = new Map<string, any>();
+  type LastMessage = Pick<Tables<"messages">, "client_id" | "body" | "created_at" | "sender_role">;
+  const lastByClient = new Map<string, LastMessage>();
   lastMessages?.forEach((m) => {
     if (!lastByClient.has(m.client_id)) lastByClient.set(m.client_id, m);
   });

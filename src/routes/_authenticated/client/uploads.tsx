@@ -4,6 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
+
+type ClientMember = { client_id: string; clients: { id: string; name: string } | null };
 
 export const Route = createFileRoute("/_authenticated/client/uploads")({
   component: ClientUploads,
@@ -71,7 +74,7 @@ function ClientUploads() {
             onChange={(e) => setClientId(e.target.value)}
             className="w-full sm:w-auto min-h-11 rounded-lg bg-input/60 hairline px-4 py-2 text-sm"
           >
-            {members.map((m: any) => (
+            {members.map((m: ClientMember) => (
               <option key={m.client_id} value={m.client_id}>
                 {m.clients?.name}
               </option>
@@ -93,7 +96,7 @@ function ClientUploads() {
       </label>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {uploads?.map((u: any) => (
+        {uploads?.map((u) => (
           <Tile key={u.id} u={u} />
         ))}
       </div>
@@ -101,7 +104,7 @@ function ClientUploads() {
   );
 }
 
-function Tile({ u }: { u: any }) {
+function Tile({ u }: { u: Tables<"uploads"> }) {
   const [url, setUrl] = useState("");
   useEffect(() => {
     supabase.storage

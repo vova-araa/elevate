@@ -84,6 +84,18 @@ export const Route = createFileRoute("/_authenticated/admin/compose")({
   component: ComposePage,
 });
 
+/** Subset van de Postiz-integratie zoals die van de server terugkomt. */
+interface PostizIntegrationOption {
+  id: string;
+  name?: string | null;
+  identifier?: string | null;
+  providerIdentifier?: string | null;
+  platform?: string | null;
+}
+
+/** Response van uploadPostizMediaFromUrl — kan een object of array zijn. */
+type PostizUploadResult = { id?: string } | { id?: string }[];
+
 function ComposePage() {
   const search = useSearch({ from: "/_authenticated/admin/compose" });
   const navigate = useNavigate();
@@ -126,7 +138,10 @@ function ComposePage() {
     queryFn: () => listFn(),
   });
 
-  const integrationsList: any[] = Array.isArray(integrations) ? integrations : [];
+  const integrationsData: unknown = integrations;
+  const integrationsList: PostizIntegrationOption[] = Array.isArray(integrationsData)
+    ? (integrationsData as PostizIntegrationOption[])
+    : [];
 
   const uploadMut = useMutation({
     mutationFn: async (file: File) => {
@@ -135,12 +150,14 @@ function ComposePage() {
       const { error } = await supabase.storage.from("client-uploads").upload(path, file);
       if (error) throw error;
       const { data } = supabase.storage.from("client-uploads").getPublicUrl(path);
-      const r: any = await uploadFn({ data: { url: data.publicUrl, filename: file.name } });
-      const postizId = r?.[0]?.id ?? r?.id;
+      const r: PostizUploadResult = await uploadFn({
+        data: { url: data.publicUrl, filename: file.name },
+      });
+      const postizId = Array.isArray(r) ? r[0]?.id : r?.id;
       return { url: data.publicUrl, postizId, name: file.name };
     },
     onSuccess: (m) => setMedia((prev) => [...prev, m]),
-    onError: (e: any) => toast.error(e?.message ?? "Upload mislukt"),
+    onError: (e: Error) => toast.error(e?.message ?? "Upload mislukt"),
   });
 
   const submitMut = useMutation({
@@ -169,7 +186,7 @@ function ComposePage() {
       qc.invalidateQueries({ queryKey: ["postiz-posts"] });
       navigate({ to: "/admin/planner" });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Inplannen mislukt"),
+    onError: (e: Error) => toast.error(e?.message ?? "Inplannen mislukt"),
   });
 
   const longest = Math.max(
