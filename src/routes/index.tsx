@@ -6,7 +6,11 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Elevate Design — Elevate your brand" },
-      { name: "description", content: "Brand studio voor muziekstudio's, chocolatiers, parfumeurs en andere ambitieuze merken. Stappenplan, content en oplevering in één portaal." },
+      {
+        name: "description",
+        content:
+          "Brand studio voor muziekstudio's, chocolatiers, parfumeurs en andere ambitieuze merken. Stappenplan, content en oplevering in één portaal.",
+      },
     ],
   }),
   component: Landing,
@@ -16,7 +20,10 @@ function Landing() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-luxe">
       {/* subtle glow */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] opacity-70" style={{ background: "var(--gradient-glow)" }} />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] opacity-70"
+        style={{ background: "var(--gradient-glow)" }}
+      />
 
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link to="/" className="flex items-center gap-2.5">
@@ -43,17 +50,24 @@ function Landing() {
             Strategie, content en uitvoering voor merken met karakter — binnen één elegant portaal.
           </p>
           <div className="mt-8 flex items-center justify-center">
-            <Link to="/dashboard" className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-gold px-5 py-2.5 text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground glow-gold">
-              Open portal <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+            <Link
+              to="/dashboard"
+              className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-gold px-5 py-2.5 text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground glow-gold"
+            >
+              Open portal{" "}
+              <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
             </Link>
           </div>
         </section>
 
-
         <section className="pb-24">
           <div className="glass-strong rounded-2xl p-10 text-center shadow-elegant">
-            <p className="font-display text-2xl md:text-4xl italic text-gradient-gold">"Craft over noise."</p>
-            <p className="mt-3 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">— Elevate Design</p>
+            <p className="font-display text-2xl md:text-4xl italic text-gradient-gold">
+              "Craft over noise."
+            </p>
+            <p className="mt-3 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              — Elevate Design
+            </p>
           </div>
         </section>
       </main>

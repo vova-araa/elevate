@@ -5,19 +5,44 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  Instagram, Linkedin, Youtube, Facebook, Music2, ShieldCheck, MessageSquarePlus,
-  CalendarClock, Loader2, Inbox, X,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Facebook,
+  Music2,
+  ShieldCheck,
+  MessageSquarePlus,
+  CalendarClock,
+  Loader2,
+  Inbox,
+  X,
 } from "lucide-react";
 import { PostComments } from "./post-comments";
 
 type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 
 const PLATFORM_META: Record<Platform, { label: string; Icon: any; tint: string }> = {
-  instagram: { label: "Instagram", Icon: Instagram, tint: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-400/30" },
-  tiktok:    { label: "TikTok",    Icon: Music2,    tint: "text-sky-300 bg-sky-500/10 border-sky-400/30" },
-  linkedin:  { label: "LinkedIn",  Icon: Linkedin,  tint: "text-blue-300 bg-blue-500/10 border-blue-400/30" },
-  youtube:   { label: "YouTube",   Icon: Youtube,   tint: "text-red-300 bg-red-500/10 border-red-400/30" },
-  facebook:  { label: "Facebook",  Icon: Facebook,  tint: "text-indigo-300 bg-indigo-500/10 border-indigo-400/30" },
+  instagram: {
+    label: "Instagram",
+    Icon: Instagram,
+    tint: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-400/30",
+  },
+  tiktok: { label: "TikTok", Icon: Music2, tint: "text-sky-300 bg-sky-500/10 border-sky-400/30" },
+  linkedin: {
+    label: "LinkedIn",
+    Icon: Linkedin,
+    tint: "text-blue-300 bg-blue-500/10 border-blue-400/30",
+  },
+  youtube: {
+    label: "YouTube",
+    Icon: Youtube,
+    tint: "text-red-300 bg-red-500/10 border-red-400/30",
+  },
+  facebook: {
+    label: "Facebook",
+    Icon: Facebook,
+    tint: "text-indigo-300 bg-indigo-500/10 border-indigo-400/30",
+  },
 };
 
 /**
@@ -67,7 +92,8 @@ export function ApprovalQueue({ clientId }: { clientId: string }) {
         <Inbox className="h-8 w-8 text-gold mx-auto mb-3" />
         <h2 className="font-display text-2xl">Niets te beoordelen</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          Er staan momenteel geen concept-posts voor je klaar. Zodra je team iets voorbereidt, verschijnt het hier.
+          Er staan momenteel geen concept-posts voor je klaar. Zodra je team iets voorbereidt,
+          verschijnt het hier.
         </p>
       </div>
     );
@@ -76,7 +102,12 @@ export function ApprovalQueue({ clientId }: { clientId: string }) {
   return (
     <div className="space-y-4">
       {drafts!.map((post) => (
-        <DraftCard key={post.id} post={post} clientId={clientId} onApprove={() => approve(post.id)} />
+        <DraftCard
+          key={post.id}
+          post={post}
+          clientId={clientId}
+          onApprove={() => approve(post.id)}
+        />
       ))}
     </div>
   );
@@ -127,13 +158,22 @@ function DraftCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={cn("text-[10px] rounded-full border px-2 py-1 inline-flex items-center gap-1", pm.tint)}>
+            <span
+              className={cn(
+                "text-[10px] rounded-full border px-2 py-1 inline-flex items-center gap-1",
+                pm.tint,
+              )}
+            >
               <pm.Icon className="h-3 w-3" /> {pm.label}
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
               <CalendarClock className="h-3 w-3" />
               {new Date(post.scheduled_at).toLocaleString("nl-NL", {
-                weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </span>
           </div>
@@ -146,13 +186,19 @@ function DraftCard({
 
           <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2">
             <button
-              onClick={async () => { setBusy("approve"); await onApprove(); setBusy(null); }}
+              onClick={async () => {
+                setBusy("approve");
+                await onApprove();
+                setBusy(null);
+              }}
               disabled={busy !== null}
               className="min-h-11 rounded-lg bg-gradient-gold px-4 text-xs font-medium text-primary-foreground inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
-              {busy === "approve"
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                : <ShieldCheck className="h-3.5 w-3.5" />}
+              {busy === "approve" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShieldCheck className="h-3.5 w-3.5" />
+              )}
               Goedkeuren
             </button>
             <button
@@ -160,7 +206,11 @@ function DraftCard({
               disabled={busy !== null}
               className="min-h-11 rounded-lg border border-gold/30 text-gold hover:bg-gold/10 px-4 text-xs font-medium inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
-              {requesting ? <X className="h-3.5 w-3.5" /> : <MessageSquarePlus className="h-3.5 w-3.5" />}
+              {requesting ? (
+                <X className="h-3.5 w-3.5" />
+              ) : (
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+              )}
               {requesting ? "Annuleer" : "Wijziging vragen"}
             </button>
             <button
@@ -172,8 +222,13 @@ function DraftCard({
           </div>
 
           {requesting && (
-            <form onSubmit={submitChangeRequest} className="mt-3 rounded-xl border border-gold/30 bg-surface/60 p-3 space-y-2">
-              <div className="text-[11px] uppercase tracking-wider text-gold/80">Wat wil je aangepast hebben?</div>
+            <form
+              onSubmit={submitChangeRequest}
+              className="mt-3 rounded-xl border border-gold/30 bg-surface/60 p-3 space-y-2"
+            >
+              <div className="text-[11px] uppercase tracking-wider text-gold/80">
+                Wat wil je aangepast hebben?
+              </div>
               <textarea
                 autoFocus
                 value={changeText}
@@ -210,8 +265,12 @@ function MediaPreview({ path, mediaType }: { path: string; mediaType: string | n
     supabase.storage
       .from("social-media")
       .createSignedUrl(path, 3600)
-      .then(({ data }) => { if (!cancelled) setUrl(data?.signedUrl || ""); });
-    return () => { cancelled = true; };
+      .then(({ data }) => {
+        if (!cancelled) setUrl(data?.signedUrl || "");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [path]);
 
   const isVideo = mediaType?.startsWith("video") || /\.(mp4|mov|webm)$/i.test(path);

@@ -4,9 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
 import {
-  Calendar, ListChecks, Sparkles, Instagram, Plus, ArrowRight,
-  CheckCircle2, AlertCircle, Clock, TrendingUp, Megaphone, Bell,
-  ChevronDown, Loader2,
+  Calendar,
+  ListChecks,
+  Sparkles,
+  Instagram,
+  Plus,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  TrendingUp,
+  Megaphone,
+  Bell,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,10 +34,12 @@ function AdminDashboard() {
 
   const { data: clients } = useQuery({
     queryKey: ["clients-all-mini"],
-    queryFn: async () => (await supabase.from("clients").select("id,name,brand_color,industry,logo_url").order("name")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("clients").select("id,name,brand_color,industry,logo_url").order("name"))
+        .data ?? [],
   });
 
-  const selected = clientId ? clients?.find((c) => c.id === clientId) ?? null : null;
+  const selected = clientId ? (clients?.find((c) => c.id === clientId) ?? null) : null;
 
   if (!clients) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
 
@@ -48,36 +61,59 @@ function Header({ clients, selected }: { clients: any[]; selected: any | null })
         <div className="mt-2 flex items-center gap-3">
           <div
             className="h-12 w-12 rounded-full flex items-center justify-center font-display text-lg text-primary-foreground shrink-0 overflow-hidden"
-            style={{ background: isAll ? "var(--gradient-gold)" : (selected.logo_url ? "transparent" : (selected.brand_color || "var(--gradient-gold)")) }}
+            style={{
+              background: isAll
+                ? "var(--gradient-gold)"
+                : selected.logo_url
+                  ? "transparent"
+                  : selected.brand_color || "var(--gradient-gold)",
+            }}
           >
             {isAll ? (
               <Sparkles className="h-5 w-5" />
             ) : selected.logo_url ? (
-              <img src={selected.logo_url} alt="" className="h-full w-full rounded-full object-cover" />
+              <img
+                src={selected.logo_url}
+                alt=""
+                className="h-full w-full rounded-full object-cover"
+              />
             ) : (
               selected.name?.[0]?.toUpperCase()
             )}
           </div>
           <div>
-            <h1 className="font-display text-3xl sm:text-4xl leading-none">{isAll ? "Alle klanten" : selected.name}</h1>
+            <h1 className="font-display text-3xl sm:text-4xl leading-none">
+              {isAll ? "Alle klanten" : selected.name}
+            </h1>
             <div className="text-xs text-muted-foreground mt-1">
-              {isAll ? `${clients.length} klant${clients.length === 1 ? "" : "en"} totaal` : (selected.industry || "—")}
+              {isAll
+                ? `${clients.length} klant${clients.length === 1 ? "" : "en"} totaal`
+                : selected.industry || "—"}
             </div>
           </div>
         </div>
       </div>
 
       <div className="relative">
-        <label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground block mb-1">Bekijk per klant</label>
+        <label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground block mb-1">
+          Bekijk per klant
+        </label>
         <div className="relative">
           <select
             value={selected?.id ?? ""}
-            onChange={(e) => navigate({ to: "/admin/dashboard", search: e.target.value ? { clientId: e.target.value } : {} })}
+            onChange={(e) =>
+              navigate({
+                to: "/admin/dashboard",
+                search: e.target.value ? { clientId: e.target.value } : {},
+              })
+            }
             className="appearance-none rounded-lg bg-input/60 hairline pl-3 pr-9 py-2 text-sm min-w-[220px] outline-none focus:ring-2 focus:ring-gold/40"
           >
             <option value="">Alle klanten</option>
             {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -93,23 +129,46 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
   const { data: posts } = useQuery({
     queryKey: ["dash-posts", clientId ?? "all"],
     queryFn: async () =>
-      ((await filterBy(supabase.from("scheduled_posts" as any).select("*")).order("scheduled_at", { ascending: true })).data ?? []) as any[],
+      ((
+        await filterBy(supabase.from("scheduled_posts" as any).select("*")).order("scheduled_at", {
+          ascending: true,
+        })
+      ).data ?? []) as any[],
   });
   const { data: tasks } = useQuery({
     queryKey: ["dash-tasks", clientId ?? "all"],
     queryFn: async () =>
-      (await filterBy(supabase.from("tasks").select("id,title,due_date,status,priority,client_id")).neq("status", "done").order("due_date", { nullsFirst: false }).limit(8)).data ?? [],
+      (
+        await filterBy(supabase.from("tasks").select("id,title,due_date,status,priority,client_id"))
+          .neq("status", "done")
+          .order("due_date", { nullsFirst: false })
+          .limit(8)
+      ).data ?? [],
   });
   const { data: results } = useQuery({
     queryKey: ["dash-results", clientId ?? "all"],
     queryFn: async () =>
-      (await filterBy(supabase.from("calendar_items").select("id,title,date,status,deliverable_type")).eq("status", "approved").order("date", { ascending: false }).limit(6)).data ?? [],
+      (
+        await filterBy(
+          supabase.from("calendar_items").select("id,title,date,status,deliverable_type"),
+        )
+          .eq("status", "approved")
+          .order("date", { ascending: false })
+          .limit(6)
+      ).data ?? [],
   });
   const { data: notifications } = useQuery({
     queryKey: ["dash-notif", userId],
     enabled: !!userId,
     queryFn: async () =>
-      (await supabase.from("notifications").select("*").eq("user_id", userId!).order("created_at", { ascending: false }).limit(8)).data ?? [],
+      (
+        await supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", userId!)
+          .order("created_at", { ascending: false })
+          .limit(8)
+      ).data ?? [],
   });
 
   const planned = (posts ?? []).filter((p) => p.status === "scheduled" || p.status === "draft");
@@ -123,9 +182,19 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
       {/* Stat strip */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Stat label="Geplande posts" value={planned.length} icon={Calendar} accent="gold" />
-        <Stat label="Open taken" value={tasks?.length ?? 0} icon={ListChecks} sub={todayTasks.length ? `${todayTasks.length} vandaag` : undefined} />
+        <Stat
+          label="Open taken"
+          value={tasks?.length ?? 0}
+          icon={ListChecks}
+          sub={todayTasks.length ? `${todayTasks.length} vandaag` : undefined}
+        />
         <Stat label="Gepubliceerd" value={published.length} icon={CheckCircle2} accent="emerald" />
-        <Stat label="Mislukt" value={failed.length} icon={AlertCircle} accent={failed.length ? "red" : undefined} />
+        <Stat
+          label="Mislukt"
+          value={failed.length}
+          icon={AlertCircle}
+          accent={failed.length ? "red" : undefined}
+        />
       </div>
 
       {/* Snelkoppelingen */}
@@ -154,27 +223,53 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Geplande posts */}
-        <Card title="Geplande posts" icon={Instagram} link={clientId ? { to: "/admin/clients/$id", params: { id: clientId }, label: "Open planner" } : { to: "/admin/planner", label: "Open planner" }} className="lg:col-span-2">
+        <Card
+          title="Geplande posts"
+          icon={Instagram}
+          link={
+            clientId
+              ? { to: "/admin/clients/$id", params: { id: clientId }, label: "Open planner" }
+              : { to: "/admin/planner", label: "Open planner" }
+          }
+          className="lg:col-span-2"
+        >
           {planned.length === 0 ? (
             <Empty body="Geen geplande posts." />
           ) : (
             <ul className="space-y-2">
               {planned.slice(0, 6).map((p) => (
-                <li key={p.id} className="flex items-center gap-3 rounded-lg bg-surface-elevated/50 p-3">
+                <li
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-lg bg-surface-elevated/50 p-3"
+                >
                   <div className="h-9 w-9 rounded-md bg-gradient-to-br from-fuchsia-500/30 via-pink-500/30 to-amber-400/30 ring-1 ring-gold/30 shrink-0 flex items-center justify-center">
                     <Instagram className="h-4 w-4 text-gold" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm truncate">{p.caption || <span className="italic text-muted-foreground">geen caption</span>}</div>
+                    <div className="text-sm truncate">
+                      {p.caption || (
+                        <span className="italic text-muted-foreground">geen caption</span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <Clock className="h-3 w-3" />
-                      {new Date(p.scheduled_at).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      {new Date(p.scheduled_at).toLocaleString("nl-NL", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   </div>
-                  <span className={cn("text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
-                    p.status === "scheduled" && "bg-gold/15 text-gold",
-                    p.status === "draft" && "bg-muted/30 text-muted-foreground",
-                  )}>{p.status}</span>
+                  <span
+                    className={cn(
+                      "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
+                      p.status === "scheduled" && "bg-gold/15 text-gold",
+                      p.status === "draft" && "bg-muted/30 text-muted-foreground",
+                    )}
+                  >
+                    {p.status}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -188,14 +283,29 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
           ) : (
             <ul className="space-y-2">
               {notifications!.slice(0, 8).map((n: any) => (
-                <li key={n.id} className={cn("rounded-lg p-2.5 text-sm", n.read ? "bg-surface-elevated/40" : "bg-gold/8 ring-1 ring-gold/30")}>
+                <li
+                  key={n.id}
+                  className={cn(
+                    "rounded-lg p-2.5 text-sm",
+                    n.read ? "bg-surface-elevated/40" : "bg-gold/8 ring-1 ring-gold/30",
+                  )}
+                >
                   <div className="flex items-center gap-2">
                     <NotifDot type={n.type} />
                     <div className="font-medium text-sm truncate flex-1">{n.title}</div>
                   </div>
-                  {n.body && <div className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{n.body}</div>}
+                  {n.body && (
+                    <div className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                      {n.body}
+                    </div>
+                  )}
                   <div className="text-[10px] text-muted-foreground mt-1">
-                    {new Date(n.created_at).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {new Date(n.created_at).toLocaleString("nl-NL", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </div>
                 </li>
               ))}
@@ -204,22 +314,36 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
         </Card>
 
         {/* Aankomende taken */}
-        <Card title="Aankomende taken" icon={ListChecks} link={{ to: "/admin/tasks", label: "Alle taken" }} className="lg:col-span-2">
+        <Card
+          title="Aankomende taken"
+          icon={ListChecks}
+          link={{ to: "/admin/tasks", label: "Alle taken" }}
+          className="lg:col-span-2"
+        >
           {(tasks ?? []).length === 0 ? (
             <Empty body="Geen openstaande taken." />
           ) : (
             <ul className="divide-y divide-border/50">
               {tasks!.map((t: any) => (
                 <li key={t.id} className="flex items-center gap-3 py-2.5">
-                  <span className={cn("h-2 w-2 rounded-full shrink-0",
-                    t.priority === "high" && "bg-red-400",
-                    t.priority === "medium" && "bg-amber-400",
-                    t.priority === "low" && "bg-sky-400",
-                  )} />
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full shrink-0",
+                      t.priority === "high" && "bg-red-400",
+                      t.priority === "medium" && "bg-amber-400",
+                      t.priority === "low" && "bg-sky-400",
+                    )}
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm truncate">{t.title}</div>
                     <div className="text-[11px] text-muted-foreground">
-                      {t.due_date ? new Date(t.due_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short" }) : "geen deadline"} · {t.status}
+                      {t.due_date
+                        ? new Date(t.due_date).toLocaleDateString("nl-NL", {
+                            day: "numeric",
+                            month: "short",
+                          })
+                        : "geen deadline"}{" "}
+                      · {t.status}
                     </div>
                   </div>
                 </li>
@@ -253,7 +377,11 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
                     <div className="text-sm font-medium truncate">{r.title}</div>
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-1">
-                    {new Date(r.date).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })} · {r.deliverable_type}
+                    {new Date(r.date).toLocaleDateString("nl-NL", {
+                      day: "numeric",
+                      month: "short",
+                    })}{" "}
+                    · {r.deliverable_type}
                   </div>
                 </div>
               ))}
@@ -265,24 +393,46 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
   );
 }
 
-function Stat({ icon: Icon, label, value, sub, accent }: { icon: any; label: string; value: number; sub?: string; accent?: "gold" | "emerald" | "red" }) {
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  icon: any;
+  label: string;
+  value: number;
+  sub?: string;
+  accent?: "gold" | "emerald" | "red";
+}) {
   return (
     <div className="glass rounded-2xl p-4 sm:p-5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
-        <Icon className={cn("h-4 w-4",
-          accent === "gold" && "text-gold",
+        <span className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          {label}
+        </span>
+        <Icon
+          className={cn(
+            "h-4 w-4",
+            accent === "gold" && "text-gold",
+            accent === "emerald" && "text-emerald-400",
+            accent === "red" && "text-red-400",
+            !accent && "text-muted-foreground",
+          )}
+        />
+      </div>
+      <div
+        className={cn(
+          "mt-2 font-display text-3xl sm:text-4xl",
+          accent === "gold" && "text-gradient-gold",
           accent === "emerald" && "text-emerald-400",
           accent === "red" && "text-red-400",
-          !accent && "text-muted-foreground",
-        )} />
+          !accent && "text-foreground",
+        )}
+      >
+        {value}
       </div>
-      <div className={cn("mt-2 font-display text-3xl sm:text-4xl",
-        accent === "gold" && "text-gradient-gold",
-        accent === "emerald" && "text-emerald-400",
-        accent === "red" && "text-red-400",
-        !accent && "text-foreground",
-      )}>{value}</div>
       {sub && <div className="text-[11px] text-muted-foreground mt-1">{sub}</div>}
     </div>
   );
@@ -296,7 +446,11 @@ function Card({ title, icon: Icon, link, children, className }: any) {
           <Icon className="h-4 w-4 text-gold" /> {title}
         </h2>
         {link && (
-          <Link to={link.to} params={link.params} className="text-xs text-gold hover:underline inline-flex items-center gap-1">
+          <Link
+            to={link.to}
+            params={link.params}
+            className="text-xs text-gold hover:underline inline-flex items-center gap-1"
+          >
             {link.label} <ArrowRight className="h-3 w-3" />
           </Link>
         )}
@@ -312,7 +466,10 @@ function Empty({ body }: { body: string }) {
 
 function QuickAction({ to, params, hash, icon: Icon, title, subtitle }: any) {
   return (
-    <Link to={to} params={params} hash={hash}
+    <Link
+      to={to}
+      params={params}
+      hash={hash}
       className="glass rounded-2xl p-4 transition hover:gold-ring group flex items-center gap-3"
     >
       <div className="h-11 w-11 rounded-full bg-gold/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -329,13 +486,19 @@ function QuickAction({ to, params, hash, icon: Icon, title, subtitle }: any) {
 
 function NotifDot({ type }: { type: string }) {
   const color =
-    type === "new_upload" ? "bg-sky-400" :
-    type === "new_message" ? "bg-fuchsia-400" :
-    type === "post_published" ? "bg-emerald-400" :
-    type === "post_failed" ? "bg-red-400" :
-    type === "awaiting_approval" ? "bg-amber-400" :
-    type === "ad_budget" ? "bg-orange-400" :
-    "bg-gold";
+    type === "new_upload"
+      ? "bg-sky-400"
+      : type === "new_message"
+        ? "bg-fuchsia-400"
+        : type === "post_published"
+          ? "bg-emerald-400"
+          : type === "post_failed"
+            ? "bg-red-400"
+            : type === "awaiting_approval"
+              ? "bg-amber-400"
+              : type === "ad_budget"
+                ? "bg-orange-400"
+                : "bg-gold";
   return <span className={cn("h-2 w-2 rounded-full shrink-0", color)} />;
 }
 
@@ -346,18 +509,31 @@ function AdsPlaceholderRow({ platform }: { platform: string }) {
         <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-sm">{platform}</span>
       </div>
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">niet gekoppeld</span>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        niet gekoppeld
+      </span>
     </div>
   );
 }
 
-function EmptyState({ title, body, cta }: { title: string; body: string; cta: { to: string; label: string } }) {
+function EmptyState({
+  title,
+  body,
+  cta,
+}: {
+  title: string;
+  body: string;
+  cta: { to: string; label: string };
+}) {
   return (
     <div className="glass rounded-2xl p-10 text-center">
       <Sparkles className="h-8 w-8 text-gold mx-auto mb-3" />
       <h2 className="font-display text-2xl">{title}</h2>
       <p className="text-sm text-muted-foreground mt-2 mb-5">{body}</p>
-      <Link to={cta.to} className="inline-flex items-center gap-2 rounded-lg bg-gradient-gold px-4 py-2 text-sm font-medium text-primary-foreground">
+      <Link
+        to={cta.to}
+        className="inline-flex items-center gap-2 rounded-lg bg-gradient-gold px-4 py-2 text-sm font-medium text-primary-foreground"
+      >
         <Plus className="h-4 w-4" /> {cta.label}
       </Link>
     </div>

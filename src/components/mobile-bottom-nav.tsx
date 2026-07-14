@@ -28,7 +28,6 @@ export function MobileBottomNav() {
     refetchInterval: 60000,
   });
 
-
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 h-[60px] bg-background border-t border-gold/15 flex">
       {items.map((it) => {
@@ -37,7 +36,10 @@ export function MobileBottomNav() {
           <Link
             key={it.to}
             to={it.to}
-            className={cn("flex-1 flex flex-col items-center justify-center gap-0.5 relative", active ? "text-gold" : "text-muted-foreground")}
+            className={cn(
+              "flex-1 flex flex-col items-center justify-center gap-0.5 relative",
+              active ? "text-gold" : "text-muted-foreground",
+            )}
           >
             <it.icon className="h-5 w-5" />
             <span className="text-[10px] font-medium">{it.label}</span>

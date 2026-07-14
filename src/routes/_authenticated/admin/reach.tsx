@@ -2,7 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +64,9 @@ function ReachPage() {
             onClick={() => setPeriod(p.id)}
             className={cn(
               "px-3 h-8 rounded-full text-xs font-medium border transition",
-              period === p.id ? "bg-gold/15 text-gold border-gold/40" : "border-border hover:bg-accent/40",
+              period === p.id
+                ? "bg-gold/15 text-gold border-gold/40"
+                : "border-border hover:bg-accent/40",
             )}
           >
             {p.label}
@@ -72,22 +82,37 @@ function ReachPage() {
       </div>
 
       <div className="rounded-xl border border-gold/15 bg-card p-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">Activiteit over tijd</div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
+          Activiteit over tijd
+        </div>
         <div className="h-[260px]">
           <ResponsiveContainer>
             <LineChart data={series} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.85 0.015 75 / 30%)" />
               <XAxis dataKey="date" stroke="oklch(0.48 0.018 65)" fontSize={11} />
               <YAxis stroke="oklch(0.48 0.018 65)" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-              <Line type="monotone" dataKey="posts" stroke="var(--gold)" strokeWidth={2} dot={false} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="posts"
+                stroke="var(--gold)"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Live bereik-cijfers per platform vereisen de Postiz analytics-koppeling. Zodra die endpoint actief is, worden hier follower-aantallen, impressies en profielbezoeken getoond.
+        Live bereik-cijfers per platform vereisen de Postiz analytics-koppeling. Zodra die endpoint
+        actief is, worden hier follower-aantallen, impressies en profielbezoeken getoond.
       </p>
     </div>
   );
@@ -97,7 +122,11 @@ function StatCard({ label, value, small }: { label: string; value: any; small?: 
   return (
     <div className="rounded-lg bg-surface p-3.5">
       <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-      <div className={cn("mt-1 font-display tabular-nums", small ? "text-base truncate" : "text-2xl")}>{value}</div>
+      <div
+        className={cn("mt-1 font-display tabular-nums", small ? "text-base truncate" : "text-2xl")}
+      >
+        {value}
+      </div>
     </div>
   );
 }

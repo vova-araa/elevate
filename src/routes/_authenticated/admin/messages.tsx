@@ -22,7 +22,8 @@ function AdminMessages() {
   const { data: clients } = useQuery({
     queryKey: ["clients-msg"],
     queryFn: async () =>
-      (await supabase.from("clients").select("id,name,brand_color,logo_url").order("name")).data ?? [],
+      (await supabase.from("clients").select("id,name,brand_color,logo_url").order("name")).data ??
+      [],
   });
 
   const { data: lastMessages } = useQuery({
@@ -38,10 +39,12 @@ function AdminMessages() {
   });
 
   const lastByClient = new Map<string, any>();
-  lastMessages?.forEach((m) => { if (!lastByClient.has(m.client_id)) lastByClient.set(m.client_id, m); });
+  lastMessages?.forEach((m) => {
+    if (!lastByClient.has(m.client_id)) lastByClient.set(m.client_id, m);
+  });
 
   const filtered = (clients ?? []).filter((c) =>
-    c.name.toLowerCase().includes(query.toLowerCase())
+    c.name.toLowerCase().includes(query.toLowerCase()),
   );
 
   // Sort: those with messages first, by recency
@@ -71,41 +74,61 @@ function AdminMessages() {
         <div className="glass-strong rounded-xl p-3 flex flex-col">
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)}
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Zoek klant..."
-              className="w-full rounded-lg border border-gold/15 bg-background/60 pl-9 pr-3 py-2 text-sm" />
+              className="w-full rounded-lg border border-gold/15 bg-background/60 pl-9 pr-3 py-2 text-sm"
+            />
           </div>
           <div className="flex-1 overflow-y-auto space-y-1 scrollbar-thin">
             {filtered.map((c) => {
               const last = lastByClient.get(c.id);
               const isActive = c.id === activeId;
               return (
-                <button key={c.id}
+                <button
+                  key={c.id}
                   onClick={() => navigate({ to: "/admin/messages", search: { clientId: c.id } })}
-                  className={cn("w-full flex items-start gap-3 rounded-lg p-3 text-left transition",
-                    isActive ? "bg-gold/15 text-foreground" : "hover:bg-accent/30")}>
+                  className={cn(
+                    "w-full flex items-start gap-3 rounded-lg p-3 text-left transition",
+                    isActive ? "bg-gold/15 text-foreground" : "hover:bg-accent/30",
+                  )}
+                >
                   {c.logo_url ? (
-                    <img src={c.logo_url} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" />
+                    <img
+                      src={c.logo_url}
+                      alt=""
+                      className="h-9 w-9 rounded-full object-cover shrink-0"
+                    />
                   ) : (
-                    <div className="h-9 w-9 rounded-full shrink-0"
-                      style={{ background: c.brand_color || "#D4B97A" }} />
+                    <div
+                      className="h-9 w-9 rounded-full shrink-0"
+                      style={{ background: c.brand_color || "#D4B97A" }}
+                    />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium truncate">{c.name}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {last ? (last.sender_role === "admin" ? "Jij: " : "") + (last.body ?? "") : "Geen berichten"}
+                      {last
+                        ? (last.sender_role === "admin" ? "Jij: " : "") + (last.body ?? "")
+                        : "Geen berichten"}
                     </div>
                   </div>
                   {last && (
                     <div className="text-[10px] text-muted-foreground shrink-0">
-                      {new Date(last.created_at).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
+                      {new Date(last.created_at).toLocaleDateString("nl-NL", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </div>
                   )}
                 </button>
               );
             })}
             {filtered.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-6">Geen klanten gevonden</p>
+              <p className="text-xs text-muted-foreground text-center py-6">
+                Geen klanten gevonden
+              </p>
             )}
           </div>
         </div>
@@ -116,9 +139,16 @@ function AdminMessages() {
             <>
               <div className="flex items-center gap-3 pb-3 mb-3 border-b border-gold/10">
                 {selected.logo_url ? (
-                  <img src={selected.logo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  <img
+                    src={selected.logo_url}
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
                 ) : (
-                  <div className="h-10 w-10 rounded-full" style={{ background: selected.brand_color || "#D4B97A" }} />
+                  <div
+                    className="h-10 w-10 rounded-full"
+                    style={{ background: selected.brand_color || "#D4B97A" }}
+                  />
                 )}
                 <div>
                   <div className="font-display text-lg">{selected.name}</div>

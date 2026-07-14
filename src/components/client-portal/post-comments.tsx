@@ -75,9 +75,7 @@ export function PostComments({
           </div>
         )}
         {!isLoading && (comments?.length ?? 0) === 0 && (
-          <p className="text-xs text-muted-foreground py-1">
-            Nog geen opmerkingen bij deze post.
-          </p>
+          <p className="text-xs text-muted-foreground py-1">Nog geen opmerkingen bij deze post.</p>
         )}
         {comments?.map((c) => {
           const isClient = c.author_role === "client";
@@ -123,7 +121,11 @@ export function PostComments({
           disabled={busy || !body.trim()}
           className="min-h-11 rounded-lg bg-gradient-gold px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-50 inline-flex items-center justify-center gap-1.5 shrink-0"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Send className="h-3.5 w-3.5" />
+          )}
           Plaatsen
         </button>
       </form>

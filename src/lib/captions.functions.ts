@@ -17,14 +17,19 @@ async function assertAdmin(ctx: { supabase: any; userId: string }) {
 const inputSchema = z.object({
   briefing: z.string().min(3).max(4000),
   tone: z.enum(["professioneel", "informeel", "energiek", "inspirerend"]).default("professioneel"),
-  platforms: z.array(z.enum(["instagram", "linkedin", "tiktok", "facebook", "x", "threads"])).min(1).max(6),
+  platforms: z
+    .array(z.enum(["instagram", "linkedin", "tiktok", "facebook", "x", "threads"]))
+    .min(1)
+    .max(6),
   clientId: z.string().uuid().optional().nullable(),
   language: z.enum(["nl", "en"]).default("nl"),
 });
 
 const PLATFORM_HINTS: Record<string, string> = {
-  instagram: "Instagram: max 2200 tekens, gebruik 3-5 relevante hashtags, emoji ok, eerste zin is een hook.",
-  linkedin: "LinkedIn: max 3000 tekens, professioneel, geen hashtags-spam (max 3), call-to-action voor reacties.",
+  instagram:
+    "Instagram: max 2200 tekens, gebruik 3-5 relevante hashtags, emoji ok, eerste zin is een hook.",
+  linkedin:
+    "LinkedIn: max 3000 tekens, professioneel, geen hashtags-spam (max 3), call-to-action voor reacties.",
   tiktok: "TikTok: max 300 tekens, korte energieke zin, 2-3 hashtags, trend-aware.",
   facebook: "Facebook: max 1500 tekens, conversationeel, geen hashtag-overdaad.",
   x: "X/Twitter: max 280 tekens, krachtige hook, 1-2 hashtags max.",
@@ -47,7 +52,8 @@ export const generateCaptions = createServerFn({ method: "POST" })
         .maybeSingle();
       if (c) {
         clientContext = `\nKlant: ${c.name}${c.industry ? ` (${c.industry})` : ""}.`;
-        if (c.notes) toneOfVoice = `\nMerkcontext/tone-of-voice notities: ${String(c.notes).slice(0, 800)}`;
+        if (c.notes)
+          toneOfVoice = `\nMerkcontext/tone-of-voice notities: ${String(c.notes).slice(0, 800)}`;
       }
     }
 
@@ -74,7 +80,14 @@ export const generateCaptions = createServerFn({ method: "POST" })
 
 export const listAiGenerations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid().optional().nullable(), limit: z.number().min(1).max(50).default(10) }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        clientId: z.string().uuid().optional().nullable(),
+        limit: z.number().min(1).max(50).default(10),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     let q = supabaseAdmin

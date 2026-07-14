@@ -3,12 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  inviteUser,
-  setUserRole,
-  setClientMembership,
-  deleteUser,
-} from "@/lib/admin.functions";
+import { inviteUser, setUserRole, setClientMembership, deleteUser } from "@/lib/admin.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -33,13 +28,16 @@ function UsersAdmin() {
       return (profiles ?? []).map((p: any) => ({
         ...p,
         roles: (roles ?? []).filter((r: any) => r.user_id === p.id).map((r: any) => r.role),
-        clientIds: (members ?? []).filter((m: any) => m.user_id === p.id).map((m: any) => m.client_id),
+        clientIds: (members ?? [])
+          .filter((m: any) => m.user_id === p.id)
+          .map((m: any) => m.client_id),
       }));
     },
   });
   const { data: clients } = useQuery({
     queryKey: ["clients-list"],
-    queryFn: async () => (await supabase.from("clients").select("id,name").order("name")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("clients").select("id,name").order("name")).data ?? [],
   });
 
   const [f, setF] = useState({ email: "", fullName: "", clientId: "", makeAdmin: false });
@@ -48,16 +46,28 @@ function UsersAdmin() {
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
-    if (f.makeAdmin && !confirm(`Weet je zeker dat je ${f.email || "deze gebruiker"} als admin wil aanmaken? Admins hebben volledige toegang tot alle klanten en instellingen.`)) {
+    if (
+      f.makeAdmin &&
+      !confirm(
+        `Weet je zeker dat je ${f.email || "deze gebruiker"} als admin wil aanmaken? Admins hebben volledige toegang tot alle klanten en instellingen.`,
+      )
+    ) {
       return;
     }
     setBusy(true);
     try {
       const res = await invite({
-        data: { email: f.email, fullName: f.fullName, clientId: f.clientId || undefined, makeAdmin: f.makeAdmin },
+        data: {
+          email: f.email,
+          fullName: f.fullName,
+          clientId: f.clientId || undefined,
+          makeAdmin: f.makeAdmin,
+        },
       });
       if (res.tempPassword) {
-        toast.success(`Account aangemaakt. Tijdelijk wachtwoord: ${res.tempPassword}`, { duration: 20000 });
+        toast.success(`Account aangemaakt. Tijdelijk wachtwoord: ${res.tempPassword}`, {
+          duration: 20000,
+        });
       } else {
         toast.success("Uitnodiging verzonden");
       }
@@ -70,7 +80,13 @@ function UsersAdmin() {
   }
 
   async function handleRole(userId: string, role: "admin" | "client", enabled: boolean) {
-    if (role === "admin" && enabled && !confirm("Weet je zeker dat je deze gebruiker tot admin wil promoten? Admins hebben volledige toegang tot alle klanten en instellingen.")) {
+    if (
+      role === "admin" &&
+      enabled &&
+      !confirm(
+        "Weet je zeker dat je deze gebruiker tot admin wil promoten? Admins hebben volledige toegang tot alle klanten en instellingen.",
+      )
+    ) {
       return;
     }
     try {
@@ -105,7 +121,9 @@ function UsersAdmin() {
   const filtered = (users ?? []).filter((u: any) => {
     if (!query) return true;
     const q = query.toLowerCase();
-    return (u.email || "").toLowerCase().includes(q) || (u.full_name || "").toLowerCase().includes(q);
+    return (
+      (u.email || "").toLowerCase().includes(q) || (u.full_name || "").toLowerCase().includes(q)
+    );
   });
 
   return (
@@ -116,20 +134,45 @@ function UsersAdmin() {
       </div>
 
       <form onSubmit={send} className="glass-strong rounded-2xl p-6 grid gap-3 md:grid-cols-2">
-        <input required type="email" placeholder="E-mailadres" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })}
-          className="rounded-lg bg-input/60 hairline px-4 py-3 text-sm" />
-        <input required placeholder="Volledige naam" value={f.fullName} onChange={(e) => setF({ ...f, fullName: e.target.value })}
-          className="rounded-lg bg-input/60 hairline px-4 py-3 text-sm" />
-        <select value={f.clientId} onChange={(e) => setF({ ...f, clientId: e.target.value })}
-          className="rounded-lg bg-input/60 hairline px-4 py-3 text-sm">
+        <input
+          required
+          type="email"
+          placeholder="E-mailadres"
+          value={f.email}
+          onChange={(e) => setF({ ...f, email: e.target.value })}
+          className="rounded-lg bg-input/60 hairline px-4 py-3 text-sm"
+        />
+        <input
+          required
+          placeholder="Volledige naam"
+          value={f.fullName}
+          onChange={(e) => setF({ ...f, fullName: e.target.value })}
+          className="rounded-lg bg-input/60 hairline px-4 py-3 text-sm"
+        />
+        <select
+          value={f.clientId}
+          onChange={(e) => setF({ ...f, clientId: e.target.value })}
+          className="rounded-lg bg-input/60 hairline px-4 py-3 text-sm"
+        >
           <option value="">Geen klant koppelen</option>
-          {clients?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {clients?.map((c: any) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={f.makeAdmin} onChange={(e) => setF({ ...f, makeAdmin: e.target.checked })} />
+          <input
+            type="checkbox"
+            checked={f.makeAdmin}
+            onChange={(e) => setF({ ...f, makeAdmin: e.target.checked })}
+          />
           Maak admin
         </label>
-        <button disabled={busy} className="md:col-span-2 rounded-lg bg-gradient-gold py-3 text-sm font-medium text-primary-foreground">
+        <button
+          disabled={busy}
+          className="md:col-span-2 rounded-lg bg-gradient-gold py-3 text-sm font-medium text-primary-foreground"
+        >
           {busy ? "Versturen..." : "Account aanmaken & uitnodigen"}
         </button>
       </form>
@@ -154,7 +197,12 @@ function UsersAdmin() {
                 </div>
                 <div className="flex gap-1 flex-wrap">
                   {u.roles?.map((r: string) => (
-                    <span key={r} className="text-[10px] rounded-full px-2 py-0.5 bg-gold/15 text-gold uppercase tracking-wider">{r}</span>
+                    <span
+                      key={r}
+                      className="text-[10px] rounded-full px-2 py-0.5 bg-gold/15 text-gold uppercase tracking-wider"
+                    >
+                      {r}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -181,7 +229,9 @@ function UsersAdmin() {
               </div>
 
               <div className="space-y-2">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Gekoppelde klanten</div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Gekoppelde klanten
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {(clients ?? []).map((c: any) => {
                     const linked = u.clientIds?.includes(c.id);
@@ -191,7 +241,8 @@ function UsersAdmin() {
                         onClick={() => handleMembership(u.id, c.id, !linked)}
                         className={`text-xs rounded-full px-3 py-1 hairline transition ${linked ? "bg-gold/20 text-gold" : "bg-input/30 text-muted-foreground hover:text-foreground"}`}
                       >
-                        {linked ? "✓ " : ""}{c.name}
+                        {linked ? "✓ " : ""}
+                        {c.name}
                       </button>
                     );
                   })}
@@ -201,7 +252,9 @@ function UsersAdmin() {
           );
         })}
         {filtered.length === 0 && (
-          <div className="text-sm text-muted-foreground text-center py-8">Geen gebruikers gevonden.</div>
+          <div className="text-sm text-muted-foreground text-center py-8">
+            Geen gebruikers gevonden.
+          </div>
         )}
       </div>
     </div>

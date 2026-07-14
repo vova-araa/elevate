@@ -59,7 +59,8 @@ export const listPostizIntegrations = createServerFn({ method: "GET" })
     const byId = new Map<string, any>();
     for (const row of (assigned as any[]) ?? []) byId.set(String(row.postiz_integration_id), row);
     return integrations.map((integration: any) => {
-      const identifier = integration.providerIdentifier ?? integration.identifier ?? integration.platform ?? "";
+      const identifier =
+        integration.providerIdentifier ?? integration.identifier ?? integration.platform ?? "";
       const assignedRow = byId.get(String(integration.id));
       return {
         ...integration,
@@ -76,11 +77,13 @@ export const listPostizIntegrations = createServerFn({ method: "GET" })
 export const listPostizPosts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      startDate: z.string(),
-      endDate: z.string(),
-      customer: z.string().optional(),
-    }).parse(d),
+    z
+      .object({
+        startDate: z.string(),
+        endDate: z.string(),
+        customer: z.string().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -92,10 +95,12 @@ export const listPostizPosts = createServerFn({ method: "POST" })
 export const uploadPostizMediaFromUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      url: z.string().url(),
-      filename: z.string().min(1).max(200).optional(),
-    }).parse(d),
+    z
+      .object({
+        url: z.string().url(),
+        filename: z.string().min(1).max(200).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -104,7 +109,10 @@ export const uploadPostizMediaFromUrl = createServerFn({ method: "POST" })
     const blob = await r.blob();
     const filename = data.filename || data.url.split("/").pop()?.split("?")[0] || "upload.bin";
     const fd = new FormData();
-    fd.append("file", new File([blob], filename, { type: blob.type || "application/octet-stream" }));
+    fd.append(
+      "file",
+      new File([blob], filename, { type: blob.type || "application/octet-stream" }),
+    );
     return await postizFetch("/upload", { method: "POST", body: fd });
   });
 
@@ -113,20 +121,20 @@ const postPayload = z.object({
   date: z.string(),
   shortLink: z.boolean().default(false),
   tags: z.array(z.string()).default([]),
-  posts: z.array(
-    z.object({
-      integration: z.object({ id: z.string() }),
-      value: z.array(
-        z.object({
-          content: z.string().max(10000),
-          image: z
-            .array(z.object({ id: z.string().optional(), path: z.string() }))
-            .optional(),
-        }),
-      ),
-      settings: z.record(z.string(), z.any()).optional(),
-    }),
-  ).min(1),
+  posts: z
+    .array(
+      z.object({
+        integration: z.object({ id: z.string() }),
+        value: z.array(
+          z.object({
+            content: z.string().max(10000),
+            image: z.array(z.object({ id: z.string().optional(), path: z.string() })).optional(),
+          }),
+        ),
+        settings: z.record(z.string(), z.any()).optional(),
+      }),
+    )
+    .min(1),
 });
 
 export const createPostizPost = createServerFn({ method: "POST" })
@@ -152,4 +160,3 @@ export const findPostizSlot = createServerFn({ method: "POST" })
     await assertAdmin(context);
     return await postizFetch(`/find-slot/${encodeURIComponent(data.integrationId)}`);
   });
-

@@ -62,10 +62,25 @@ export function AdminSidebar() {
       const now = new Date().toISOString();
       const in7 = new Date(Date.now() + 7 * 86400000).toISOString();
       const [sched, drafts, alerts, unread] = await Promise.all([
-        supabase.from("scheduled_posts").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("scheduled_at", now).lte("scheduled_at", in7),
-        supabase.from("scheduled_posts").select("id", { count: "exact", head: true }).eq("status", "draft"),
-        supabase.from("notifications").select("id", { count: "exact", head: true }).eq("read", false),
-        supabase.from("messages").select("id", { count: "exact", head: true }).eq("sender_role", "client").is("read_at", null),
+        supabase
+          .from("scheduled_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "scheduled")
+          .gte("scheduled_at", now)
+          .lte("scheduled_at", in7),
+        supabase
+          .from("scheduled_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "draft"),
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("read", false),
+        supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("sender_role", "client")
+          .is("read_at", null),
       ]);
       return {
         scheduled: sched.count ?? 0,
@@ -77,7 +92,6 @@ export function AdminSidebar() {
     },
     refetchInterval: 60000,
   });
-
 
   // Clients list
   const { data: clients } = useQuery({
@@ -95,7 +109,11 @@ export function AdminSidebar() {
 
   // Dismiss "Nieuw" badge for AI after first visit
   const [aiBadgeDismissed, setAiBadgeDismissed] = useState(() => {
-    try { return localStorage.getItem("elevate-ai-badge") === "dismissed"; } catch { return false; }
+    try {
+      return localStorage.getItem("elevate-ai-badge") === "dismissed";
+    } catch {
+      return false;
+    }
   });
 
   // Auto-select first client if none selected
@@ -107,7 +125,12 @@ export function AdminSidebar() {
         name: c.name,
         color: c.brand_color,
         logo_url: c.logo_url,
-        initials: c.name.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase(),
+        initials: c.name
+          .split(" ")
+          .slice(0, 2)
+          .map((w: string) => w[0])
+          .join("")
+          .toUpperCase(),
       });
     }
   }, [activeClientId, clients, setActiveClient]);
@@ -117,16 +140,31 @@ export function AdminSidebar() {
       label: "Werkruimte",
       items: [
         { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/admin/planner", label: "Planner", icon: CalendarDays, badge: counts?.scheduled ? { value: counts.scheduled, tone: "default" } : undefined },
+        {
+          to: "/admin/planner",
+          label: "Planner",
+          icon: CalendarDays,
+          badge: counts?.scheduled ? { value: counts.scheduled, tone: "default" } : undefined,
+        },
         { to: "/admin/postiz", label: "Posts", icon: Send },
-        { to: "/admin/queue", label: "Concepten", icon: FileText, badge: counts?.drafts ? { value: counts.drafts, tone: "amber" } : undefined },
+        {
+          to: "/admin/queue",
+          label: "Concepten",
+          icon: FileText,
+          badge: counts?.drafts ? { value: counts.drafts, tone: "amber" } : undefined,
+        },
         { to: "/admin/media", label: "Media", icon: ImageIcon },
       ],
     },
     {
       label: "AI tools",
       items: [
-        { to: "/admin/ai", label: "AI Studio", icon: Sparkles, badge: aiBadgeDismissed ? undefined : { value: "Nieuw", tone: "green" } },
+        {
+          to: "/admin/ai",
+          label: "AI Studio",
+          icon: Sparkles,
+          badge: aiBadgeDismissed ? undefined : { value: "Nieuw", tone: "green" },
+        },
         { to: "/admin/besttime", label: "Best time", icon: Clock },
       ],
     },
@@ -141,10 +179,25 @@ export function AdminSidebar() {
     {
       label: "Beheer",
       items: [
-        { to: "/admin/approvals", label: "Goedkeuring", icon: CheckSquare, badge: counts?.pending ? { value: counts.pending, tone: "red" } : undefined },
-        { to: "/admin/messages", label: "Berichten", icon: MessageSquare, badge: counts?.unread ? { value: counts.unread, tone: "red" } : undefined },
+        {
+          to: "/admin/approvals",
+          label: "Goedkeuring",
+          icon: CheckSquare,
+          badge: counts?.pending ? { value: counts.pending, tone: "red" } : undefined,
+        },
+        {
+          to: "/admin/messages",
+          label: "Berichten",
+          icon: MessageSquare,
+          badge: counts?.unread ? { value: counts.unread, tone: "red" } : undefined,
+        },
         { to: "/admin/clients", label: "Klanten", icon: Building2 },
-        { to: "/admin/settings", label: "Instellingen", icon: SettingsIcon, badge: counts?.alerts ? { value: counts.alerts, tone: "red" } : undefined },
+        {
+          to: "/admin/settings",
+          label: "Instellingen",
+          icon: SettingsIcon,
+          badge: counts?.alerts ? { value: counts.alerts, tone: "red" } : undefined,
+        },
       ],
     },
   ];
@@ -162,15 +215,32 @@ export function AdminSidebar() {
       )}
     >
       {/* Header */}
-      <div className={cn("flex items-center px-3 py-4 border-b border-gold/10", collapsed ? "justify-center" : "justify-between")}>
+      <div
+        className={cn(
+          "flex items-center px-3 py-4 border-b border-gold/10",
+          collapsed ? "justify-center" : "justify-between",
+        )}
+      >
         {!collapsed && (
           <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <img src={elevateLogo} alt="Elevate" width={28} height={28} className="h-7 w-7 object-contain" />
+            <img
+              src={elevateLogo}
+              alt="Elevate"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain"
+            />
             <span className="font-display text-base tracking-tight">Elevate Design</span>
           </Link>
         )}
         {collapsed && (
-          <img src={elevateLogo} alt="Elevate" width={28} height={28} className="h-7 w-7 object-contain" />
+          <img
+            src={elevateLogo}
+            alt="Elevate"
+            width={28}
+            height={28}
+            className="h-7 w-7 object-contain"
+          />
         )}
         <button
           onClick={toggleSidebar}
@@ -180,7 +250,11 @@ export function AdminSidebar() {
           )}
           title={collapsed ? "Uitklappen" : "Inklappen"}
         >
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          {collapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5" />
+          )}
         </button>
       </div>
 
@@ -218,7 +292,11 @@ export function AdminSidebar() {
                     onClick={() => {
                       if (item.to === "/admin/ai" && !aiBadgeDismissed) {
                         setAiBadgeDismissed(true);
-                        try { localStorage.setItem("elevate-ai-badge", "dismissed"); } catch {}
+                        try {
+                          localStorage.setItem("elevate-ai-badge", "dismissed");
+                        } catch {
+                          /* localStorage niet beschikbaar */
+                        }
                       }
                     }}
                     className={cn(
@@ -235,7 +313,12 @@ export function AdminSidebar() {
                       <>
                         <span className="flex-1 truncate">{item.label}</span>
                         {item.badge && (
-                          <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none", badgeClasses[item.badge.tone])}>
+                          <span
+                            className={cn(
+                              "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                              badgeClasses[item.badge.tone],
+                            )}
+                          >
                             {item.badge.value}
                           </span>
                         )}
@@ -259,7 +342,12 @@ export function AdminSidebar() {
         <div className="space-y-0.5">
           {(clients ?? []).map((c) => {
             const active = c.id === activeClientId;
-            const initials = c.name.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+            const initials = c.name
+              .split(" ")
+              .slice(0, 2)
+              .map((w: string) => w[0])
+              .join("")
+              .toUpperCase();
             return (
               <button
                 key={c.id}
@@ -282,7 +370,11 @@ export function AdminSidebar() {
                 title={collapsed ? c.name : undefined}
               >
                 {c.logo_url ? (
-                  <img src={c.logo_url} alt="" className="h-6 w-6 rounded-full object-cover shrink-0" />
+                  <img
+                    src={c.logo_url}
+                    alt=""
+                    className="h-6 w-6 rounded-full object-cover shrink-0"
+                  />
                 ) : (
                   <div
                     className="h-6 w-6 rounded-full grid place-items-center text-[10px] font-semibold text-white shrink-0"
@@ -292,7 +384,11 @@ export function AdminSidebar() {
                   </div>
                 )}
                 {!collapsed && (
-                  <span className={cn("flex-1 truncate text-left", active && "text-gold font-medium")}>{c.name}</span>
+                  <span
+                    className={cn("flex-1 truncate text-left", active && "text-gold font-medium")}
+                  >
+                    {c.name}
+                  </span>
                 )}
               </button>
             );

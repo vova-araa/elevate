@@ -56,7 +56,9 @@ function BestTimePage() {
             onClick={() => setPlatform(p)}
             className={cn(
               "px-3 h-8 rounded-full text-xs font-medium border capitalize transition",
-              platform === p ? "bg-gold/15 text-gold border-gold/40" : "border-border hover:bg-accent/40",
+              platform === p
+                ? "bg-gold/15 text-gold border-gold/40"
+                : "border-border hover:bg-accent/40",
             )}
           >
             {p}
@@ -66,17 +68,23 @@ function BestTimePage() {
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5">
         <div className="rounded-xl border border-gold/15 bg-card p-4 overflow-auto">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">Heatmap</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
+            Heatmap
+          </div>
           <div className="min-w-[700px]">
             <div className="grid grid-cols-[40px_repeat(24,1fr)] gap-0.5 text-[10px] text-muted-foreground mb-1">
               <div></div>
               {Array.from({ length: 24 }, (_, h) => (
-                <div key={h} className="text-center">{h}</div>
+                <div key={h} className="text-center">
+                  {h}
+                </div>
               ))}
             </div>
             {grid.map((row, d) => (
               <div key={d} className="grid grid-cols-[40px_repeat(24,1fr)] gap-0.5 mb-0.5">
-                <div className="text-[10px] text-muted-foreground grid place-items-center">{DAYS[d]}</div>
+                <div className="text-[10px] text-muted-foreground grid place-items-center">
+                  {DAYS[d]}
+                </div>
                 {row.map((s, h) => {
                   const alpha = s / max;
                   return (
@@ -94,13 +102,25 @@ function BestTimePage() {
         </div>
 
         <div className="rounded-xl border border-gold/15 bg-card p-4">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">Top slots</div>
-          {flat.length === 0 && <p className="text-sm text-muted-foreground">Nog geen benchmark data.</p>}
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
+            Top slots
+          </div>
+          {flat.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nog geen benchmark data.</p>
+          )}
           <div className="space-y-2">
             {flat.map((b, i) => (
-              <div key={b.id} className={cn("rounded-lg border p-3", i === 0 ? "border-gold/40 bg-gold/5" : "border-border")}>
+              <div
+                key={b.id}
+                className={cn(
+                  "rounded-lg border p-3",
+                  i === 0 ? "border-gold/40 bg-gold/5" : "border-border",
+                )}
+              >
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{DAYS[(b.day_of_week + 6) % 7]} • {(b.time_of_day ?? "").slice(0, 5)}</span>
+                  <span className="font-medium">
+                    {DAYS[(b.day_of_week + 6) % 7]} • {(b.time_of_day ?? "").slice(0, 5)}
+                  </span>
                   <span className="text-xs text-gold font-semibold tabular-nums">{b.score}</span>
                 </div>
                 <Link

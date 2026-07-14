@@ -2,13 +2,27 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Search as SearchIcon, Loader2, Instagram, Music2, Linkedin, Youtube, Facebook } from "lucide-react";
+import {
+  Search as SearchIcon,
+  Loader2,
+  Instagram,
+  Music2,
+  Linkedin,
+  Youtube,
+  Facebook,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/search")({
   component: SearchPage,
 });
 
-const ICONS: Record<string, any> = { instagram: Instagram, tiktok: Music2, linkedin: Linkedin, youtube: Youtube, facebook: Facebook };
+const ICONS: Record<string, any> = {
+  instagram: Instagram,
+  tiktok: Music2,
+  linkedin: Linkedin,
+  youtube: Youtube,
+  facebook: Facebook,
+};
 
 function SearchPage() {
   const [q, setQ] = useState("");
@@ -43,7 +57,15 @@ function SearchPage() {
     },
   });
 
-  const empty = useMemo(() => q.trim().length >= 2 && !lp && !lu && (posts?.length ?? 0) === 0 && (uploads?.length ?? 0) === 0, [q, lp, lu, posts, uploads]);
+  const empty = useMemo(
+    () =>
+      q.trim().length >= 2 &&
+      !lp &&
+      !lu &&
+      (posts?.length ?? 0) === 0 &&
+      (uploads?.length ?? 0) === 0,
+    [q, lp, lu, posts, uploads],
+  );
 
   return (
     <div className="space-y-6">
@@ -65,8 +87,11 @@ function SearchPage() {
         </div>
         <div className="inline-flex rounded-full glass p-1 text-xs">
           {(["all", "posts", "uploads"] as const).map((s) => (
-            <button key={s} onClick={() => setScope(s)}
-              className={`rounded-full px-3 py-1 ${scope === s ? "bg-gold/15 text-gold" : "text-muted-foreground"}`}>
+            <button
+              key={s}
+              onClick={() => setScope(s)}
+              className={`rounded-full px-3 py-1 ${scope === s ? "bg-gold/15 text-gold" : "text-muted-foreground"}`}
+            >
               {s === "all" ? "Alles" : s === "posts" ? "Posts" : "Uploads"}
             </button>
           ))}
@@ -74,12 +99,18 @@ function SearchPage() {
       </div>
 
       {q.trim().length < 2 && (
-        <div className="text-sm text-muted-foreground text-center py-8">Type minimaal 2 tekens om te zoeken.</div>
+        <div className="text-sm text-muted-foreground text-center py-8">
+          Type minimaal 2 tekens om te zoeken.
+        </div>
       )}
 
       {(lp || lu) && <Loader2 className="h-6 w-6 animate-spin text-gold mx-auto" />}
 
-      {empty && <div className="text-sm text-muted-foreground text-center py-8">Geen resultaten voor "{q}".</div>}
+      {empty && (
+        <div className="text-sm text-muted-foreground text-center py-8">
+          Geen resultaten voor "{q}".
+        </div>
+      )}
 
       {(scope === "all" || scope === "posts") && posts && posts.length > 0 && (
         <section className="space-y-2">
@@ -87,8 +118,12 @@ function SearchPage() {
           {posts.map((p: any) => {
             const Icon = ICONS[p.platform] ?? Instagram;
             return (
-              <Link key={p.id} to="/admin/planner" search={{ clientId: p.client_id, view: "agenda" } as any}
-                className="block glass rounded-xl p-3 hover:bg-accent/30">
+              <Link
+                key={p.id}
+                to="/admin/planner"
+                search={{ clientId: p.client_id, view: "agenda" } as any}
+                className="block glass rounded-xl p-3 hover:bg-accent/30"
+              >
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Icon className="h-3.5 w-3.5" />
                   <span>{p.clients?.name}</span>
@@ -96,7 +131,9 @@ function SearchPage() {
                   <span>{new Date(p.scheduled_at).toLocaleDateString("nl-NL")}</span>
                   <span className="rounded-full bg-accent/30 px-2 py-0.5">{p.status}</span>
                 </div>
-                <p className="text-sm mt-1.5 line-clamp-2 whitespace-pre-wrap">{p.caption || <em className="text-muted-foreground">Geen caption</em>}</p>
+                <p className="text-sm mt-1.5 line-clamp-2 whitespace-pre-wrap">
+                  {p.caption || <em className="text-muted-foreground">Geen caption</em>}
+                </p>
                 {p.notes && <p className="text-xs text-gold/80 mt-1">📝 {p.notes}</p>}
               </Link>
             );
@@ -106,11 +143,16 @@ function SearchPage() {
 
       {(scope === "all" || scope === "uploads") && uploads && uploads.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-xs uppercase tracking-wider text-gold/70">Uploads ({uploads.length})</h2>
+          <h2 className="text-xs uppercase tracking-wider text-gold/70">
+            Uploads ({uploads.length})
+          </h2>
           {uploads.map((u: any) => (
             <div key={u.id} className="glass rounded-xl p-3">
               <div className="text-sm">{u.file_name}</div>
-              <div className="text-xs text-muted-foreground">{u.clients?.name} • {u.file_type} • {new Date(u.created_at).toLocaleDateString("nl-NL")}</div>
+              <div className="text-xs text-muted-foreground">
+                {u.clients?.name} • {u.file_type} •{" "}
+                {new Date(u.created_at).toLocaleDateString("nl-NL")}
+              </div>
               {u.caption && <p className="text-xs mt-1">{u.caption}</p>}
             </div>
           ))}

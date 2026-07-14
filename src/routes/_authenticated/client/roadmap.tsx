@@ -4,9 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Compass, Clock, CheckCircle2, Circle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/client/roadmap")({ component: ClientRoadmap });
+export const Route = createFileRoute("/_authenticated/client/roadmap")({
+  component: ClientRoadmap,
+});
 
-const STATUS_META: Record<string, { label: string; icon: any; color: string; bg: string; border: string }> = {
+const STATUS_META: Record<
+  string,
+  { label: string; icon: any; color: string; bg: string; border: string }
+> = {
   pending: {
     label: "In afwachting",
     icon: Circle,
@@ -74,7 +79,9 @@ export function ClientRoadmap() {
       )}
 
       {data?.map((r: any) => {
-        const steps = [...(r.roadmap_steps ?? [])].sort((a: any, b: any) => a.step_order - b.step_order);
+        const steps = [...(r.roadmap_steps ?? [])].sort(
+          (a: any, b: any) => a.step_order - b.step_order,
+        );
         const completed = steps.filter((s: any) => s.status === "completed").length;
         const total = steps.length;
         const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -123,7 +130,7 @@ export function ClientRoadmap() {
                           ? "bg-emerald-500 border-emerald-500 text-white"
                           : s.status === "in_progress"
                             ? "bg-gold border-gold text-primary-foreground"
-                            : "bg-background border-muted-foreground/40"
+                            : "bg-background border-muted-foreground/40",
                       )}
                     >
                       {s.status === "completed" ? (
@@ -140,7 +147,7 @@ export function ClientRoadmap() {
                         "rounded-xl border p-4 transition",
                         meta.border,
                         meta.bg,
-                        s.status === "in_progress" && "gold-ring"
+                        s.status === "in_progress" && "gold-ring",
                       )}
                     >
                       <div className="flex flex-wrap items-center gap-2">
@@ -148,7 +155,7 @@ export function ClientRoadmap() {
                           className={cn(
                             "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-wider",
                             meta.border,
-                            meta.color
+                            meta.color,
                           )}
                         >
                           <Icon className="h-3 w-3" />

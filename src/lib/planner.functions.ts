@@ -74,7 +74,14 @@ ${data.goal ? `Doel: ${data.goal}` : ""}
 Mix awareness, education, social proof en conversie. Vermijd cliché's. Geef variatie in formats.`;
 
     const result = await generateJson<{
-      ideas: { title: string; platform: string; format: string; hook: string; description: string; pillar?: string }[];
+      ideas: {
+        title: string;
+        platform: string;
+        format: string;
+        hook: string;
+        description: string;
+        pillar?: string;
+      }[];
     }>({
       system,
       user: `Genereer ${data.count} ideeën voor ${data.brand}.`,
@@ -89,7 +96,10 @@ Mix awareness, education, social proof en conversie. Vermijd cliché's. Geef var
               type: "object",
               properties: {
                 title: { type: "string" },
-                platform: { type: "string", enum: ["instagram", "tiktok", "linkedin", "youtube", "facebook"] },
+                platform: {
+                  type: "string",
+                  enum: ["instagram", "tiktok", "linkedin", "youtube", "facebook"],
+                },
                 format: { type: "string" },
                 hook: { type: "string" },
                 description: { type: "string" },

@@ -23,13 +23,13 @@ bun run dev            # http://localhost:5173
 
 Zie `.env.example`. Publieke Supabase-waarden staan in `.env`; server-secrets (nooit committen):
 
-| Variabele | Waarvoor |
-|---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | Admin-operaties op de server |
-| `ANTHROPIC_API_KEY` | Alle AI-features (Claude) |
-| `CLAUDE_MODEL` | Optioneel, default `claude-opus-4-8` |
-| `POSTIZ_API_KEY` / `POSTIZ_BASE_URL` | Social publishing |
-| `CRON_SECRET` | Beveiliging van `/api/public/automation-tick` |
+| Variabele                            | Waarvoor                                      |
+| ------------------------------------ | --------------------------------------------- |
+| `SUPABASE_SERVICE_ROLE_KEY`          | Admin-operaties op de server                  |
+| `ANTHROPIC_API_KEY`                  | Alle AI-features (Claude)                     |
+| `CLAUDE_MODEL`                       | Optioneel, default `claude-opus-4-8`          |
+| `POSTIZ_API_KEY` / `POSTIZ_BASE_URL` | Social publishing                             |
+| `CRON_SECRET`                        | Beveiliging van `/api/public/automation-tick` |
 
 ## Build & deploy
 
@@ -42,14 +42,14 @@ Ander deploy-target? Zet `NITRO_PRESET` bij de build, bv. `NITRO_PRESET=vercel b
 
 ## Scripts
 
-| Script | Doel |
-|---|---|
-| `bun run dev` | Dev-server met HMR |
-| `bun run build` | Productie-build |
-| `bun run start` | Productie-server starten |
-| `bun run typecheck` | TypeScript check |
-| `bun run lint` | ESLint |
-| `bun run format` | Prettier |
+| Script              | Doel                     |
+| ------------------- | ------------------------ |
+| `bun run dev`       | Dev-server met HMR       |
+| `bun run build`     | Productie-build          |
+| `bun run start`     | Productie-server starten |
+| `bun run typecheck` | TypeScript check         |
+| `bun run lint`      | ESLint                   |
+| `bun run format`    | Prettier                 |
 
 ## Structuur
 

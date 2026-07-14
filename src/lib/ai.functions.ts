@@ -28,7 +28,8 @@ const inputSchema = z.object({
 const tools: Anthropic.Tool[] = [
   {
     name: "create_task",
-    description: "Maak een nieuwe taak aan voor een klant. Gebruik dit als de gebruiker een taak, to-do of actiepunt wil aanmaken.",
+    description:
+      "Maak een nieuwe taak aan voor een klant. Gebruik dit als de gebruiker een taak, to-do of actiepunt wil aanmaken.",
     input_schema: {
       type: "object",
       properties: {
@@ -44,7 +45,8 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: "create_calendar_item",
-    description: "Plan een deliverable in de contentkalender. Gebruik dit als de gebruiker iets wil inplannen op een datum.",
+    description:
+      "Plan een deliverable in de contentkalender. Gebruik dit als de gebruiker iets wil inplannen op een datum.",
     input_schema: {
       type: "object",
       properties: {
@@ -73,7 +75,8 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: "generate_caption",
-    description: "Genereer een social-media caption voor één of meer platforms. Gebruik dit als de gebruiker om een caption, post-tekst of social-copy vraagt.",
+    description:
+      "Genereer een social-media caption voor één of meer platforms. Gebruik dit als de gebruiker om een caption, post-tekst of social-copy vraagt.",
     input_schema: {
       type: "object",
       properties: {
@@ -82,7 +85,10 @@ const tools: Anthropic.Tool[] = [
         tone: { type: "string", enum: ["professioneel", "informeel", "energiek", "inspirerend"] },
         platforms: {
           type: "array",
-          items: { type: "string", enum: ["instagram", "linkedin", "tiktok", "facebook", "x", "threads"] },
+          items: {
+            type: "string",
+            enum: ["instagram", "linkedin", "tiktok", "facebook", "x", "threads"],
+          },
         },
       },
       required: ["briefing", "platforms"],
@@ -90,7 +96,8 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: "schedule_post",
-    description: "Plan een post in via Postiz. Roep dit aan zodra je tekst hebt en een datum/tijd én tenminste één Postiz integratie-id.",
+    description:
+      "Plan een post in via Postiz. Roep dit aan zodra je tekst hebt en een datum/tijd én tenminste één Postiz integratie-id.",
     input_schema: {
       type: "object",
       properties: {
@@ -116,35 +123,47 @@ const CAPTION_PLATFORM_HINTS: Record<string, string> = {
 
 async function runTool(name: string, args: any) {
   if (name === "create_task") {
-    const { error, data } = await supabaseAdmin.from("tasks").insert({
-      client_id: args.client_id,
-      title: args.title,
-      description: args.description ?? null,
-      priority: args.priority ?? "medium",
-      status: args.status ?? "todo",
-      due_date: args.due_date ?? null,
-    }).select().single();
+    const { error, data } = await supabaseAdmin
+      .from("tasks")
+      .insert({
+        client_id: args.client_id,
+        title: args.title,
+        description: args.description ?? null,
+        priority: args.priority ?? "medium",
+        status: args.status ?? "todo",
+        due_date: args.due_date ?? null,
+      })
+      .select()
+      .single();
     if (error) return { ok: false, error: error.message };
     return { ok: true, id: data.id };
   }
   if (name === "create_calendar_item") {
-    const { error, data } = await supabaseAdmin.from("calendar_items").insert({
-      client_id: args.client_id,
-      title: args.title,
-      date: args.date,
-      deliverable_type: args.deliverable_type ?? "other",
-      description: args.description ?? null,
-    }).select().single();
+    const { error, data } = await supabaseAdmin
+      .from("calendar_items")
+      .insert({
+        client_id: args.client_id,
+        title: args.title,
+        date: args.date,
+        deliverable_type: args.deliverable_type ?? "other",
+        description: args.description ?? null,
+      })
+      .select()
+      .single();
     if (error) return { ok: false, error: error.message };
     return { ok: true, id: data.id };
   }
   if (name === "create_strategy_note") {
-    const { error, data } = await supabaseAdmin.from("strategy_notes").insert({
-      client_id: args.client_id,
-      title: args.title,
-      body: args.body ?? null,
-      category: args.category ?? "general",
-    }).select().single();
+    const { error, data } = await supabaseAdmin
+      .from("strategy_notes")
+      .insert({
+        client_id: args.client_id,
+        title: args.title,
+        body: args.body ?? null,
+        category: args.category ?? "general",
+      })
+      .select()
+      .single();
     if (error) return { ok: false, error: error.message };
     return { ok: true, id: data.id };
   }
@@ -172,15 +191,23 @@ async function runTool(name: string, args: any) {
     try {
       if (!args.client_id) return { ok: false, error: "client_id ontbreekt" };
       const first = (args.integration_ids?.[0] ?? "instagram") as string;
-      const platform = (["facebook","instagram","linkedin","tiktok","youtube"].includes(first) ? first : "instagram") as any;
-      const { error, data } = await supabaseAdmin.from("scheduled_posts").insert({
-        client_id: args.client_id,
-        caption: args.content,
-        scheduled_at: args.date,
-        status: args.type === "draft" ? "draft" : "scheduled",
-        platform,
-        notes: args.integration_ids ? `integrations:${args.integration_ids.join(",")}` : null,
-      }).select().single();
+      const platform = (
+        ["facebook", "instagram", "linkedin", "tiktok", "youtube"].includes(first)
+          ? first
+          : "instagram"
+      ) as any;
+      const { error, data } = await supabaseAdmin
+        .from("scheduled_posts")
+        .insert({
+          client_id: args.client_id,
+          caption: args.content,
+          scheduled_at: args.date,
+          status: args.type === "draft" ? "draft" : "scheduled",
+          platform,
+          notes: args.integration_ids ? `integrations:${args.integration_ids.join(",")}` : null,
+        })
+        .select()
+        .single();
       if (error) return { ok: false, error: error.message };
       return { ok: true, id: data.id };
     } catch (e: any) {

@@ -5,8 +5,19 @@ import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  CheckCircle2, XCircle, MessageSquare, Loader2, Clock, Instagram,
-  Music2, Linkedin, Youtube, Facebook, Filter, ListChecks, Send,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  Loader2,
+  Clock,
+  Instagram,
+  Music2,
+  Linkedin,
+  Youtube,
+  Facebook,
+  Filter,
+  ListChecks,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +26,18 @@ export const Route = createFileRoute("/_authenticated/admin/approvals")({
 });
 
 const PLATFORM_ICONS: Record<string, any> = {
-  instagram: Instagram, tiktok: Music2, linkedin: Linkedin, youtube: Youtube, facebook: Facebook,
+  instagram: Instagram,
+  tiktok: Music2,
+  linkedin: Linkedin,
+  youtube: Youtube,
+  facebook: Facebook,
 };
 const PLATFORM_COLORS: Record<string, string> = {
-  instagram: "#E4405F", tiktok: "#000000", linkedin: "#0A66C2", youtube: "#FF0000", facebook: "#1877F2",
+  instagram: "#E4405F",
+  tiktok: "#000000",
+  linkedin: "#0A66C2",
+  youtube: "#FF0000",
+  facebook: "#1877F2",
 };
 
 function ApprovalsPage() {
@@ -30,29 +49,40 @@ function ApprovalsPage() {
 
   const { data: clients } = useQuery({
     queryKey: ["clients-min-appr"],
-    queryFn: async () => (await supabase.from("clients").select("id,name,brand_color").order("name")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("clients").select("id,name,brand_color").order("name")).data ?? [],
   });
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["approvals-posts"],
     queryFn: async () => {
-      const { data } = await supabase.from("scheduled_posts")
-        .select("*").eq("status", "draft").order("scheduled_at", { ascending: true });
+      const { data } = await supabase
+        .from("scheduled_posts")
+        .select("*")
+        .eq("status", "draft")
+        .order("scheduled_at", { ascending: true });
       return data ?? [];
     },
   });
 
   const filtered = (posts ?? []).filter((p) =>
-    filterClient === "all" ? true : p.client_id === filterClient
+    filterClient === "all" ? true : p.client_id === filterClient,
   );
 
   const clientName = (id: string) => clients?.find((c) => c.id === id)?.name ?? "—";
 
   async function approve(postId: string, clientId: string) {
-    const { error } = await supabase.from("scheduled_posts")
-      .update({ status: "scheduled" }).eq("id", postId);
+    const { error } = await supabase
+      .from("scheduled_posts")
+      .update({ status: "scheduled" })
+      .eq("id", postId);
     if (error) return toast.error(error.message);
-    await notifyTeam(clientId, "Post goedgekeurd", "Post staat klaar om te publiceren.", `/admin/planner?clientId=${clientId}`);
+    await notifyTeam(
+      clientId,
+      "Post goedgekeurd",
+      "Post staat klaar om te publiceren.",
+      `/admin/planner?clientId=${clientId}`,
+    );
     toast.success("Goedgekeurd");
     qc.invalidateQueries({ queryKey: ["approvals-posts"] });
   }
@@ -61,7 +91,12 @@ function ApprovalsPage() {
     if (!confirm("Post afwijzen en verwijderen?")) return;
     const { error } = await supabase.from("scheduled_posts").delete().eq("id", postId);
     if (error) return toast.error(error.message);
-    await notifyTeam(clientId, "Post afgewezen", "Concept is verwijderd.", `/admin/planner?clientId=${clientId}`);
+    await notifyTeam(
+      clientId,
+      "Post afgewezen",
+      "Concept is verwijderd.",
+      `/admin/planner?clientId=${clientId}`,
+    );
     toast.success("Afgewezen");
     qc.invalidateQueries({ queryKey: ["approvals-posts"] });
   }
@@ -75,12 +110,19 @@ function ApprovalsPage() {
       `/admin/planner?clientId=${clientId}`,
     );
     toast.success("Feedback verzonden");
-    setFeedbackFor(null); setFeedbackText("");
+    setFeedbackFor(null);
+    setFeedbackText("");
   }
 
   async function notifyTeam(clientId: string, title: string, body: string, link: string) {
-    const { data: members } = await supabase.from("client_members").select("user_id").eq("client_id", clientId);
-    const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+    const { data: members } = await supabase
+      .from("client_members")
+      .select("user_id")
+      .eq("client_id", clientId);
+    const { data: admins } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
     const ids = new Set<string>();
     members?.forEach((m: any) => ids.add(m.user_id));
     admins?.forEach((a: any) => ids.add(a.user_id));
@@ -102,12 +144,22 @@ function ApprovalsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gold/70" />
-          <select value={filterClient} onChange={(e) => setFilterClient(e.target.value)}
-            className="rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm">
+          <select
+            value={filterClient}
+            onChange={(e) => setFilterClient(e.target.value)}
+            className="rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
+          >
             <option value="all">Alle klanten</option>
-            {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {clients?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
-          <Link to="/admin/tasks" className="hidden sm:inline-flex items-center gap-1 text-xs rounded-lg border border-gold/20 px-3 py-2 hover:bg-gold/10">
+          <Link
+            to="/admin/tasks"
+            className="hidden sm:inline-flex items-center gap-1 text-xs rounded-lg border border-gold/20 px-3 py-2 hover:bg-gold/10"
+          >
             <ListChecks className="h-3.5 w-3.5" /> Naar taken
           </Link>
         </div>
@@ -116,11 +168,21 @@ function ApprovalsPage() {
       {/* Counter */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Stat icon={Clock} label="Wacht op goedkeuring" value={filtered.length} tint="text-gold" />
-        <Stat icon={CheckCircle2} label="Vandaag in te plannen"
-          value={filtered.filter((p) => new Date(p.scheduled_at).toDateString() === new Date().toDateString()).length}
-          tint="text-emerald-400" />
-        <Stat icon={MessageSquare} label="Klanten met concepten"
-          value={new Set(filtered.map((p) => p.client_id)).size} />
+        <Stat
+          icon={CheckCircle2}
+          label="Vandaag in te plannen"
+          value={
+            filtered.filter(
+              (p) => new Date(p.scheduled_at).toDateString() === new Date().toDateString(),
+            ).length
+          }
+          tint="text-emerald-400"
+        />
+        <Stat
+          icon={MessageSquare}
+          label="Klanten met concepten"
+          value={new Set(filtered.map((p) => p.client_id)).size}
+        />
       </div>
 
       {isLoading ? (
@@ -141,7 +203,11 @@ function ApprovalsPage() {
               <div key={p.id} className="glass-strong rounded-xl overflow-hidden flex flex-col">
                 {mediaUrl ? (
                   p.media_type?.startsWith("video") ? (
-                    <video src={mediaUrl} controls className="w-full aspect-square object-cover bg-black" />
+                    <video
+                      src={mediaUrl}
+                      controls
+                      className="w-full aspect-square object-cover bg-black"
+                    />
                   ) : (
                     <img src={mediaUrl} alt="" className="w-full aspect-square object-cover" />
                   )
@@ -153,45 +219,79 @@ function ApprovalsPage() {
                 <div className="p-4 flex-1 flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      {Icon && <Icon className="h-3.5 w-3.5" style={{ color: PLATFORM_COLORS[p.platform] }} />}
+                      {Icon && (
+                        <Icon
+                          className="h-3.5 w-3.5"
+                          style={{ color: PLATFORM_COLORS[p.platform] }}
+                        />
+                      )}
                       <span className="capitalize text-muted-foreground">{p.platform}</span>
                     </div>
-                    <span className="rounded-full bg-gold/15 text-gold px-2 py-0.5">{clientName(p.client_id)}</span>
+                    <span className="rounded-full bg-gold/15 text-gold px-2 py-0.5">
+                      {clientName(p.client_id)}
+                    </span>
                   </div>
 
-                  <p className="text-sm whitespace-pre-wrap line-clamp-4">{p.caption || <span className="text-muted-foreground italic">Geen caption</span>}</p>
+                  <p className="text-sm whitespace-pre-wrap line-clamp-4">
+                    {p.caption || (
+                      <span className="text-muted-foreground italic">Geen caption</span>
+                    )}
+                  </p>
 
                   <div className="text-[11px] text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    Gepland: {new Date(p.scheduled_at).toLocaleString("nl-NL", { dateStyle: "medium", timeStyle: "short" })}
+                    Gepland:{" "}
+                    {new Date(p.scheduled_at).toLocaleString("nl-NL", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
                   </div>
 
                   {feedbackFor === p.id ? (
                     <div className="space-y-2">
-                      <textarea value={feedbackText} onChange={(e) => setFeedbackText(e.target.value)}
-                        rows={3} placeholder="Wat moet er anders?"
-                        className="w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm" />
+                      <textarea
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                        rows={3}
+                        placeholder="Wat moet er anders?"
+                        className="w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
+                      />
                       <div className="flex gap-2">
-                        <button onClick={() => submitFeedback(p.id, p.client_id)}
-                          className="flex-1 rounded-lg bg-gold/20 text-gold px-3 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/30">
+                        <button
+                          onClick={() => submitFeedback(p.id, p.client_id)}
+                          className="flex-1 rounded-lg bg-gold/20 text-gold px-3 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/30"
+                        >
                           <Send className="h-3.5 w-3.5" /> Verstuur
                         </button>
-                        <button onClick={() => { setFeedbackFor(null); setFeedbackText(""); }}
-                          className="rounded-lg border border-gold/20 px-3 py-2 text-xs hover:bg-accent/40">Annuleer</button>
+                        <button
+                          onClick={() => {
+                            setFeedbackFor(null);
+                            setFeedbackText("");
+                          }}
+                          className="rounded-lg border border-gold/20 px-3 py-2 text-xs hover:bg-accent/40"
+                        >
+                          Annuleer
+                        </button>
                       </div>
                     </div>
                   ) : (
                     <div className="mt-auto grid grid-cols-3 gap-1.5">
-                      <button onClick={() => approve(p.id, p.client_id)}
-                        className="rounded-lg bg-emerald-500/20 text-emerald-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-emerald-500/30">
+                      <button
+                        onClick={() => approve(p.id, p.client_id)}
+                        className="rounded-lg bg-emerald-500/20 text-emerald-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-emerald-500/30"
+                      >
                         <CheckCircle2 className="h-3.5 w-3.5" /> Keur
                       </button>
-                      <button onClick={() => setFeedbackFor(p.id)}
-                        className="rounded-lg bg-gold/15 text-gold px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/25">
+                      <button
+                        onClick={() => setFeedbackFor(p.id)}
+                        className="rounded-lg bg-gold/15 text-gold px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/25"
+                      >
                         <MessageSquare className="h-3.5 w-3.5" /> Feedback
                       </button>
-                      <button onClick={() => reject(p.id, p.client_id)}
-                        className="rounded-lg bg-red-500/15 text-red-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-red-500/25">
+                      <button
+                        onClick={() => reject(p.id, p.client_id)}
+                        className="rounded-lg bg-red-500/15 text-red-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-red-500/25"
+                      >
                         <XCircle className="h-3.5 w-3.5" /> Wijs af
                       </button>
                     </div>

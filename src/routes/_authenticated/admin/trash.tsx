@@ -23,7 +23,10 @@ function TrashPage() {
   });
 
   async function restore(id: string) {
-    const { error } = await supabase.from("scheduled_posts").update({ deleted_at: null }).eq("id", id);
+    const { error } = await supabase
+      .from("scheduled_posts")
+      .update({ deleted_at: null })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Hersteld");
     qc.invalidateQueries({ queryKey: ["trash-posts"] });
@@ -64,14 +67,23 @@ function TrashPage() {
         {data?.map((p: any) => {
           const left = daysLeft(p.deleted_at);
           return (
-            <div key={p.id} className="glass-strong rounded-xl p-4 flex items-start justify-between gap-4">
+            <div
+              key={p.id}
+              className="glass-strong rounded-xl p-4 flex items-start justify-between gap-4"
+            >
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="text-gold">{p.clients?.name}</span>
                   <span className="text-muted-foreground">•</span>
                   <span className="text-muted-foreground">{p.platform}</span>
                   <span className="text-muted-foreground">•</span>
-                  <span className={left <= 3 ? "text-destructive inline-flex items-center gap-1" : "text-muted-foreground"}>
+                  <span
+                    className={
+                      left <= 3
+                        ? "text-destructive inline-flex items-center gap-1"
+                        : "text-muted-foreground"
+                    }
+                  >
                     {left <= 3 && <AlertTriangle className="h-3 w-3" />}
                     Nog {left} dagen
                   </span>
@@ -81,12 +93,16 @@ function TrashPage() {
                 </p>
               </div>
               <div className="flex flex-col gap-1.5 shrink-0">
-                <button onClick={() => restore(p.id)}
-                  className="text-xs rounded-full border border-gold/40 text-gold hover:bg-gold/10 px-3 py-1.5 inline-flex items-center gap-1.5">
+                <button
+                  onClick={() => restore(p.id)}
+                  className="text-xs rounded-full border border-gold/40 text-gold hover:bg-gold/10 px-3 py-1.5 inline-flex items-center gap-1.5"
+                >
                   <RotateCcw className="h-3 w-3" /> Herstel
                 </button>
-                <button onClick={() => purge(p.id)}
-                  className="text-xs rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 px-3 py-1.5 inline-flex items-center gap-1.5">
+                <button
+                  onClick={() => purge(p.id)}
+                  className="text-xs rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 px-3 py-1.5 inline-flex items-center gap-1.5"
+                >
                   <Trash2 className="h-3 w-3" /> Voor altijd
                 </button>
               </div>
@@ -96,7 +112,9 @@ function TrashPage() {
       </div>
 
       <div className="text-xs text-muted-foreground">
-        <Link to="/admin/planner" className="hover:text-gold">← Terug naar planner</Link>
+        <Link to="/admin/planner" className="hover:text-gold">
+          ← Terug naar planner
+        </Link>
       </div>
     </div>
   );

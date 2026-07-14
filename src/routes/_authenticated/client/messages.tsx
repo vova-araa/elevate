@@ -27,7 +27,11 @@ function ClientMessages() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-gold" /></div>;
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-gold" />
+      </div>
+    );
   }
 
   if (!membership) {

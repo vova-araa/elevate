@@ -1,11 +1,44 @@
-import { createFileRoute, Outlet, Link, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  Link,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, LogOut, LayoutDashboard, Users, Briefcase, Compass, Calendar, Upload, ListChecks, MessageSquare, Menu, X, Home, CalendarDays, Sparkles, BarChart3, CheckSquare, Settings as SettingsIcon, Sun, Moon, Layers, Trash2, Search, Zap, Loader2, Image as ImageIcon } from "lucide-react";
+import {
+  Bell,
+  LogOut,
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  Compass,
+  Calendar,
+  Upload,
+  ListChecks,
+  MessageSquare,
+  Menu,
+  X,
+  Home,
+  CalendarDays,
+  Sparkles,
+  BarChart3,
+  CheckSquare,
+  Settings as SettingsIcon,
+  Sun,
+  Moon,
+  Layers,
+  Trash2,
+  Search,
+  Zap,
+  Loader2,
+  Image as ImageIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
-
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -23,7 +56,9 @@ function AuthLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   // Wacht tot rol geladen is voor we de juiste UI tonen
   useEffect(() => {
@@ -46,24 +81,41 @@ function AuthLayout() {
 
   const isAdminRoute = pathname.startsWith("/admin");
 
-
   if (isAdminRoute) {
     return <Outlet />;
   }
 
   return (
     <div className="flex min-h-screen bg-luxe">
-      <Sidebar role={effectiveRole} onLogout={async () => { await signOut(); navigate({ to: "/auth" }); }} />
+      <Sidebar
+        role={effectiveRole}
+        onLogout={async () => {
+          await signOut();
+          navigate({ to: "/auth" });
+        }}
+      />
 
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden" onClick={() => setMobileOpen(false)}>
           <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
-          <div onClick={(e) => e.stopPropagation()} className="absolute left-0 top-0 bottom-0 w-72 bg-sidebar border-r border-gold/15 p-5 overflow-y-auto">
-            <button onClick={() => setMobileOpen(false)} className="mb-4 rounded-full p-2 hover:bg-accent/40">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="absolute left-0 top-0 bottom-0 w-72 bg-sidebar border-r border-gold/15 p-5 overflow-y-auto"
+          >
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="mb-4 rounded-full p-2 hover:bg-accent/40"
+            >
               <X className="h-5 w-5" />
             </button>
-            <SidebarContent role={effectiveRole} onLogout={async () => { await signOut(); navigate({ to: "/auth" }); }} />
+            <SidebarContent
+              role={effectiveRole}
+              onLogout={async () => {
+                await signOut();
+                navigate({ to: "/auth" });
+              }}
+            />
           </div>
         </div>
       )}
@@ -74,8 +126,6 @@ function AuthLayout() {
           <Outlet />
         </main>
       </div>
-
-      
     </div>
   );
 }
@@ -167,13 +217,17 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
                 const active = pathname === l.to || pathname.startsWith(l.to + "/");
                 return (
                   <Link
-                    key={l.to} to={l.to}
+                    key={l.to}
+                    to={l.to}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
-                      active ? "bg-gold/15 text-gold gold-ring" : "text-foreground/80 hover:bg-accent/40"
+                      active
+                        ? "bg-gold/15 text-gold gold-ring"
+                        : "text-foreground/80 hover:bg-accent/40",
                     )}
                   >
-                    <l.icon className="h-4 w-4 shrink-0" /> <span className="truncate">{l.label}</span>
+                    <l.icon className="h-4 w-4 shrink-0" />{" "}
+                    <span className="truncate">{l.label}</span>
                   </Link>
                 );
               })}
@@ -181,7 +235,10 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
           </div>
         ))}
       </nav>
-      <button onClick={onLogout} className="mt-4 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+      <button
+        onClick={onLogout}
+        className="mt-4 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+      >
         <LogOut className="h-4 w-4" /> Uitloggen
       </button>
     </>
@@ -199,14 +256,30 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   useEffect(() => {
     if (!user) return;
     load();
-    const ch = supabase.channel("notif-" + user.id)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => load())
+    const ch = supabase
+      .channel("notif-" + user.id)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => load(),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user]);
 
   async function load() {
-    const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(20);
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
     setItems(data ?? []);
     setUnread((data ?? []).filter((n: any) => !n.read).length);
   }
@@ -223,19 +296,33 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
           <Menu className="h-5 w-5" />
         </button>
         {!isHome && (
-          <Link to="/dashboard" className="rounded-full p-2 hover:bg-accent/40 text-gold" aria-label="Terug naar home">
+          <Link
+            to="/dashboard"
+            className="rounded-full p-2 hover:bg-accent/40 text-gold"
+            aria-label="Terug naar home"
+          >
             <Home className="h-5 w-5" />
           </Link>
         )}
         <div className="min-w-0">
-          <div className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-gold/70">{role === "admin" ? "Admin" : "Client"}</div>
-          <div className="text-xs sm:text-sm text-muted-foreground truncate">{user?.email ?? "Account"}</div>
+          <div className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-gold/70">
+            {role === "admin" ? "Admin" : "Client"}
+          </div>
+          <div className="text-xs sm:text-sm text-muted-foreground truncate">
+            {user?.email ?? "Account"}
+          </div>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <ThemeToggle />
         <div className="relative">
-          <button onClick={() => { setOpen(!open); if (!open) markAllRead(); }} className="relative rounded-full p-2 hover:bg-accent/40">
+          <button
+            onClick={() => {
+              setOpen(!open);
+              if (!open) markAllRead();
+            }}
+            className="relative rounded-full p-2 hover:bg-accent/40"
+          >
             <Bell className="h-5 w-5 text-gold" />
             {unread > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-primary-foreground">
@@ -243,19 +330,29 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
               </span>
             )}
           </button>
-        {open && (
-          <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] glass-strong rounded-xl p-3 shadow-elegant z-50 max-h-96 overflow-y-auto scrollbar-thin">
-            <div className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-gold/70">Notificaties</div>
-            {items.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">Niets nieuws</div>}
-            {items.map((n) => (
-              <a key={n.id} href={n.link || "#"} className="block rounded-lg p-3 hover:bg-accent/40">
-                <div className="text-sm font-medium">{n.title}</div>
-                {n.body && <div className="text-xs text-muted-foreground mt-0.5">{n.body}</div>}
-                <div className="text-[10px] text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString("nl-NL")}</div>
-              </a>
-            ))}
-          </div>
-        )}
+          {open && (
+            <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] glass-strong rounded-xl p-3 shadow-elegant z-50 max-h-96 overflow-y-auto scrollbar-thin">
+              <div className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-gold/70">
+                Notificaties
+              </div>
+              {items.length === 0 && (
+                <div className="p-4 text-center text-sm text-muted-foreground">Niets nieuws</div>
+              )}
+              {items.map((n) => (
+                <a
+                  key={n.id}
+                  href={n.link || "#"}
+                  className="block rounded-lg p-3 hover:bg-accent/40"
+                >
+                  <div className="text-sm font-medium">{n.title}</div>
+                  {n.body && <div className="text-xs text-muted-foreground mt-0.5">{n.body}</div>}
+                  <div className="text-[10px] text-muted-foreground mt-1">
+                    {new Date(n.created_at).toLocaleString("nl-NL")}
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </header>
@@ -266,7 +363,11 @@ function ThemeToggle() {
   const { theme, toggle } = useTheme();
   return (
     <button onClick={toggle} title="Thema wisselen" className="rounded-full p-2 hover:bg-accent/40">
-      {theme === "dark" ? <Sun className="h-5 w-5 text-gold" /> : <Moon className="h-5 w-5 text-gold" />}
+      {theme === "dark" ? (
+        <Sun className="h-5 w-5 text-gold" />
+      ) : (
+        <Moon className="h-5 w-5 text-gold" />
+      )}
     </button>
   );
 }

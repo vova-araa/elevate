@@ -11,8 +11,16 @@ export const Route = createFileRoute("/_authenticated/admin/clients/new")({
 function NewClient() {
   const nav = useNavigate();
   const [f, setF] = useState({
-    name: "", industry: "", description: "", website: "", brand_color: "#D4B97A",
-    instagram_url: "", tiktok_url: "", linkedin_url: "", youtube_url: "", facebook_url: "",
+    name: "",
+    industry: "",
+    description: "",
+    website: "",
+    brand_color: "#D4B97A",
+    instagram_url: "",
+    tiktok_url: "",
+    linkedin_url: "",
+    youtube_url: "",
+    facebook_url: "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -20,7 +28,9 @@ function NewClient() {
     e.preventDefault();
     setBusy(true);
     const payload: any = { ...f };
-    Object.keys(payload).forEach((k) => { if (payload[k] === "") payload[k] = null; });
+    Object.keys(payload).forEach((k) => {
+      if (payload[k] === "") payload[k] = null;
+    });
     payload.name = f.name;
     const { data, error } = await supabase.from("clients").insert(payload).select().single();
     setBusy(false);
@@ -32,7 +42,12 @@ function NewClient() {
   const socials = [
     { k: "instagram_url", label: "Instagram", Icon: Instagram, ph: "https://instagram.com/..." },
     { k: "tiktok_url", label: "TikTok", Icon: Music2, ph: "https://tiktok.com/@..." },
-    { k: "linkedin_url", label: "LinkedIn", Icon: Linkedin, ph: "https://linkedin.com/company/..." },
+    {
+      k: "linkedin_url",
+      label: "LinkedIn",
+      Icon: Linkedin,
+      ph: "https://linkedin.com/company/...",
+    },
     { k: "youtube_url", label: "YouTube", Icon: Youtube, ph: "https://youtube.com/@..." },
     { k: "facebook_url", label: "Facebook", Icon: Facebook, ph: "https://facebook.com/..." },
   ] as const;
@@ -46,20 +61,36 @@ function NewClient() {
       <form onSubmit={save} className="glass-strong rounded-2xl p-5 sm:p-8 space-y-5">
         {[
           { k: "name", label: "Merknaam", required: true },
-          { k: "industry", label: "Industrie", placeholder: "Chocolatier, parfumeur, muziekstudio..." },
+          {
+            k: "industry",
+            label: "Industrie",
+            placeholder: "Chocolatier, parfumeur, muziekstudio...",
+          },
           { k: "website", label: "Website", placeholder: "https://..." },
         ].map((x: any) => (
           <div key={x.k}>
-            <label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{x.label}</label>
-            <input value={(f as any)[x.k]} onChange={(e) => setF({ ...f, [x.k]: e.target.value })} required={x.required}
+            <label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {x.label}
+            </label>
+            <input
+              value={(f as any)[x.k]}
+              onChange={(e) => setF({ ...f, [x.k]: e.target.value })}
+              required={x.required}
               placeholder={x.placeholder}
-              className="mt-2 w-full rounded-lg bg-input/60 hairline px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gold/40" />
+              className="mt-2 w-full rounded-lg bg-input/60 hairline px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gold/40"
+            />
           </div>
         ))}
         <div>
-          <label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Omschrijving</label>
-          <textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={4}
-            className="mt-2 w-full rounded-lg bg-input/60 hairline px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gold/40" />
+          <label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Omschrijving
+          </label>
+          <textarea
+            value={f.description}
+            onChange={(e) => setF({ ...f, description: e.target.value })}
+            rows={4}
+            className="mt-2 w-full rounded-lg bg-input/60 hairline px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gold/40"
+          />
         </div>
 
         <div className="space-y-3 pt-2 border-t border-gold/15">
@@ -78,11 +109,20 @@ function NewClient() {
         </div>
 
         <div>
-          <label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Brand kleur</label>
-          <input type="color" value={f.brand_color} onChange={(e) => setF({ ...f, brand_color: e.target.value })}
-            className="mt-2 h-12 w-24 rounded-lg bg-input/60 hairline" />
+          <label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Brand kleur
+          </label>
+          <input
+            type="color"
+            value={f.brand_color}
+            onChange={(e) => setF({ ...f, brand_color: e.target.value })}
+            className="mt-2 h-12 w-24 rounded-lg bg-input/60 hairline"
+          />
         </div>
-        <button disabled={busy} className="w-full rounded-lg bg-gradient-gold py-3 text-sm font-medium text-primary-foreground glow-gold">
+        <button
+          disabled={busy}
+          className="w-full rounded-lg bg-gradient-gold py-3 text-sm font-medium text-primary-foreground glow-gold"
+        >
           {busy ? "Opslaan..." : "Klant aanmaken"}
         </button>
       </form>

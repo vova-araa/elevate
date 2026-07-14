@@ -6,7 +6,9 @@ import { useAuth } from "@/lib/auth-context";
 import { ReportCard } from "@/components/client-portal/report-card";
 import { FileBarChart, Loader2 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/client/reports")({ component: ClientReports });
+export const Route = createFileRoute("/_authenticated/client/reports")({
+  component: ClientReports,
+});
 
 function ClientReports() {
   const { user } = useAuth();
@@ -77,7 +79,8 @@ function ClientReports() {
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Resultaten</p>
         <h1 className="font-display text-4xl sm:text-5xl mt-2">Maandrapporten</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          De rapportages van je Elevate-team: wat er is gepubliceerd, hoe het presteerde en wat de highlights waren.
+          De rapportages van je Elevate-team: wat er is gepubliceerd, hoe het presteerde en wat de
+          highlights waren.
         </p>
       </div>
 
@@ -86,8 +89,8 @@ function ClientReports() {
           <FileBarChart className="h-10 w-10 text-gold mx-auto mb-4" />
           <h2 className="font-display text-2xl">Nog geen rapporten</h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-            Je eerste maandrapport verschijnt hier zodra je team het klaargezet heeft.
-            Meestal ontvang je aan het begin van elke maand een terugblik.
+            Je eerste maandrapport verschijnt hier zodra je team het klaargezet heeft. Meestal
+            ontvang je aan het begin van elke maand een terugblik.
           </p>
         </div>
       )}

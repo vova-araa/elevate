@@ -3,7 +3,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, Send, Trash2, RefreshCw, ExternalLink, Image as ImageIcon, Loader2, Plug } from "lucide-react";
+import {
+  CalendarClock,
+  Send,
+  Trash2,
+  RefreshCw,
+  ExternalLink,
+  Image as ImageIcon,
+  Loader2,
+  Plug,
+} from "lucide-react";
 import {
   listPostizIntegrations,
   listPostizPosts,
@@ -58,7 +67,9 @@ function PostizPage() {
       // upload to media bucket and pass public URL to postiz
       const ext = file.name.split(".").pop() || "bin";
       const path = `postiz/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("client-uploads").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage
+        .from("client-uploads")
+        .upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from("client-uploads").getPublicUrl(path);
       const res: any = await uploadMedia({ data: { url: data.publicUrl, filename: file.name } });
@@ -75,7 +86,10 @@ function PostizPage() {
       if (!content.trim()) throw new Error("Schrijf eerst content");
       if (selectedIntegrations.length === 0) throw new Error("Kies minimaal 1 social-account");
       const date = mode === "now" ? new Date().toISOString() : new Date(when).toISOString();
-      const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
+      const tags = tagsRaw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
       const posts = selectedIntegrations.map((id) => ({
         integration: { id },
         value: [{ content, image: imagePaths }],
@@ -102,7 +116,9 @@ function PostizPage() {
   });
 
   const integrationsErr = integrationsQ.error as Error | null;
-  const integrations: any[] = Array.isArray(integrationsQ.data) ? (integrationsQ.data as any[]) : ((integrationsQ.data as any)?.integrations ?? []);
+  const integrations: any[] = Array.isArray(integrationsQ.data)
+    ? (integrationsQ.data as any[])
+    : ((integrationsQ.data as any)?.integrations ?? []);
 
   return (
     <div className="space-y-6">
@@ -111,7 +127,8 @@ function PostizPage() {
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Externe scheduler</p>
           <h1 className="font-display text-4xl">Postiz</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Plan posts via je gekoppelde Postiz-account totdat we social media intern hebben geïntegreerd.
+            Plan posts via je gekoppelde Postiz-account totdat we social media intern hebben
+            geïntegreerd.
           </p>
         </div>
         <button
@@ -179,7 +196,9 @@ function PostizPage() {
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Content</label>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Content
+            </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -188,7 +207,9 @@ function PostizPage() {
               placeholder="Wat ga je posten?"
               className="mt-1 w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
             />
-            <div className="text-[10px] text-muted-foreground text-right">{content.length} / 5000</div>
+            <div className="text-[10px] text-muted-foreground text-right">
+              {content.length} / 5000
+            </div>
           </div>
 
           <div>
@@ -198,7 +219,10 @@ function PostizPage() {
             <div className="mt-2 flex flex-wrap gap-2">
               {imagePaths.map((img, idx) => (
                 <div key={idx} className="relative">
-                  <img src={img.path} className="h-16 w-16 rounded object-cover border border-gold/20" />
+                  <img
+                    src={img.path}
+                    className="h-16 w-16 rounded object-cover border border-gold/20"
+                  />
                   <button
                     onClick={() => setImagePaths((p) => p.filter((_, i) => i !== idx))}
                     className="absolute -top-1 -right-1 bg-destructive text-white rounded-full h-5 w-5 text-xs"
@@ -221,7 +245,9 @@ function PostizPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">Modus</label>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Modus
+              </label>
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value as any)}
@@ -233,7 +259,9 @@ function PostizPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">Datum & tijd</label>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Datum & tijd
+              </label>
               <input
                 type="datetime-local"
                 value={when}
@@ -245,7 +273,9 @@ function PostizPage() {
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Tags (komma gescheiden)</label>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Tags (komma gescheiden)
+            </label>
             <input
               value={tagsRaw}
               onChange={(e) => setTagsRaw(e.target.value)}
@@ -259,7 +289,11 @@ function PostizPage() {
             disabled={submitMut.isPending}
             className="w-full rounded-lg bg-gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground inline-flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {submitMut.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
             {mode === "now" ? "Nu posten" : mode === "draft" ? "Opslaan als concept" : "Inplannen"}
           </button>
         </div>
@@ -309,8 +343,12 @@ function PostsList({ posts, onDelete }: { posts: any[]; onDelete: (id: string) =
                 </div>
                 <p className="text-sm mt-1 line-clamp-3 whitespace-pre-wrap">{content || "—"}</p>
                 {link && (
-                  <a href={link} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-gold mt-1 hover:underline">
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-gold mt-1 hover:underline"
+                  >
                     Bekijk <ExternalLink className="h-3 w-3" />
                   </a>
                 )}

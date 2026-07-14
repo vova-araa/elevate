@@ -82,15 +82,38 @@ type IntakeState = {
 };
 
 const init: IntakeState = {
-  brand_name: "", industry: "", website: "", target_audience: "", brand_values: "", usp: "", competitors: "",
-  main_goal: "", goals_3_months: "", goals_12_months: "", kpis: "", budget_range: "",
-  content_pillars: "", tone_of_voice: "", preferred_formats: "", posting_frequency: "",
-  instagram: {}, tiktok: {}, linkedin: {}, youtube: {}, facebook: {},
+  brand_name: "",
+  industry: "",
+  website: "",
+  target_audience: "",
+  brand_values: "",
+  usp: "",
+  competitors: "",
+  main_goal: "",
+  goals_3_months: "",
+  goals_12_months: "",
+  kpis: "",
+  budget_range: "",
+  content_pillars: "",
+  tone_of_voice: "",
+  preferred_formats: "",
+  posting_frequency: "",
+  instagram: {},
+  tiktok: {},
+  linkedin: {},
+  youtube: {},
+  facebook: {},
   brand_awareness_score: 5,
-  perceived_strengths: "", perceived_weaknesses: "",
-  top_performing_content: "", worst_performing_content: "",
-  paid_ads_history: "", influencer_history: "",
-  has_photographer: false, has_videographer: false, has_copywriter: false, internal_team_notes: "",
+  perceived_strengths: "",
+  perceived_weaknesses: "",
+  top_performing_content: "",
+  worst_performing_content: "",
+  paid_ads_history: "",
+  influencer_history: "",
+  has_photographer: false,
+  has_videographer: false,
+  has_copywriter: false,
+  internal_team_notes: "",
   extra_notes: "",
   create_client: true,
 };
@@ -133,9 +156,7 @@ function IntakePage() {
       if (prev) {
         setF((p) => ({
           ...p,
-          ...Object.fromEntries(
-            Object.entries(prev).filter(([k]) => k in init),
-          ),
+          ...Object.fromEntries(Object.entries(prev).filter(([k]) => k in init)),
           create_client: false,
         }));
         setPrefilled(true);
@@ -155,9 +176,12 @@ function IntakePage() {
 
   const isExisting = !!presetClientId;
 
-  const upd = <K extends keyof IntakeState>(k: K, v: IntakeState[K]) => setF((p) => ({ ...p, [k]: v }));
-  const updPlatform = (k: "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook", patch: PlatformStats) =>
-    setF((p) => ({ ...p, [k]: { ...p[k], ...patch } }));
+  const upd = <K extends keyof IntakeState>(k: K, v: IntakeState[K]) =>
+    setF((p) => ({ ...p, [k]: v }));
+  const updPlatform = (
+    k: "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook",
+    patch: PlatformStats,
+  ) => setF((p) => ({ ...p, [k]: { ...p[k], ...patch } }));
 
   async function save() {
     if (!f.brand_name.trim()) {
@@ -198,7 +222,6 @@ function IntakePage() {
     else nav({ to: "/admin/clients" });
   }
 
-
   const Step = steps[step];
 
   return (
@@ -217,7 +240,10 @@ function IntakePage() {
               : "Strategische vragenlijst: merk, doelen en huidige social awareness"}
           </p>
         </div>
-        <Link to="/admin/clients" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+        <Link
+          to="/admin/clients"
+          className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
           <ArrowLeft className="h-3 w-3" /> Klanten
         </Link>
       </div>
@@ -236,8 +262,8 @@ function IntakePage() {
                   active
                     ? "bg-gold/15 text-gold border-gold/40"
                     : done
-                    ? "border-gold/20 text-foreground"
-                    : "border-gold/10 text-muted-foreground hover:border-gold/30"
+                      ? "border-gold/20 text-foreground"
+                      : "border-gold/10 text-muted-foreground hover:border-gold/30"
                 }`}
               >
                 {done ? <Check className="h-3 w-3 text-gold" /> : <s.Icon className="h-3 w-3" />}
@@ -263,26 +289,107 @@ function IntakePage() {
         {step === 0 && (
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Merknaam *" value={f.brand_name} onChange={(v) => upd("brand_name", v)} />
-            <Field label="Industrie / sector" value={f.industry} onChange={(v) => upd("industry", v)} placeholder="Chocolatier, muziekstudio, parfumeur..." />
-            <Field label="Website" value={f.website} onChange={(v) => upd("website", v)} placeholder="https://..." />
-            <Field label="Concurrenten" value={f.competitors} onChange={(v) => upd("competitors", v)} placeholder="Belangrijkste 2-3 namen of accounts" />
-            <Area className="sm:col-span-2" label="Doelgroep" value={f.target_audience} onChange={(v) => upd("target_audience", v)} placeholder="Leeftijd, locatie, gedrag, koopmotivatie..." />
-            <Area className="sm:col-span-2" label="Merkwaarden / identiteit" value={f.brand_values} onChange={(v) => upd("brand_values", v)} placeholder="Wat staat het merk voor? 3-5 kernwoorden + uitleg" />
-            <Area className="sm:col-span-2" label="USP — Waarom dit merk?" value={f.usp} onChange={(v) => upd("usp", v)} placeholder="Wat maakt dit merk uniek t.o.v. de concurrentie?" />
+            <Field
+              label="Industrie / sector"
+              value={f.industry}
+              onChange={(v) => upd("industry", v)}
+              placeholder="Chocolatier, muziekstudio, parfumeur..."
+            />
+            <Field
+              label="Website"
+              value={f.website}
+              onChange={(v) => upd("website", v)}
+              placeholder="https://..."
+            />
+            <Field
+              label="Concurrenten"
+              value={f.competitors}
+              onChange={(v) => upd("competitors", v)}
+              placeholder="Belangrijkste 2-3 namen of accounts"
+            />
+            <Area
+              className="sm:col-span-2"
+              label="Doelgroep"
+              value={f.target_audience}
+              onChange={(v) => upd("target_audience", v)}
+              placeholder="Leeftijd, locatie, gedrag, koopmotivatie..."
+            />
+            <Area
+              className="sm:col-span-2"
+              label="Merkwaarden / identiteit"
+              value={f.brand_values}
+              onChange={(v) => upd("brand_values", v)}
+              placeholder="Wat staat het merk voor? 3-5 kernwoorden + uitleg"
+            />
+            <Area
+              className="sm:col-span-2"
+              label="USP — Waarom dit merk?"
+              value={f.usp}
+              onChange={(v) => upd("usp", v)}
+              placeholder="Wat maakt dit merk uniek t.o.v. de concurrentie?"
+            />
           </div>
         )}
 
         {step === 1 && (
           <div className="grid gap-5 sm:grid-cols-2">
-            <Area className="sm:col-span-2" label="Hoofddoel social media" value={f.main_goal} onChange={(v) => upd("main_goal", v)} placeholder="Awareness, verkoop, community, autoriteit, leads..." />
-            <Area label="Doelen — 3 maanden" value={f.goals_3_months} onChange={(v) => upd("goals_3_months", v)} placeholder="Concrete, meetbare doelen voor het eerste kwartaal" />
-            <Area label="Doelen — 12 maanden" value={f.goals_12_months} onChange={(v) => upd("goals_12_months", v)} placeholder="Visie na een jaar samenwerken" />
-            <Area className="sm:col-span-2" label="KPI's & succescriteria" value={f.kpis} onChange={(v) => upd("kpis", v)} placeholder="Volgers, bereik, engagement, conversies, omzet..." />
-            <Field label="Budget (per maand)" value={f.budget_range} onChange={(v) => upd("budget_range", v)} placeholder="bv. €1.500 content + €500 ads" />
-            <Field label="Postfrequentie (gewenst)" value={f.posting_frequency} onChange={(v) => upd("posting_frequency", v)} placeholder="bv. 3x/week feed + 5x stories" />
-            <Area className="sm:col-span-2" label="Content pijlers" value={f.content_pillars} onChange={(v) => upd("content_pillars", v)} placeholder="3-5 thema's waar alle content uit voortkomt" />
-            <Area label="Tone of voice" value={f.tone_of_voice} onChange={(v) => upd("tone_of_voice", v)} placeholder="Premium, speels, autoriteit, intiem, ironisch..." />
-            <Area label="Voorkeur formats" value={f.preferred_formats} onChange={(v) => upd("preferred_formats", v)} placeholder="Reels, carrousels, stills, BTS, talking head..." />
+            <Area
+              className="sm:col-span-2"
+              label="Hoofddoel social media"
+              value={f.main_goal}
+              onChange={(v) => upd("main_goal", v)}
+              placeholder="Awareness, verkoop, community, autoriteit, leads..."
+            />
+            <Area
+              label="Doelen — 3 maanden"
+              value={f.goals_3_months}
+              onChange={(v) => upd("goals_3_months", v)}
+              placeholder="Concrete, meetbare doelen voor het eerste kwartaal"
+            />
+            <Area
+              label="Doelen — 12 maanden"
+              value={f.goals_12_months}
+              onChange={(v) => upd("goals_12_months", v)}
+              placeholder="Visie na een jaar samenwerken"
+            />
+            <Area
+              className="sm:col-span-2"
+              label="KPI's & succescriteria"
+              value={f.kpis}
+              onChange={(v) => upd("kpis", v)}
+              placeholder="Volgers, bereik, engagement, conversies, omzet..."
+            />
+            <Field
+              label="Budget (per maand)"
+              value={f.budget_range}
+              onChange={(v) => upd("budget_range", v)}
+              placeholder="bv. €1.500 content + €500 ads"
+            />
+            <Field
+              label="Postfrequentie (gewenst)"
+              value={f.posting_frequency}
+              onChange={(v) => upd("posting_frequency", v)}
+              placeholder="bv. 3x/week feed + 5x stories"
+            />
+            <Area
+              className="sm:col-span-2"
+              label="Content pijlers"
+              value={f.content_pillars}
+              onChange={(v) => upd("content_pillars", v)}
+              placeholder="3-5 thema's waar alle content uit voortkomt"
+            />
+            <Area
+              label="Tone of voice"
+              value={f.tone_of_voice}
+              onChange={(v) => upd("tone_of_voice", v)}
+              placeholder="Premium, speels, autoriteit, intiem, ironisch..."
+            />
+            <Area
+              label="Voorkeur formats"
+              value={f.preferred_formats}
+              onChange={(v) => upd("preferred_formats", v)}
+              placeholder="Reels, carrousels, stills, BTS, talking head..."
+            />
           </div>
         )}
 
@@ -291,11 +398,36 @@ function IntakePage() {
             <p className="text-sm text-muted-foreground">
               Vul per platform de huidige situatie in. Laat leeg als ze niet aanwezig zijn.
             </p>
-            <PlatformBlock label="Instagram" Icon={Instagram} stats={f.instagram} onChange={(p) => updPlatform("instagram", p)} />
-            <PlatformBlock label="TikTok" Icon={Music2} stats={f.tiktok} onChange={(p) => updPlatform("tiktok", p)} />
-            <PlatformBlock label="LinkedIn" Icon={Linkedin} stats={f.linkedin} onChange={(p) => updPlatform("linkedin", p)} />
-            <PlatformBlock label="YouTube" Icon={Youtube} stats={f.youtube} onChange={(p) => updPlatform("youtube", p)} />
-            <PlatformBlock label="Facebook" Icon={Facebook} stats={f.facebook} onChange={(p) => updPlatform("facebook", p)} />
+            <PlatformBlock
+              label="Instagram"
+              Icon={Instagram}
+              stats={f.instagram}
+              onChange={(p) => updPlatform("instagram", p)}
+            />
+            <PlatformBlock
+              label="TikTok"
+              Icon={Music2}
+              stats={f.tiktok}
+              onChange={(p) => updPlatform("tiktok", p)}
+            />
+            <PlatformBlock
+              label="LinkedIn"
+              Icon={Linkedin}
+              stats={f.linkedin}
+              onChange={(p) => updPlatform("linkedin", p)}
+            />
+            <PlatformBlock
+              label="YouTube"
+              Icon={Youtube}
+              stats={f.youtube}
+              onChange={(p) => updPlatform("youtube", p)}
+            />
+            <PlatformBlock
+              label="Facebook"
+              Icon={Facebook}
+              stats={f.facebook}
+              onChange={(p) => updPlatform("facebook", p)}
+            />
           </div>
         )}
 
@@ -320,12 +452,42 @@ function IntakePage() {
               </div>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
-              <Area label="Sterke punten huidige social" value={f.perceived_strengths} onChange={(v) => upd("perceived_strengths", v)} placeholder="Wat werkt al goed?" />
-              <Area label="Zwakke punten / gaps" value={f.perceived_weaknesses} onChange={(v) => upd("perceived_weaknesses", v)} placeholder="Wat ontbreekt of werkt niet?" />
-              <Area label="Best presterende content tot nu toe" value={f.top_performing_content} onChange={(v) => upd("top_performing_content", v)} placeholder="Links, formats of beschrijvingen" />
-              <Area label="Slechtst presterende content" value={f.worst_performing_content} onChange={(v) => upd("worst_performing_content", v)} placeholder="Wat sloeg niet aan en waarom?" />
-              <Area label="Historie betaalde ads" value={f.paid_ads_history} onChange={(v) => upd("paid_ads_history", v)} placeholder="Welke campagnes, budget, resultaat" />
-              <Area label="Historie influencer / partnerships" value={f.influencer_history} onChange={(v) => upd("influencer_history", v)} placeholder="Welke samenwerkingen, resultaat" />
+              <Area
+                label="Sterke punten huidige social"
+                value={f.perceived_strengths}
+                onChange={(v) => upd("perceived_strengths", v)}
+                placeholder="Wat werkt al goed?"
+              />
+              <Area
+                label="Zwakke punten / gaps"
+                value={f.perceived_weaknesses}
+                onChange={(v) => upd("perceived_weaknesses", v)}
+                placeholder="Wat ontbreekt of werkt niet?"
+              />
+              <Area
+                label="Best presterende content tot nu toe"
+                value={f.top_performing_content}
+                onChange={(v) => upd("top_performing_content", v)}
+                placeholder="Links, formats of beschrijvingen"
+              />
+              <Area
+                label="Slechtst presterende content"
+                value={f.worst_performing_content}
+                onChange={(v) => upd("worst_performing_content", v)}
+                placeholder="Wat sloeg niet aan en waarom?"
+              />
+              <Area
+                label="Historie betaalde ads"
+                value={f.paid_ads_history}
+                onChange={(v) => upd("paid_ads_history", v)}
+                placeholder="Welke campagnes, budget, resultaat"
+              />
+              <Area
+                label="Historie influencer / partnerships"
+                value={f.influencer_history}
+                onChange={(v) => upd("influencer_history", v)}
+                placeholder="Welke samenwerkingen, resultaat"
+              />
             </div>
           </div>
         )}
@@ -333,12 +495,34 @@ function IntakePage() {
         {step === 4 && (
           <div className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-3">
-              <Toggle label="Eigen fotograaf" value={f.has_photographer} onChange={(v) => upd("has_photographer", v)} />
-              <Toggle label="Eigen videograaf" value={f.has_videographer} onChange={(v) => upd("has_videographer", v)} />
-              <Toggle label="Eigen copywriter" value={f.has_copywriter} onChange={(v) => upd("has_copywriter", v)} />
+              <Toggle
+                label="Eigen fotograaf"
+                value={f.has_photographer}
+                onChange={(v) => upd("has_photographer", v)}
+              />
+              <Toggle
+                label="Eigen videograaf"
+                value={f.has_videographer}
+                onChange={(v) => upd("has_videographer", v)}
+              />
+              <Toggle
+                label="Eigen copywriter"
+                value={f.has_copywriter}
+                onChange={(v) => upd("has_copywriter", v)}
+              />
             </div>
-            <Area label="Intern team & beschikbaarheid" value={f.internal_team_notes} onChange={(v) => upd("internal_team_notes", v)} placeholder="Wie levert wat aan, hoeveel uur p/w, contactpersonen..." />
-            <Area label="Overige notities" value={f.extra_notes} onChange={(v) => upd("extra_notes", v)} placeholder="Alles wat nog niet aan bod kwam" />
+            <Area
+              label="Intern team & beschikbaarheid"
+              value={f.internal_team_notes}
+              onChange={(v) => upd("internal_team_notes", v)}
+              placeholder="Wie levert wat aan, hoeveel uur p/w, contactpersonen..."
+            />
+            <Area
+              label="Overige notities"
+              value={f.extra_notes}
+              onChange={(v) => upd("extra_notes", v)}
+              placeholder="Alles wat nog niet aan bod kwam"
+            />
           </div>
         )}
 
@@ -371,7 +555,8 @@ function IntakePage() {
                 <div>
                   <div className="text-sm font-medium">Direct klant aanmaken</div>
                   <div className="text-xs text-muted-foreground">
-                    Maakt een nieuwe klant op basis van merknaam, industrie en website en koppelt deze intake eraan.
+                    Maakt een nieuwe klant op basis van merknaam, industrie en website en koppelt
+                    deze intake eraan.
                   </div>
                 </div>
               </label>
@@ -411,9 +596,17 @@ function IntakePage() {
 }
 
 function Field({
-  label, value, onChange, placeholder, className,
+  label,
+  value,
+  onChange,
+  placeholder,
+  className,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; className?: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
 }) {
   return (
     <div className={className}>
@@ -429,9 +622,17 @@ function Field({
 }
 
 function Area({
-  label, value, onChange, placeholder, className,
+  label,
+  value,
+  onChange,
+  placeholder,
+  className,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; className?: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
 }) {
   return (
     <div className={className}>
@@ -447,21 +648,42 @@ function Area({
   );
 }
 
-function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
-    <label className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition ${
-      value ? "border-gold/40 bg-gold/10" : "border-gold/15 hover:border-gold/30"
-    }`}>
-      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} className="accent-[#D4B97A]" />
+    <label
+      className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition ${
+        value ? "border-gold/40 bg-gold/10" : "border-gold/15 hover:border-gold/30"
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={value}
+        onChange={(e) => onChange(e.target.checked)}
+        className="accent-[#D4B97A]"
+      />
       <span className="text-sm">{label}</span>
     </label>
   );
 }
 
 function PlatformBlock({
-  label, Icon, stats, onChange,
+  label,
+  Icon,
+  stats,
+  onChange,
 }: {
-  label: string; Icon: any; stats: PlatformStats; onChange: (p: PlatformStats) => void;
+  label: string;
+  Icon: any;
+  stats: PlatformStats;
+  onChange: (p: PlatformStats) => void;
 }) {
   return (
     <div className="rounded-xl border border-gold/15 p-4 space-y-3">
@@ -470,18 +692,50 @@ function PlatformBlock({
         <div className="font-medium text-sm">{label}</div>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <SmallField label="Handle / URL" value={stats.handle || ""} onChange={(v) => onChange({ handle: v })} />
-        <SmallField label="Volgers" value={stats.followers || ""} onChange={(v) => onChange({ followers: v })} />
-        <SmallField label="Engagement %" value={stats.engagement || ""} onChange={(v) => onChange({ engagement: v })} />
-        <SmallField label="Bereik (maand)" value={stats.monthly_reach || ""} onChange={(v) => onChange({ monthly_reach: v })} />
-        <SmallField label="Posts per week" value={stats.post_freq || ""} onChange={(v) => onChange({ post_freq: v })} />
-        <SmallField label="Notities" value={stats.notes || ""} onChange={(v) => onChange({ notes: v })} />
+        <SmallField
+          label="Handle / URL"
+          value={stats.handle || ""}
+          onChange={(v) => onChange({ handle: v })}
+        />
+        <SmallField
+          label="Volgers"
+          value={stats.followers || ""}
+          onChange={(v) => onChange({ followers: v })}
+        />
+        <SmallField
+          label="Engagement %"
+          value={stats.engagement || ""}
+          onChange={(v) => onChange({ engagement: v })}
+        />
+        <SmallField
+          label="Bereik (maand)"
+          value={stats.monthly_reach || ""}
+          onChange={(v) => onChange({ monthly_reach: v })}
+        />
+        <SmallField
+          label="Posts per week"
+          value={stats.post_freq || ""}
+          onChange={(v) => onChange({ post_freq: v })}
+        />
+        <SmallField
+          label="Notities"
+          value={stats.notes || ""}
+          onChange={(v) => onChange({ notes: v })}
+        />
       </div>
     </div>
   );
 }
 
-function SmallField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function SmallField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div>
       <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>

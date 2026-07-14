@@ -2,14 +2,36 @@ import { useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  LayoutDashboard, CalendarDays, Send, FileText, Image as ImageIcon,
-  Sparkles, Clock, TrendingUp, Heart, FileBarChart, CheckSquare,
-  MessageSquare, Building2, Settings as SettingsIcon, PenSquare,
-  UserPlus, Moon, Sun, PanelLeft, ListChecks, Plug,
+  LayoutDashboard,
+  CalendarDays,
+  Send,
+  FileText,
+  Image as ImageIcon,
+  Sparkles,
+  Clock,
+  TrendingUp,
+  Heart,
+  FileBarChart,
+  CheckSquare,
+  MessageSquare,
+  Building2,
+  Settings as SettingsIcon,
+  PenSquare,
+  UserPlus,
+  Moon,
+  Sun,
+  PanelLeft,
+  ListChecks,
+  Plug,
 } from "lucide-react";
 import {
-  CommandDialog, CommandEmpty, CommandGroup, CommandInput,
-  CommandItem, CommandList, CommandSeparator,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
@@ -18,22 +40,62 @@ import { useTheme } from "@/lib/theme";
 
 const NAV_ITEMS = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, keywords: "home overzicht" },
-  { to: "/admin/planner", label: "Planner", icon: CalendarDays, keywords: "kalender agenda content" },
-  { to: "/admin/compose", label: "Nieuwe post", icon: PenSquare, keywords: "schrijven maken opstellen" },
+  {
+    to: "/admin/planner",
+    label: "Planner",
+    icon: CalendarDays,
+    keywords: "kalender agenda content",
+  },
+  {
+    to: "/admin/compose",
+    label: "Nieuwe post",
+    icon: PenSquare,
+    keywords: "schrijven maken opstellen",
+  },
   { to: "/admin/postiz", label: "Posts", icon: Send, keywords: "gepland gepubliceerd" },
   { to: "/admin/queue", label: "Concepten", icon: FileText, keywords: "drafts wachtrij" },
   { to: "/admin/media", label: "Media", icon: ImageIcon, keywords: "bibliotheek fotos videos" },
-  { to: "/admin/ai", label: "AI Studio", icon: Sparkles, keywords: "assistent captions hashtags hooks hergebruik" },
+  {
+    to: "/admin/ai",
+    label: "AI Studio",
+    icon: Sparkles,
+    keywords: "assistent captions hashtags hooks hergebruik",
+  },
   { to: "/admin/besttime", label: "Best time", icon: Clock, keywords: "beste tijd posten" },
-  { to: "/admin/reach", label: "Bereik & groei", icon: TrendingUp, keywords: "analytics statistieken" },
-  { to: "/admin/engagement", label: "Engagement", icon: Heart, keywords: "likes reacties interactie" },
+  {
+    to: "/admin/reach",
+    label: "Bereik & groei",
+    icon: TrendingUp,
+    keywords: "analytics statistieken",
+  },
+  {
+    to: "/admin/engagement",
+    label: "Engagement",
+    icon: Heart,
+    keywords: "likes reacties interactie",
+  },
   { to: "/admin/reports", label: "Rapporten", icon: FileBarChart, keywords: "maandrapport pdf" },
-  { to: "/admin/approvals", label: "Goedkeuring", icon: CheckSquare, keywords: "akkoord feedback review" },
+  {
+    to: "/admin/approvals",
+    label: "Goedkeuring",
+    icon: CheckSquare,
+    keywords: "akkoord feedback review",
+  },
   { to: "/admin/messages", label: "Berichten", icon: MessageSquare, keywords: "chat inbox" },
   { to: "/admin/tasks", label: "Taken", icon: ListChecks, keywords: "todo actiepunten" },
   { to: "/admin/clients", label: "Klanten", icon: Building2, keywords: "accounts bedrijven" },
-  { to: "/admin/webhooks", label: "Kanalen", icon: Plug, keywords: "koppelingen integraties webhooks" },
-  { to: "/admin/settings", label: "Instellingen", icon: SettingsIcon, keywords: "voorkeuren configuratie" },
+  {
+    to: "/admin/webhooks",
+    label: "Kanalen",
+    icon: Plug,
+    keywords: "koppelingen integraties webhooks",
+  },
+  {
+    to: "/admin/settings",
+    label: "Instellingen",
+    icon: SettingsIcon,
+    keywords: "voorkeuren configuratie",
+  },
 ];
 
 export function CommandPalette() {
@@ -101,7 +163,11 @@ export function CommandPalette() {
             keywords={["thema", "dark", "licht", "donker"]}
             onSelect={() => run(toggleTheme)}
           >
-            {theme === "dark" ? <Sun className="mr-2 text-gold" /> : <Moon className="mr-2 text-gold" />}
+            {theme === "dark" ? (
+              <Sun className="mr-2 text-gold" />
+            ) : (
+              <Moon className="mr-2 text-gold" />
+            )}
             {theme === "dark" ? "Licht thema" : "Donker thema"}
           </CommandItem>
           <CommandItem
@@ -143,7 +209,12 @@ export function CommandPalette() {
                         name: c.name,
                         color: c.brand_color,
                         logo_url: c.logo_url,
-                        initials: c.name.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase(),
+                        initials: c.name
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((w: string) => w[0])
+                          .join("")
+                          .toUpperCase(),
                       });
                       navigate({ to: "/admin/clients/$id", params: { id: c.id } });
                     })

@@ -6,7 +6,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // De oude directe TikTok-koppeling via de Lovable connector-gateway is
 // verwijderd bij de migratie weg van Lovable.
 
-const POSTIZ_BASE = () => process.env.POSTIZ_BASE_URL?.replace(/\/$/, "") || "https://api.postiz.com";
+const POSTIZ_BASE = () =>
+  process.env.POSTIZ_BASE_URL?.replace(/\/$/, "") || "https://api.postiz.com";
 
 function postizKey() {
   const k = process.env.POSTIZ_API_KEY;
@@ -49,14 +50,20 @@ export const publishTikTokPost = createServerFn({ method: "POST" })
     const { supabase } = context;
 
     const { data: post, error: postErr } = await supabase
-      .from("scheduled_posts").select("*").eq("id", data.postId).maybeSingle();
+      .from("scheduled_posts")
+      .select("*")
+      .eq("id", data.postId)
+      .maybeSingle();
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("Post niet gevonden");
     if (post.platform !== "tiktok") throw new Error("Deze post is niet voor TikTok");
 
     const { data: conn, error: connErr } = await supabase
-      .from("social_connections").select("*")
-      .eq("client_id", post.client_id).eq("platform", "tiktok").maybeSingle();
+      .from("social_connections")
+      .select("*")
+      .eq("client_id", post.client_id)
+      .eq("platform", "tiktok")
+      .maybeSingle();
     if (connErr) throw new Error(connErr.message);
     if (!conn?.postiz_integration_id) {
       throw new Error(
@@ -64,24 +71,33 @@ export const publishTikTokPost = createServerFn({ method: "POST" })
       );
     }
 
-    await supabase.from("scheduled_posts").update({ status: "publishing", error_message: null }).eq("id", post.id);
+    await supabase
+      .from("scheduled_posts")
+      .update({ status: "publishing", error_message: null })
+      .eq("id", post.id);
 
     try {
       // Media (indien aanwezig) via signed URL naar Postiz uploaden
       let image: { id?: string; path: string }[] | undefined;
       if (post.media_path) {
-        const { data: signed, error: signErr } = await supabase
-          .storage.from("social-media").createSignedUrl(post.media_path, 3600);
-        if (signErr || !signed?.signedUrl) throw new Error(signErr?.message ?? "Signed URL mislukt");
+        const { data: signed, error: signErr } = await supabase.storage
+          .from("social-media")
+          .createSignedUrl(post.media_path, 3600);
+        if (signErr || !signed?.signedUrl)
+          throw new Error(signErr?.message ?? "Signed URL mislukt");
 
         const fileRes = await fetch(signed.signedUrl);
         if (!fileRes.ok) throw new Error(`Media niet bereikbaar: ${fileRes.status}`);
         const blob = await fileRes.blob();
         const filename = post.media_path.split("/").pop() || "upload.mp4";
         const fd = new FormData();
-        fd.append("file", new File([blob], filename, { type: blob.type || "application/octet-stream" }));
+        fd.append(
+          "file",
+          new File([blob], filename, { type: blob.type || "application/octet-stream" }),
+        );
         const uploaded = await postizFetch("/upload", { method: "POST", body: fd });
-        if (uploaded?.path) image = [{ id: uploaded.id ? String(uploaded.id) : undefined, path: uploaded.path }];
+        if (uploaded?.path)
+          image = [{ id: uploaded.id ? String(uploaded.id) : undefined, path: uploaded.path }];
       }
 
       const result = await postizFetch("/posts", {
@@ -100,19 +116,28 @@ export const publishTikTokPost = createServerFn({ method: "POST" })
         }),
       });
 
-      const publishId: string | null = Array.isArray(result) ? (result[0]?.postId ?? null) : (result?.id ?? null);
+      const publishId: string | null = Array.isArray(result)
+        ? (result[0]?.postId ?? null)
+        : (result?.id ?? null);
 
-      await supabase.from("scheduled_posts").update({
-        status: "published",
-        published_at: new Date().toISOString(),
-        platform_container_id: publishId,
-      }).eq("id", post.id);
+      await supabase
+        .from("scheduled_posts")
+        .update({
+          status: "published",
+          published_at: new Date().toISOString(),
+          platform_container_id: publishId,
+        })
+        .eq("id", post.id);
 
       return { ok: true, publishId };
     } catch (e: any) {
-      await supabase.from("scheduled_posts").update({
-        status: "failed", error_message: e?.message ?? "Onbekende fout",
-      }).eq("id", post.id);
+      await supabase
+        .from("scheduled_posts")
+        .update({
+          status: "failed",
+          error_message: e?.message ?? "Onbekende fout",
+        })
+        .eq("id", post.id);
       throw e;
     }
   });

@@ -8,8 +8,14 @@ const MAX_ATTEMPTS = 3;
  * Stub: in een latere ronde vervangen door echte Postiz-call
  * POST https://api.postiz.com/public/v1/organizations
  */
-async function callPostizCreateOrg(clientName: string): Promise<{ organizationId: string; apiKey: string }> {
-  const slug = clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 24) || "client";
+async function callPostizCreateOrg(
+  clientName: string,
+): Promise<{ organizationId: string; apiKey: string }> {
+  const slug =
+    clientName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .slice(0, 24) || "client";
   return {
     organizationId: `org_stub_${slug}_${Math.random().toString(36).slice(2, 8)}`,
     apiKey: `pst_stub_${Math.random().toString(36).slice(2, 10)}${Math.random().toString(36).slice(2, 10)}`,
@@ -23,7 +29,8 @@ export const provisionClientPostiz = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-    if (!roles?.some((r) => r.role === "admin")) throw new Error("Alleen admins mogen provisioneren");
+    if (!roles?.some((r) => r.role === "admin"))
+      throw new Error("Alleen admins mogen provisioneren");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -52,7 +59,6 @@ export const provisionClientPostiz = createServerFn({ method: "POST" })
         .update({ status: "done", last_attempt_at: new Date().toISOString(), error_message: null })
         .eq("client_id", client.id);
       return { ok: true, organizationId: res.organizationId };
-
     } catch (e: any) {
       await supabaseAdmin.from("provision_queue").upsert(
         {
@@ -85,7 +91,11 @@ export async function runProvisionQueue() {
   for (const row of rows) {
     await supabaseAdmin
       .from("provision_queue")
-      .update({ status: "processing", attempts: row.attempts + 1, last_attempt_at: new Date().toISOString() })
+      .update({
+        status: "processing",
+        attempts: row.attempts + 1,
+        last_attempt_at: new Date().toISOString(),
+      })
       .eq("id", row.id);
 
     const { data: client } = await supabaseAdmin
@@ -95,11 +105,17 @@ export async function runProvisionQueue() {
       .maybeSingle();
 
     if (!client) {
-      await supabaseAdmin.from("provision_queue").update({ status: "failed", error_message: "client weg" }).eq("id", row.id);
+      await supabaseAdmin
+        .from("provision_queue")
+        .update({ status: "failed", error_message: "client weg" })
+        .eq("id", row.id);
       continue;
     }
     if (client.postiz_organization_id) {
-      await supabaseAdmin.from("provision_queue").update({ status: "done", error_message: null }).eq("id", row.id);
+      await supabaseAdmin
+        .from("provision_queue")
+        .update({ status: "done", error_message: null })
+        .eq("id", row.id);
       success++;
       continue;
     }

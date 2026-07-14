@@ -24,7 +24,9 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 function metricLabel(key: string) {
-  return METRIC_LABELS[key.toLowerCase()] ?? key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  return (
+    METRIC_LABELS[key.toLowerCase()] ?? key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+  );
 }
 
 function formatMetricValue(v: unknown): string {
@@ -40,7 +42,9 @@ const fmtDate = (d: string) =>
 export function ReportCard({ report }: { report: any }) {
   const metrics =
     report.metrics && typeof report.metrics === "object" && !Array.isArray(report.metrics)
-      ? Object.entries(report.metrics as Record<string, unknown>).filter(([, v]) => v != null && typeof v !== "object")
+      ? Object.entries(report.metrics as Record<string, unknown>).filter(
+          ([, v]) => v != null && typeof v !== "object",
+        )
       : [];
 
   const period =
@@ -57,7 +61,9 @@ export function ReportCard({ report }: { report: any }) {
           <FileBarChart className="h-5 w-5 text-gold" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-display text-xl sm:text-2xl leading-tight break-words">{report.title}</h3>
+          <h3 className="font-display text-xl sm:text-2xl leading-tight break-words">
+            {report.title}
+          </h3>
           {period && (
             <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <CalendarRange className="h-3.5 w-3.5 text-gold/70" />
@@ -94,10 +100,15 @@ export function ReportCard({ report }: { report: any }) {
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {metrics.map(([key, value]) => (
             <div key={key} className="rounded-lg border border-border/40 bg-surface/40 p-3 min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate" title={metricLabel(key)}>
+              <div
+                className="text-[10px] uppercase tracking-wider text-muted-foreground truncate"
+                title={metricLabel(key)}
+              >
                 {metricLabel(key)}
               </div>
-              <div className="font-display text-lg sm:text-xl mt-0.5 break-words">{formatMetricValue(value)}</div>
+              <div className="font-display text-lg sm:text-xl mt-0.5 break-words">
+                {formatMetricValue(value)}
+              </div>
             </div>
           ))}
         </div>

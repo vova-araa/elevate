@@ -136,7 +136,12 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
                   <span className="text-[10px] uppercase tracking-wider text-gold/80">
                     {m.sender_role === "admin" ? "Elevate" : "Klant"}
                   </span>
-                  <span className={cn("text-[10px] rounded-full px-2 py-0.5", PRIO_COLORS[m.priority] ?? "")}>
+                  <span
+                    className={cn(
+                      "text-[10px] rounded-full px-2 py-0.5",
+                      PRIO_COLORS[m.priority] ?? "",
+                    )}
+                  >
                     {PRIORITIES.find((p) => p.v === m.priority)?.label ?? m.priority}
                   </span>
                   {m.deliverable_type && (
@@ -178,7 +183,11 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
                 onChange={(e) => setDeliverable(e.target.value)}
                 className="rounded-lg bg-background/60 hairline px-3 py-2 text-sm"
               >
-                {DELIVERABLES.map((d) => <option key={d.v} value={d.v}>{d.label}</option>)}
+                {DELIVERABLES.map((d) => (
+                  <option key={d.v} value={d.v}>
+                    {d.label}
+                  </option>
+                ))}
               </select>
               <input
                 type="date"
@@ -196,7 +205,11 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
               asRole === "client" && "md:col-span-3",
             )}
           >
-            {PRIORITIES.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
+            {PRIORITIES.map((p) => (
+              <option key={p.v} value={p.v}>
+                {p.label}
+              </option>
+            ))}
           </select>
         </div>
         <textarea

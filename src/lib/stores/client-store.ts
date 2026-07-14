@@ -21,8 +21,7 @@ export const useClientStore = create<ClientState>()(
     (set) => ({
       activeClientId: null,
       activeClient: null,
-      setActiveClient: (c) =>
-        set({ activeClient: c, activeClientId: c?.id ?? null }),
+      setActiveClient: (c) => set({ activeClient: c, activeClientId: c?.id ?? null }),
     }),
     { name: "elevate-active-client" },
   ),

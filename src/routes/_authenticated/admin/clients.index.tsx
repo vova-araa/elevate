@@ -35,7 +35,8 @@ function ClientsList() {
   const { data: clients } = useQuery({
     queryKey: ["clients"],
     queryFn: async () =>
-      (await supabase.from("clients").select("*").order("created_at", { ascending: false })).data ?? [],
+      (await supabase.from("clients").select("*").order("created_at", { ascending: false })).data ??
+      [],
   });
 
   const { data: stats } = useQuery({
@@ -49,7 +50,13 @@ function ClientsList() {
       ]);
       const byClient: Record<
         string,
-        { meetings: number; openTasks: number; pipeline: number; lastEval: number | null; lastEvalDate: string | null }
+        {
+          meetings: number;
+          openTasks: number;
+          pipeline: number;
+          lastEval: number | null;
+          lastEvalDate: string | null;
+        }
       > = {};
 
       (meetings.data ?? []).forEach((m: any) => {
@@ -186,8 +193,7 @@ function ClientsList() {
     );
   };
 
-  const activeFilters =
-    (!!q.trim() ? 1 : 0) + (!!industryFilter ? 1 : 0) + (!!minPipeline ? 1 : 0);
+  const activeFilters = (q.trim() ? 1 : 0) + (industryFilter ? 1 : 0) + (minPipeline ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -251,18 +257,50 @@ function ClientsList() {
 
         {/* Sorteerchips */}
         <div className="flex flex-wrap gap-2">
-          <SortChip label="Naam" sortKey="name" current={sortKey} toggle={toggleSort} icon={<SortIcon k="name" />} />
-          <SortChip label="Pipeline" sortKey="pipeline" current={sortKey} toggle={toggleSort} icon={<SortIcon k="pipeline" />} />
-          <SortChip label="Open taken" sortKey="openTasks" current={sortKey} toggle={toggleSort} icon={<SortIcon k="openTasks" />} />
-          <SortChip label="Gesprekken" sortKey="meetings" current={sortKey} toggle={toggleSort} icon={<SortIcon k="meetings" />} />
-          <SortChip label="Laatste evaluatie" sortKey="lastEval" current={sortKey} toggle={toggleSort} icon={<SortIcon k="lastEval" />} />
+          <SortChip
+            label="Naam"
+            sortKey="name"
+            current={sortKey}
+            toggle={toggleSort}
+            icon={<SortIcon k="name" />}
+          />
+          <SortChip
+            label="Pipeline"
+            sortKey="pipeline"
+            current={sortKey}
+            toggle={toggleSort}
+            icon={<SortIcon k="pipeline" />}
+          />
+          <SortChip
+            label="Open taken"
+            sortKey="openTasks"
+            current={sortKey}
+            toggle={toggleSort}
+            icon={<SortIcon k="openTasks" />}
+          />
+          <SortChip
+            label="Gesprekken"
+            sortKey="meetings"
+            current={sortKey}
+            toggle={toggleSort}
+            icon={<SortIcon k="meetings" />}
+          />
+          <SortChip
+            label="Laatste evaluatie"
+            sortKey="lastEval"
+            current={sortKey}
+            toggle={toggleSort}
+            icon={<SortIcon k="lastEval" />}
+          />
         </div>
 
         {/* Uitgeklapte filters */}
         {showFilters && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pt-2 border-t border-gold/10">
             <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5 block">Branche</label>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5 block">
+                Branche
+              </label>
               <select
                 value={industryFilter}
                 onChange={(e) => setIndustryFilter(e.target.value)}
@@ -379,7 +417,9 @@ function ClientsList() {
           <div className="col-span-full text-center py-12">
             <Search className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground">
-              {activeFilters > 0 ? "Geen klanten gevonden met deze filters." : "Nog geen klanten. Voeg er één toe."}
+              {activeFilters > 0
+                ? "Geen klanten gevonden met deze filters."
+                : "Nog geen klanten. Voeg er één toe."}
             </p>
           </div>
         )}
@@ -433,8 +473,9 @@ function Stat({
       <div className={`font-display text-lg mt-1 leading-none ${highlight ? "text-gold" : ""}`}>
         {value}
       </div>
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5">{label}</div>
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5">
+        {label}
+      </div>
     </div>
   );
 }
-

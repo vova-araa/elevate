@@ -28,13 +28,10 @@ export const inviteUser = createServerFn({ method: "POST" })
     await assertAdmin(context);
 
     const siteUrl = process.env.SITE_URL || "";
-    const { data: created, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-      data.email,
-      {
-        data: { full_name: data.fullName, company: data.company },
-        redirectTo: siteUrl ? `${siteUrl}/auth` : undefined,
-      },
-    );
+    const { data: created, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+      data: { full_name: data.fullName, company: data.company },
+      redirectTo: siteUrl ? `${siteUrl}/auth` : undefined,
+    });
 
     if (error || !created.user) {
       const tempPassword = crypto.randomUUID().slice(0, 12) + "Aa1!";
@@ -44,7 +41,8 @@ export const inviteUser = createServerFn({ method: "POST" })
         email_confirm: true,
         user_metadata: { full_name: data.fullName, company: data.company },
       });
-      if (e2 || !u2.user) throw new Error(e2?.message || error?.message || "Kon gebruiker niet aanmaken");
+      if (e2 || !u2.user)
+        throw new Error(e2?.message || error?.message || "Kon gebruiker niet aanmaken");
       return await finalize(u2.user.id, data, tempPassword);
     }
 
@@ -123,7 +121,10 @@ export const setClientMembership = createServerFn({ method: "POST" })
     if (data.link) {
       const { error } = await supabaseAdmin
         .from("client_members")
-        .upsert({ client_id: data.clientId, user_id: data.userId }, { onConflict: "client_id,user_id" });
+        .upsert(
+          { client_id: data.clientId, user_id: data.userId },
+          { onConflict: "client_id,user_id" },
+        );
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabaseAdmin

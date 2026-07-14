@@ -4,32 +4,77 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Loader2, Send, Save, Image as ImageIcon, X, Heart, MessageCircle, Repeat2 } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  Save,
+  Image as ImageIcon,
+  X,
+  Heart,
+  MessageCircle,
+  Repeat2,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
-import { listPostizIntegrations, createPostizPost, uploadPostizMediaFromUrl } from "@/lib/postiz.functions";
+import {
+  listPostizIntegrations,
+  createPostizPost,
+  uploadPostizMediaFromUrl,
+} from "@/lib/postiz.functions";
 import { cn } from "@/lib/utils";
 
 type PostType = { id: string; label: string };
 
 const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }[] = [
-  { id: "instagram", label: "Instagram", limit: 2200, types: [
-    { id: "feed", label: "Feed" }, { id: "reel", label: "Reel" }, { id: "story", label: "Story" },
-  ]},
-  { id: "linkedin", label: "LinkedIn", limit: 3000, types: [
-    { id: "post", label: "Post" }, { id: "article", label: "Artikel" },
-  ]},
-  { id: "tiktok", label: "TikTok", limit: 300, types: [
-    { id: "video", label: "Video" }, { id: "photo", label: "Foto" },
-  ]},
-  { id: "facebook", label: "Facebook", limit: 1500, types: [
-    { id: "post", label: "Post" }, { id: "reel", label: "Reel" }, { id: "story", label: "Story" },
-  ]},
-  { id: "x", label: "X", limit: 280, types: [{ id: "tweet", label: "Tweet" }]},
-  { id: "threads", label: "Threads", limit: 500, types: [{ id: "post", label: "Post" }]},
-  { id: "youtube", label: "YouTube", limit: 1000, types: [
-    { id: "short", label: "Short" }, { id: "video", label: "Video" },
-  ]},
+  {
+    id: "instagram",
+    label: "Instagram",
+    limit: 2200,
+    types: [
+      { id: "feed", label: "Feed" },
+      { id: "reel", label: "Reel" },
+      { id: "story", label: "Story" },
+    ],
+  },
+  {
+    id: "linkedin",
+    label: "LinkedIn",
+    limit: 3000,
+    types: [
+      { id: "post", label: "Post" },
+      { id: "article", label: "Artikel" },
+    ],
+  },
+  {
+    id: "tiktok",
+    label: "TikTok",
+    limit: 300,
+    types: [
+      { id: "video", label: "Video" },
+      { id: "photo", label: "Foto" },
+    ],
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    limit: 1500,
+    types: [
+      { id: "post", label: "Post" },
+      { id: "reel", label: "Reel" },
+      { id: "story", label: "Story" },
+    ],
+  },
+  { id: "x", label: "X", limit: 280, types: [{ id: "tweet", label: "Tweet" }] },
+  { id: "threads", label: "Threads", limit: 500, types: [{ id: "post", label: "Post" }] },
+  {
+    id: "youtube",
+    label: "YouTube",
+    limit: 1000,
+    types: [
+      { id: "short", label: "Short" },
+      { id: "video", label: "Video" },
+    ],
+  },
 ];
 
 const searchSchema = z.object({ at: z.string().optional() });
@@ -61,10 +106,15 @@ function ComposePage() {
     if (!raw) return;
     sessionStorage.removeItem("compose-pending-media");
     try {
-      const parsed = JSON.parse(raw) as { media?: { url: string; postizId?: string; name: string }[]; caption?: string };
+      const parsed = JSON.parse(raw) as {
+        media?: { url: string; postizId?: string; name: string }[];
+        caption?: string;
+      };
       if (parsed.media?.length) setMedia(parsed.media);
       if (parsed.caption) setContent(parsed.caption);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const listFn = useServerFn(listPostizIntegrations);
@@ -98,10 +148,9 @@ function ComposePage() {
       const chosen = integrationsList.filter((i) => selectedIntegrations[i.id]);
       if (chosen.length === 0) throw new Error("Selecteer minstens één kanaal");
       if (!content.trim()) throw new Error("Schrijf eerst een caption");
-      const dateISO = mode === "now" ? new Date().toISOString() : new Date(scheduleAt).toISOString();
-      const image = media.length
-        ? media.map((m) => ({ id: m.postizId, path: m.url }))
-        : undefined;
+      const dateISO =
+        mode === "now" ? new Date().toISOString() : new Date(scheduleAt).toISOString();
+      const image = media.length ? media.map((m) => ({ id: m.postizId, path: m.url })) : undefined;
       return await createFn({
         data: {
           type: mode,
@@ -123,7 +172,9 @@ function ComposePage() {
     onError: (e: any) => toast.error(e?.message ?? "Inplannen mislukt"),
   });
 
-  const longest = Math.max(...selectedPlatforms.map((p) => PLATFORMS.find((x) => x.id === p)?.limit ?? 2200));
+  const longest = Math.max(
+    ...selectedPlatforms.map((p) => PLATFORMS.find((x) => x.id === p)?.limit ?? 2200),
+  );
 
   const togglePlatform = (id: string) => {
     setSelectedPlatforms((prev) => {
@@ -144,8 +195,12 @@ function ComposePage() {
       <div className="space-y-5">
         {/* Active client */}
         <div className="rounded-xl border border-gold/15 bg-card p-4">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Klant</div>
-          <div className="text-sm font-medium">{activeClient?.name ?? "Selecteer een klant in de sidebar"}</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
+            Klant
+          </div>
+          <div className="text-sm font-medium">
+            {activeClient?.name ?? "Selecteer een klant in de sidebar"}
+          </div>
         </div>
 
         {/* Platforms + per-platform post type */}
@@ -158,9 +213,13 @@ function ComposePage() {
           const available = PLATFORMS.filter((p) => connectedIds.has(p.id));
           return (
             <div className="rounded-xl border border-gold/15 bg-card p-4 space-y-3">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Platforms & post type</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Platforms & post type
+              </div>
               {available.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nog geen accounts gekoppeld. Ga naar Kanalen om te koppelen.</p>
+                <p className="text-xs text-muted-foreground">
+                  Nog geen accounts gekoppeld. Ga naar Kanalen om te koppelen.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {available.map((p) => {
@@ -171,7 +230,9 @@ function ComposePage() {
                           onClick={() => togglePlatform(p.id)}
                           className={cn(
                             "px-3 h-8 rounded-full text-xs font-medium border transition min-w-[110px]",
-                            on ? "bg-gold/15 text-gold border-gold/40" : "border-border hover:bg-accent/40",
+                            on
+                              ? "bg-gold/15 text-gold border-gold/40"
+                              : "border-border hover:bg-accent/40",
                           )}
                         >
                           {p.label}
@@ -181,10 +242,15 @@ function ComposePage() {
                             {p.types.map((t) => (
                               <button
                                 key={t.id}
-                                onClick={() => { setPostTypes((pt) => ({ ...pt, [p.id]: t.id })); setPreviewPlatform(p.id); }}
+                                onClick={() => {
+                                  setPostTypes((pt) => ({ ...pt, [p.id]: t.id }));
+                                  setPreviewPlatform(p.id);
+                                }}
                                 className={cn(
                                   "px-2.5 h-7 rounded-md text-[11px] border transition",
-                                  postTypes[p.id] === t.id ? "bg-gold/10 text-gold border-gold/30" : "border-border/60 text-muted-foreground hover:text-foreground",
+                                  postTypes[p.id] === t.id
+                                    ? "bg-gold/10 text-gold border-gold/30"
+                                    : "border-border/60 text-muted-foreground hover:text-foreground",
                                 )}
                               >
                                 {t.label}
@@ -193,7 +259,9 @@ function ComposePage() {
                           </div>
                         )}
                         {on && p.types.length === 1 && (
-                          <span className="text-[11px] text-muted-foreground">{p.types[0].label}</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {p.types[0].label}
+                          </span>
                         )}
                       </div>
                     );
@@ -206,21 +274,30 @@ function ComposePage() {
 
         {/* Channels (Postiz integrations) */}
         <div className="rounded-xl border border-gold/15 bg-card p-4">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Kanalen</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
+            Kanalen
+          </div>
           {integrationsList.length === 0 ? (
             <p className="text-xs text-muted-foreground">Geen Postiz integraties gevonden.</p>
           ) : (
             <div className="grid sm:grid-cols-2 gap-2">
               {integrationsList.map((i) => (
-                <label key={i.id} className="flex items-center gap-2 text-sm cursor-pointer rounded-lg border border-border px-3 py-2 hover:bg-accent/40">
+                <label
+                  key={i.id}
+                  className="flex items-center gap-2 text-sm cursor-pointer rounded-lg border border-border px-3 py-2 hover:bg-accent/40"
+                >
                   <input
                     type="checkbox"
                     checked={!!selectedIntegrations[i.id]}
-                    onChange={(e) => setSelectedIntegrations((p) => ({ ...p, [i.id]: e.target.checked }))}
+                    onChange={(e) =>
+                      setSelectedIntegrations((p) => ({ ...p, [i.id]: e.target.checked }))
+                    }
                     className="accent-[var(--gold)]"
                   />
                   <span className="font-medium">{i.name ?? i.identifier ?? i.id}</span>
-                  <span className="text-xs text-muted-foreground">{i.providerIdentifier ?? i.platform ?? ""}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {i.providerIdentifier ?? i.platform ?? ""}
+                  </span>
                 </label>
               ))}
             </div>
@@ -230,7 +307,9 @@ function ComposePage() {
         {/* Textarea */}
         <div className="rounded-xl border border-gold/15 bg-card p-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Caption</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Caption
+            </div>
             <div className="text-xs text-muted-foreground tabular-nums">
               {content.length} / {longest}
             </div>
@@ -245,7 +324,9 @@ function ComposePage() {
 
         {/* Media */}
         <div className="rounded-xl border border-gold/15 bg-card p-4">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Media</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
+            Media
+          </div>
           <label className="block rounded-lg border-2 border-dashed border-border p-6 text-center text-sm cursor-pointer hover:border-gold/40">
             <input
               type="file"
@@ -258,15 +339,22 @@ function ComposePage() {
               }}
             />
             {uploadMut.isPending ? (
-              <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploaden…</span>
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> Uploaden…
+              </span>
             ) : (
-              <span className="inline-flex items-center gap-2 text-muted-foreground"><ImageIcon className="h-4 w-4" /> Klik om bestand toe te voegen</span>
+              <span className="inline-flex items-center gap-2 text-muted-foreground">
+                <ImageIcon className="h-4 w-4" /> Klik om bestand toe te voegen
+              </span>
             )}
           </label>
           {media.length > 0 && (
             <div className="mt-3 flex gap-2 flex-wrap">
               {media.map((m, i) => (
-                <div key={i} className="relative h-16 w-16 rounded-lg overflow-hidden border border-border">
+                <div
+                  key={i}
+                  className="relative h-16 w-16 rounded-lg overflow-hidden border border-border"
+                >
                   <img src={m.url} alt="" className="h-full w-full object-cover" />
                   <button
                     onClick={() => setMedia((p) => p.filter((_, j) => j !== i))}
@@ -289,7 +377,9 @@ function ComposePage() {
                 onClick={() => setMode(m)}
                 className={cn(
                   "px-3 h-8 rounded-full text-xs font-medium border transition",
-                  mode === m ? "bg-gold/15 text-gold border-gold/40" : "border-border hover:bg-accent/40",
+                  mode === m
+                    ? "bg-gold/15 text-gold border-gold/40"
+                    : "border-border hover:bg-accent/40",
                 )}
               >
                 {m === "schedule" ? "Inplannen" : m === "now" ? "Nu publiceren" : "Concept"}
@@ -311,7 +401,13 @@ function ComposePage() {
           disabled={submitMut.isPending}
           className="w-full h-11 rounded-lg bg-gold text-primary-foreground font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50"
         >
-          {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "draft" ? <Save className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          {submitMut.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : mode === "draft" ? (
+            <Save className="h-4 w-4" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
           {mode === "schedule" ? "Inplannen" : mode === "now" ? "Nu publiceren" : "Concept opslaan"}
         </button>
       </div>
@@ -320,7 +416,9 @@ function ComposePage() {
       <aside className="hidden lg:block">
         <div className="sticky top-20 rounded-xl border border-gold/15 bg-card/60 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Voorbeeld</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Voorbeeld
+            </div>
             {selectedPlatforms.length > 1 && (
               <select
                 value={previewPlatform}
@@ -329,7 +427,11 @@ function ComposePage() {
               >
                 {selectedPlatforms.map((id) => {
                   const p = PLATFORMS.find((x) => x.id === id);
-                  return <option key={id} value={id}>{p?.label ?? id}</option>;
+                  return (
+                    <option key={id} value={id}>
+                      {p?.label ?? id}
+                    </option>
+                  );
                 })}
               </select>
             )}
@@ -349,13 +451,27 @@ function ComposePage() {
 }
 
 function PlatformPreview({
-  platform, type, content, mediaUrl, clientName, clientLogo,
+  platform,
+  type,
+  content,
+  mediaUrl,
+  clientName,
+  clientLogo,
 }: {
-  platform: string; type?: string; content: string; mediaUrl?: string; clientName: string; clientLogo?: string | null;
+  platform: string;
+  type?: string;
+  content: string;
+  mediaUrl?: string;
+  clientName: string;
+  clientLogo?: string | null;
 }) {
   const p = PLATFORMS.find((x) => x.id === platform);
   const typeLabel = p?.types.find((t) => t.id === type)?.label ?? p?.types[0]?.label ?? "";
-  const isVertical = type === "reel" || type === "story" || type === "short" || (platform === "tiktok" && type === "video");
+  const isVertical =
+    type === "reel" ||
+    type === "story" ||
+    type === "short" ||
+    (platform === "tiktok" && type === "video");
 
   const Header = (
     <div className="flex items-center gap-2">
@@ -365,7 +481,9 @@ function PlatformPreview({
         <div className="h-6 w-6 rounded-full bg-gradient-gold" />
       )}
       <span className="text-xs font-medium">{clientName}</span>
-      <span className="ml-auto text-[10px] text-muted-foreground uppercase tracking-wider">{p?.label} · {typeLabel}</span>
+      <span className="ml-auto text-[10px] text-muted-foreground uppercase tracking-wider">
+        {p?.label} · {typeLabel}
+      </span>
     </div>
   );
 
@@ -373,10 +491,18 @@ function PlatformPreview({
     <img
       src={mediaUrl}
       alt=""
-      className={cn("w-full object-cover rounded-md", isVertical ? "aspect-[9/16]" : "aspect-square")}
+      className={cn(
+        "w-full object-cover rounded-md",
+        isVertical ? "aspect-[9/16]" : "aspect-square",
+      )}
     />
   ) : (
-    <div className={cn("w-full rounded-md bg-muted/40 grid place-items-center text-[10px] text-muted-foreground", isVertical ? "aspect-[9/16]" : "aspect-square")}>
+    <div
+      className={cn(
+        "w-full rounded-md bg-muted/40 grid place-items-center text-[10px] text-muted-foreground",
+        isVertical ? "aspect-[9/16]" : "aspect-square",
+      )}
+    >
       geen media
     </div>
   );

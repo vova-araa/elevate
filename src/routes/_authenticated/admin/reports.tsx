@@ -16,7 +16,11 @@ function ReportsPage() {
   const { data: history, refetch } = useQuery({
     queryKey: ["reports", activeClient?.id],
     queryFn: async () => {
-      let q = supabase.from("reports").select("*").order("created_at", { ascending: false }).limit(20);
+      let q = supabase
+        .from("reports")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
       if (activeClient?.id) q = q.eq("client_id", activeClient.id);
       const { data } = await q;
       return data ?? [];
@@ -52,11 +56,15 @@ function ReportsPage() {
     <div className="grid lg:grid-cols-[360px_1fr] gap-5 max-w-6xl">
       <div className="rounded-xl border border-gold/15 bg-card p-5 space-y-4">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Klant</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">
+            Klant
+          </div>
           <div className="text-sm font-medium">{activeClient?.name ?? "—"}</div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Periode</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">
+            Periode
+          </div>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
@@ -72,13 +80,19 @@ function ReportsPage() {
           disabled={busy}
           className="w-full h-10 rounded-lg bg-gold text-primary-foreground font-medium inline-flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileBarChart className="h-4 w-4" />}
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileBarChart className="h-4 w-4" />
+          )}
           Rapport genereren
         </button>
       </div>
 
       <div className="rounded-xl border border-gold/15 bg-card p-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">Geschiedenis</div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
+          Geschiedenis
+        </div>
         {(history ?? []).length === 0 ? (
           <p className="text-sm text-muted-foreground">Nog geen rapporten gegenereerd.</p>
         ) : (
@@ -88,12 +102,16 @@ function ReportsPage() {
                 <div>
                   <div className="font-medium">{r.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {r.period_start ? new Date(r.period_start).toLocaleDateString("nl-NL") : "—"} – {r.period_end ? new Date(r.period_end).toLocaleDateString("nl-NL") : "—"}
+                    {r.period_start ? new Date(r.period_start).toLocaleDateString("nl-NL") : "—"} –{" "}
+                    {r.period_end ? new Date(r.period_end).toLocaleDateString("nl-NL") : "—"}
                     <span className="uppercase ml-2">{r.report_type}</span>
                   </div>
                 </div>
                 {r.file_path ? (
-                  <a href={r.file_path} className="text-xs h-8 px-3 rounded-lg bg-gold/15 text-gold inline-flex items-center gap-1.5">
+                  <a
+                    href={r.file_path}
+                    className="text-xs h-8 px-3 rounded-lg bg-gold/15 text-gold inline-flex items-center gap-1.5"
+                  >
                     <Download className="h-3.5 w-3.5" /> Download
                   </a>
                 ) : (

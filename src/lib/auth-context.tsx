@@ -47,10 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function loadRole(userId: string) {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
     if (data && data.length > 0) {
       const isAdmin = data.some((r) => r.role === "admin");
       setRole(isAdmin ? "admin" : "client");

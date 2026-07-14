@@ -4,8 +4,9 @@ import { z } from "zod";
 import { authenticateApiKey, dispatchEvent } from "@/lib/automation-engine.server";
 
 function admin() {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } });
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
 const CreateSchema = z.object({
@@ -24,10 +25,19 @@ export const Route = createFileRoute("/api/public/v1/posts")({
     handlers: {
       GET: async ({ request }) => {
         const auth = await authenticateApiKey(request);
-        if (!auth.ok) return new Response(JSON.stringify({ error: auth.error }), { status: 401, headers: { "Content-Type": "application/json" } });
+        if (!auth.ok)
+          return new Response(JSON.stringify({ error: auth.error }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
         const sb = admin();
         const url = new URL(request.url);
-        let q = sb.from("scheduled_posts").select("*").is("deleted_at", null).order("scheduled_at", { ascending: false }).limit(100);
+        let q = sb
+          .from("scheduled_posts")
+          .select("*")
+          .is("deleted_at", null)
+          .order("scheduled_at", { ascending: false })
+          .limit(100);
         const clientId = url.searchParams.get("client_id");
         if (auth.key!.client_id) q = q.eq("client_id", auth.key!.client_id);
         else if (clientId) q = q.eq("client_id", clientId);
@@ -37,17 +47,34 @@ export const Route = createFileRoute("/api/public/v1/posts")({
       },
       POST: async ({ request }) => {
         const auth = await authenticateApiKey(request);
-        if (!auth.ok) return new Response(JSON.stringify({ error: auth.error }), { status: 401, headers: { "Content-Type": "application/json" } });
-        if (!auth.key!.scopes?.includes("write")) return new Response(JSON.stringify({ error: "Key missing 'write' scope" }), { status: 403 });
+        if (!auth.ok)
+          return new Response(JSON.stringify({ error: auth.error }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        if (!auth.key!.scopes?.includes("write"))
+          return new Response(JSON.stringify({ error: "Key missing 'write' scope" }), {
+            status: 403,
+          });
         const body = await request.json().catch(() => null);
         const parsed = CreateSchema.safeParse(body);
-        if (!parsed.success) return new Response(JSON.stringify({ error: "Invalid input", issues: parsed.error.issues }), { status: 400 });
+        if (!parsed.success)
+          return new Response(
+            JSON.stringify({ error: "Invalid input", issues: parsed.error.issues }),
+            { status: 400 },
+          );
         const input = parsed.data;
         if (auth.key!.client_id && auth.key!.client_id !== input.client_id) {
-          return new Response(JSON.stringify({ error: "Key scoped to another client" }), { status: 403 });
+          return new Response(JSON.stringify({ error: "Key scoped to another client" }), {
+            status: 403,
+          });
         }
         const sb = admin();
-        const { data, error } = await sb.from("scheduled_posts").insert({ ...input }).select().single();
+        const { data, error } = await sb
+          .from("scheduled_posts")
+          .insert({ ...input })
+          .select()
+          .single();
         if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
         await dispatchEvent("post.created", { post: data }, data.client_id);
         return Response.json({ data }, { status: 201 });

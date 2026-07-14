@@ -8,4 +8,12 @@ export const CAPTION_LIMITS: Record<string, { soft: number; hard: number; label:
 };
 
 export const DAY_LABELS = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"];
-export const DAY_LABELS_LONG = ["Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
+export const DAY_LABELS_LONG = [
+  "Zondag",
+  "Maandag",
+  "Dinsdag",
+  "Woensdag",
+  "Donderdag",
+  "Vrijdag",
+  "Zaterdag",
+];
