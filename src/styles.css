@@ -96,11 +96,17 @@
   --sidebar-border: oklch(0.85 0.015 75 / 60%);
   --sidebar-ring: oklch(0.72 0.13 75);
 
-  --gradient-gold: linear-gradient(135deg, oklch(0.85 0.09 82), oklch(0.65 0.14 70));
+  --gradient-gold: linear-gradient(
+    135deg,
+    oklch(0.87 0.09 84),
+    oklch(0.72 0.13 75) 55%,
+    oklch(0.62 0.14 68)
+  );
   --gradient-luxe: linear-gradient(180deg, oklch(0.985 0.008 85), oklch(0.95 0.012 82));
   --gradient-glow: radial-gradient(60% 60% at 50% 0%, oklch(0.72 0.13 75 / 14%), transparent 70%);
 
-  --shadow-gold: 0 20px 60px -20px oklch(0.72 0.13 75 / 30%);
+  --shadow-gold:
+    0 8px 24px -12px oklch(0.72 0.13 75 / 35%), 0 20px 60px -20px oklch(0.72 0.13 75 / 28%);
   --shadow-elegant: 0 20px 50px -25px oklch(0.4 0.02 60 / 25%);
 }
 
@@ -137,7 +143,17 @@
   --sidebar-accent-foreground: oklch(0.95 0.012 85);
   --sidebar-border: oklch(0.78 0.015 75 / 14%);
   --sidebar-ring: oklch(0.78 0.13 78);
+  --gradient-gold: linear-gradient(
+    135deg,
+    oklch(0.88 0.09 84),
+    oklch(0.76 0.13 76) 55%,
+    oklch(0.64 0.14 68)
+  );
   --gradient-luxe: linear-gradient(180deg, oklch(0.18 0.012 60), oklch(0.22 0.013 60));
+  --gradient-glow: radial-gradient(60% 60% at 50% 0%, oklch(0.78 0.13 78 / 12%), transparent 70%);
+  --shadow-gold:
+    0 8px 24px -12px oklch(0.78 0.13 78 / 28%), 0 20px 60px -20px oklch(0 0 0 / 45%);
+  --shadow-elegant: 0 20px 50px -25px oklch(0 0 0 / 55%);
 }
 
 @layer base {
@@ -159,6 +175,86 @@
   .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
+  }
+
+  /* Tekstselectie in goudtint */
+  ::selection {
+    background: oklch(0.72 0.13 75 / 25%);
+    color: inherit;
+  }
+  .dark ::selection {
+    background: oklch(0.78 0.13 78 / 32%);
+  }
+
+  /* Nette gouden focus-ring voor toetsenbordnavigatie.
+     Componenten met eigen ring (focus-visible:outline-none) overschrijven dit. */
+  :focus-visible {
+    outline: 2px solid oklch(from var(--ring) l c h / 70%);
+    outline-offset: 2px;
+  }
+
+  /* Dunne, warme scrollbar — overal */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.72 0.13 75 / 28%) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.72 0.13 75 / 28%);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.72 0.13 75 / 45%);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Subtiele entrance-animatie voor page content */
+@utility fade-in-up {
+  animation: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Zachte shimmer voor skeletons */
+@utility skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(from var(--gold) l c h / 8%) 25%,
+    oklch(from var(--gold) l c h / 18%) 50%,
+    oklch(from var(--gold) l c h / 8%) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-up,
+  .skeleton-shimmer {
+    animation: none;
   }
 }
 
@@ -200,6 +296,21 @@
     background: oklch(0.99 0.006 85 / 90%);
     backdrop-filter: blur(20px);
     border: 1px solid oklch(0.72 0.13 75 / 22%);
+  }
+  /* Warme dark-mode varianten — geen puur zwart */
+  .dark .glass {
+    background: oklch(0.22 0.013 60 / 70%);
+    border-color: oklch(0.78 0.13 78 / 16%);
+  }
+  .dark .glass-strong {
+    background: oklch(0.22 0.013 60 / 88%);
+    border-color: oklch(0.78 0.13 78 / 20%);
+  }
+  .dark .hairline {
+    border-color: oklch(0.78 0.13 78 / 18%);
+  }
+  .dark .grain::before {
+    background-image: radial-gradient(oklch(0.4 0.03 75) 1px, transparent 1px);
   }
   .hairline {
     border: 1px solid oklch(0.72 0.13 75 / 20%);

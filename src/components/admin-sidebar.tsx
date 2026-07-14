@@ -245,7 +245,7 @@ export function AdminSidebar() {
         <button
           onClick={toggleSidebar}
           className={cn(
-            "h-6 w-6 grid place-items-center rounded-md border border-gold/15 hover:bg-accent/40 transition",
+            "h-6 w-6 grid place-items-center rounded-md border border-gold/15 text-muted-foreground transition-colors duration-150 hover:border-gold/30 hover:bg-accent/40 hover:text-foreground",
             collapsed && "absolute -right-3 top-5 bg-background",
           )}
           title={collapsed ? "Uitklappen" : "Inklappen"}
@@ -263,7 +263,7 @@ export function AdminSidebar() {
         <Link
           to="/admin/compose"
           className={cn(
-            "flex items-center gap-2 rounded-lg bg-gold text-primary-foreground font-medium text-sm transition hover:opacity-90",
+            "flex items-center gap-2 rounded-lg bg-gradient-gold text-primary-foreground font-medium text-sm shadow-sm transition-all duration-200 hover:brightness-105 hover:shadow-md active:scale-[0.98]",
             collapsed ? "h-9 w-9 justify-center mx-auto p-0" : "h-9 px-3 w-full justify-center",
           )}
           title="Nieuwe post"
@@ -300,15 +300,20 @@ export function AdminSidebar() {
                       }
                     }}
                     className={cn(
-                      "flex items-center rounded-lg text-sm transition relative",
+                      "group flex items-center rounded-lg text-sm transition-colors duration-150 relative active:scale-[0.99]",
                       collapsed ? "h-9 w-9 justify-center mx-auto" : "gap-3 px-3 py-2",
                       active
-                        ? "bg-gold/12 text-gold font-medium before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-gold before:rounded-r"
+                        ? "bg-gold/12 text-gold font-medium before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:bg-gold before:rounded-full"
                         : "text-foreground/75 hover:bg-accent/40 hover:text-foreground",
                     )}
                     title={collapsed ? item.label : undefined}
                   >
-                    <item.icon className={cn("h-4 w-4 shrink-0", active && "text-gold")} />
+                    <item.icon
+                      className={cn(
+                        "h-4 w-4 shrink-0 transition-colors duration-150",
+                        active ? "text-gold" : "text-muted-foreground group-hover:text-foreground",
+                      )}
+                    />
                     {!collapsed && (
                       <>
                         <span className="flex-1 truncate">{item.label}</span>
@@ -361,10 +366,10 @@ export function AdminSidebar() {
                   })
                 }
                 className={cn(
-                  "flex items-center w-full rounded-lg text-sm transition relative",
+                  "flex items-center w-full rounded-lg text-sm transition-colors duration-150 relative active:scale-[0.99]",
                   collapsed ? "h-9 w-9 justify-center mx-auto" : "gap-2.5 px-2 py-1.5",
                   active
-                    ? "bg-gold/12 before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-gold before:rounded-r"
+                    ? "bg-gold/12 before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:bg-gold before:rounded-full"
                     : "hover:bg-accent/40",
                 )}
                 title={collapsed ? c.name : undefined}

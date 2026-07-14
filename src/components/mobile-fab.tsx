@@ -9,7 +9,7 @@ export function MobileFab() {
   return (
     <Link
       to="/admin/compose"
-      className="md:hidden fixed right-4 bottom-[76px] z-40 h-14 w-14 rounded-full bg-gold text-primary-foreground grid place-items-center shadow-elegant hover:opacity-90 transition"
+      className="md:hidden fixed right-4 bottom-[76px] z-40 h-14 w-14 rounded-full bg-gradient-gold text-primary-foreground grid place-items-center glow-gold transition-all duration-200 hover:scale-105 hover:brightness-105 active:scale-95"
       aria-label="Nieuwe post"
     >
       <Plus className="h-6 w-6" />
