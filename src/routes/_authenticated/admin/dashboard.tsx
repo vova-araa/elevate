@@ -1,23 +1,34 @@
+import type { ReactNode } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { addDays, format, formatDistanceToNow, isToday, startOfDay } from "date-fns";
+import { nl } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
+import { Skeleton } from "@/components/ui/skeleton";
 import { z } from "zod";
 import {
-  Calendar,
-  ListChecks,
-  Sparkles,
-  Instagram,
-  Plus,
   ArrowRight,
+  Calendar,
+  CalendarClock,
   CheckCircle2,
-  AlertCircle,
-  Clock,
-  TrendingUp,
-  Megaphone,
-  Bell,
+  CheckSquare,
   ChevronDown,
+  FileText,
+  Instagram,
+  Linkedin,
+  ListChecks,
   Loader2,
+  MessageSquare,
+  Music2,
+  Plus,
+  Sparkles,
+  TrendingUp,
+  UserPlus,
+  Youtube,
+  Facebook,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +38,17 @@ export const Route = createFileRoute("/_authenticated/admin/dashboard")({
   validateSearch: searchSchema,
   component: AdminDashboard,
 });
+
+type ClientMini = Pick<Tables<"clients">, "id" | "name" | "brand_color" | "industry" | "logo_url">;
+type Platform = Tables<"scheduled_posts">["platform"];
+
+const PLATFORM_ICONS: Record<Platform, LucideIcon> = {
+  instagram: Instagram,
+  tiktok: Music2,
+  linkedin: Linkedin,
+  youtube: Youtube,
+  facebook: Facebook,
+};
 
 function AdminDashboard() {
   const { clientId } = Route.useSearch();
@@ -51,7 +73,7 @@ function AdminDashboard() {
   );
 }
 
-function Header({ clients, selected }: { clients: any[]; selected: any | null }) {
+function Header({ clients, selected }: { clients: ClientMini[]; selected: ClientMini | null }) {
   const navigate = useNavigate();
   const isAll = !selected;
   return (
@@ -124,189 +146,239 @@ function Header({ clients, selected }: { clients: any[]; selected: any | null })
 }
 
 function DashboardBody({ clientId, userId }: { clientId: string | null; userId?: string }) {
-  const filterBy = (q: any) => (clientId ? q.eq("client_id", clientId) : q);
+  // KPI's voor de tegels bovenaan
+  const { data: kpis, isLoading: kpisLoading } = useQuery({
+    queryKey: ["dashboard-kpis", clientId ?? "all", userId ?? "anon"],
+    queryFn: async () => {
+      const now = new Date();
+      const in7 = addDays(now, 7);
 
-  const { data: posts } = useQuery({
-    queryKey: ["dash-posts", clientId ?? "all"],
-    queryFn: async () =>
-      ((
-        await filterBy(supabase.from("scheduled_posts" as any).select("*")).order("scheduled_at", {
-          ascending: true,
-        })
-      ).data ?? []) as any[],
-  });
-  const { data: tasks } = useQuery({
-    queryKey: ["dash-tasks", clientId ?? "all"],
-    queryFn: async () =>
-      (
-        await filterBy(supabase.from("tasks").select("id,title,due_date,status,priority,client_id"))
-          .neq("status", "done")
-          .order("due_date", { nullsFirst: false })
-          .limit(8)
-      ).data ?? [],
-  });
-  const { data: results } = useQuery({
-    queryKey: ["dash-results", clientId ?? "all"],
-    queryFn: async () =>
-      (
-        await filterBy(
-          supabase.from("calendar_items").select("id,title,date,status,deliverable_type"),
-        )
-          .eq("status", "approved")
-          .order("date", { ascending: false })
-          .limit(6)
-      ).data ?? [],
-  });
-  const { data: notifications } = useQuery({
-    queryKey: ["dash-notif", userId],
-    enabled: !!userId,
-    queryFn: async () =>
-      (
-        await supabase
-          .from("notifications")
-          .select("*")
-          .eq("user_id", userId!)
-          .order("created_at", { ascending: false })
-          .limit(8)
-      ).data ?? [],
+      let scheduledQ = supabase
+        .from("scheduled_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "scheduled")
+        .is("deleted_at", null)
+        .gte("scheduled_at", now.toISOString())
+        .lte("scheduled_at", in7.toISOString());
+      if (clientId) scheduledQ = scheduledQ.eq("client_id", clientId);
+
+      let draftsQ = supabase
+        .from("scheduled_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "draft")
+        .is("deleted_at", null);
+      if (clientId) draftsQ = draftsQ.eq("client_id", clientId);
+
+      let tasksQ = supabase
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "done");
+      if (clientId) tasksQ = tasksQ.eq("client_id", clientId);
+
+      // "Ongelezen klantberichten": de messages-tabel heeft geen gelezen-status,
+      // dus we tellen de ongelezen new_message-notificaties van deze gebruiker.
+      const messagesQ = userId
+        ? supabase
+            .from("notifications")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .eq("type", "new_message")
+            .eq("read", false)
+        : null;
+
+      const [sched, drafts, tasks, msgs] = await Promise.all([
+        scheduledQ,
+        draftsQ,
+        tasksQ,
+        messagesQ,
+      ]);
+      return {
+        scheduled: sched.count ?? 0,
+        drafts: drafts.count ?? 0,
+        tasks: tasks.count ?? 0,
+        messages: msgs?.count ?? 0,
+      };
+    },
   });
 
-  const planned = (posts ?? []).filter((p) => p.status === "scheduled" || p.status === "draft");
-  const failed = (posts ?? []).filter((p) => p.status === "failed");
-  const published = (posts ?? []).filter((p) => p.status === "published");
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayTasks = (tasks ?? []).filter((t: any) => t.due_date === todayStr);
+  // Agenda: geplande posts van vandaag en morgen
+  const { data: agenda, isLoading: agendaLoading } = useQuery({
+    queryKey: ["dashboard-agenda", clientId ?? "all"],
+    queryFn: async () => {
+      const start = startOfDay(new Date());
+      const end = addDays(start, 2);
+      let q = supabase
+        .from("scheduled_posts")
+        .select("id,caption,scheduled_at,platform,status,client_id,clients(name)")
+        .is("deleted_at", null)
+        .neq("status", "failed")
+        .gte("scheduled_at", start.toISOString())
+        .lt("scheduled_at", end.toISOString());
+      if (clientId) q = q.eq("client_id", clientId);
+      return (await q.order("scheduled_at", { ascending: true })).data ?? [];
+    },
+  });
+
+  // Recente feedback van klanten op posts
+  const { data: feedback, isLoading: feedbackLoading } = useQuery({
+    queryKey: ["dashboard-feedback", clientId ?? "all"],
+    queryFn: async () => {
+      let q = supabase
+        .from("post_comments")
+        .select("id,body,created_at,client_id,clients(name)")
+        .eq("author_role", "client");
+      if (clientId) q = q.eq("client_id", clientId);
+      return (await q.order("created_at", { ascending: false }).limit(6)).data ?? [];
+    },
+  });
+
+  // Openstaande taken
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: ["dashboard-tasks", clientId ?? "all"],
+    queryFn: async () => {
+      let q = supabase
+        .from("tasks")
+        .select("id,title,due_date,status,priority,client_id")
+        .neq("status", "done");
+      if (clientId) q = q.eq("client_id", clientId);
+      return (await q.order("due_date", { nullsFirst: false }).limit(8)).data ?? [];
+    },
+  });
+
+  // Recent goedgekeurde deliverables
+  const { data: results, isLoading: resultsLoading } = useQuery({
+    queryKey: ["dashboard-results", clientId ?? "all"],
+    queryFn: async () => {
+      let q = supabase
+        .from("calendar_items")
+        .select("id,title,date,status,deliverable_type")
+        .eq("status", "approved");
+      if (clientId) q = q.eq("client_id", clientId);
+      return (await q.order("date", { ascending: false }).limit(6)).data ?? [];
+    },
+  });
+
+  const todayItems = (agenda ?? []).filter((p) => isToday(new Date(p.scheduled_at)));
+  const tomorrowItems = (agenda ?? []).filter((p) => !isToday(new Date(p.scheduled_at)));
 
   return (
     <>
-      {/* Stat strip */}
+      {/* KPI-tegels */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <Stat label="Geplande posts" value={planned.length} icon={Calendar} accent="gold" />
-        <Stat
-          label="Open taken"
-          value={tasks?.length ?? 0}
-          icon={ListChecks}
-          sub={todayTasks.length ? `${todayTasks.length} vandaag` : undefined}
+        <KpiTile
+          to="/admin/planner"
+          icon={Calendar}
+          label="Gepland (7 dagen)"
+          value={kpis?.scheduled}
+          loading={kpisLoading}
+          accent="gold"
         />
-        <Stat label="Gepubliceerd" value={published.length} icon={CheckCircle2} accent="emerald" />
-        <Stat
-          label="Mislukt"
-          value={failed.length}
-          icon={AlertCircle}
-          accent={failed.length ? "red" : undefined}
+        <KpiTile
+          to="/admin/queue"
+          icon={FileText}
+          label="Concepten wachtend"
+          value={kpis?.drafts}
+          loading={kpisLoading}
+          accent="amber"
+        />
+        <KpiTile
+          to="/admin/messages"
+          icon={MessageSquare}
+          label="Ongelezen klantberichten"
+          value={kpis?.messages}
+          loading={kpisLoading}
+          accent="sky"
+        />
+        <KpiTile
+          to="/admin/tasks"
+          icon={ListChecks}
+          label="Open taken"
+          value={kpis?.tasks}
+          loading={kpisLoading}
+          accent="emerald"
         />
       </div>
 
-      {/* Snelkoppelingen */}
-      <div className="grid gap-3 md:grid-cols-3">
+      {/* Snelacties */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <QuickAction
-          to={clientId ? "/admin/clients/$id" : "/admin/compose"}
-          params={clientId ? { id: clientId } : undefined}
-          hash={clientId ? "planner" : undefined}
+          to="/admin/compose"
           icon={Plus}
-          title="Nieuwe post inplannen"
-          subtitle={clientId ? "Direct naar de planner" : "Kies een klant in de composer"}
+          title="Nieuwe post"
+          subtitle="Composer openen"
         />
         <QuickAction
-          to="/admin/tasks"
-          icon={ListChecks}
-          title="Nieuwe taak"
-          subtitle="Werkbord openen"
+          to="/admin/ai"
+          icon={Sparkles}
+          title="AI Studio"
+          subtitle="Content genereren"
         />
         <QuickAction
-          to="/admin/planner"
-          icon={Calendar}
-          title="Agenda deze week"
-          subtitle={`${todayTasks.length} item${todayTasks.length === 1 ? "" : "s"} vandaag`}
+          to="/admin/clients/new"
+          icon={UserPlus}
+          title="Nieuwe klant"
+          subtitle="Klant toevoegen"
+        />
+        <QuickAction
+          to="/admin/approvals"
+          icon={CheckSquare}
+          title="Goedkeuringen"
+          subtitle="Concepten beoordelen"
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Geplande posts */}
+        {/* Vandaag & morgen */}
         <Card
-          title="Geplande posts"
-          icon={Instagram}
-          link={
-            clientId
-              ? { to: "/admin/clients/$id", params: { id: clientId }, label: "Open planner" }
-              : { to: "/admin/planner", label: "Open planner" }
-          }
+          title="Vandaag & morgen"
+          icon={CalendarClock}
+          link={{ to: "/admin/planner", label: "Open planner" }}
           className="lg:col-span-2"
         >
-          {planned.length === 0 ? (
-            <Empty body="Geen geplande posts." />
+          {agendaLoading ? (
+            <ListSkeleton rows={4} />
+          ) : (agenda ?? []).length === 0 ? (
+            <Empty body="Geen posts gepland voor vandaag of morgen." />
           ) : (
-            <ul className="space-y-2">
-              {planned.slice(0, 6).map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-lg bg-surface-elevated/50 p-3"
-                >
-                  <div className="h-9 w-9 rounded-md bg-gradient-to-br from-fuchsia-500/30 via-pink-500/30 to-amber-400/30 ring-1 ring-gold/30 shrink-0 flex items-center justify-center">
-                    <Instagram className="h-4 w-4 text-gold" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm truncate">
-                      {p.caption || (
-                        <span className="italic text-muted-foreground">geen caption</span>
-                      )}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground flex items-center gap-2">
-                      <Clock className="h-3 w-3" />
-                      {new Date(p.scheduled_at).toLocaleString("nl-NL", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
-                      p.status === "scheduled" && "bg-gold/15 text-gold",
-                      p.status === "draft" && "bg-muted/30 text-muted-foreground",
-                    )}
-                  >
-                    {p.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="space-y-4">
+              <AgendaSection label="Vandaag" items={todayItems} />
+              <AgendaSection label="Morgen" items={tomorrowItems} />
+            </div>
           )}
         </Card>
 
-        {/* Notificaties */}
-        <Card title="Meldingen" icon={Bell}>
-          {(notifications ?? []).length === 0 ? (
-            <Empty body="Geen meldingen." />
+        {/* Recente feedback van klanten */}
+        <Card
+          title="Feedback van klanten"
+          icon={MessageSquare}
+          link={{ to: "/admin/approvals", label: "Goedkeuringen" }}
+        >
+          {feedbackLoading ? (
+            <ListSkeleton rows={3} />
+          ) : (feedback ?? []).length === 0 ? (
+            <Empty body="Nog geen feedback van klanten." />
           ) : (
             <ul className="space-y-2">
-              {notifications!.slice(0, 8).map((n: any) => (
-                <li
-                  key={n.id}
-                  className={cn(
-                    "rounded-lg p-2.5 text-sm",
-                    n.read ? "bg-surface-elevated/40" : "bg-gold/8 ring-1 ring-gold/30",
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <NotifDot type={n.type} />
-                    <div className="font-medium text-sm truncate flex-1">{n.title}</div>
-                  </div>
-                  {n.body && (
-                    <div className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
-                      {n.body}
+              {(feedback ?? []).map((c) => (
+                <li key={c.id}>
+                  <Link
+                    to="/admin/approvals"
+                    className="block rounded-lg bg-surface-elevated/50 p-3 transition hover:bg-accent/40"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-gold shrink-0" />
+                      <span className="text-xs font-medium truncate">
+                        {c.clients?.name ?? "Onbekende klant"}
+                      </span>
+                      <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
+                        {formatDistanceToNow(new Date(c.created_at), {
+                          addSuffix: true,
+                          locale: nl,
+                        })}
+                      </span>
                     </div>
-                  )}
-                  <div className="text-[10px] text-muted-foreground mt-1">
-                    {new Date(n.created_at).toLocaleString("nl-NL", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{c.body}</p>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -320,16 +392,18 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
           link={{ to: "/admin/tasks", label: "Alle taken" }}
           className="lg:col-span-2"
         >
-          {(tasks ?? []).length === 0 ? (
+          {tasksLoading ? (
+            <ListSkeleton rows={4} />
+          ) : (tasks ?? []).length === 0 ? (
             <Empty body="Geen openstaande taken." />
           ) : (
             <ul className="divide-y divide-border/50">
-              {tasks!.map((t: any) => (
+              {(tasks ?? []).map((t) => (
                 <li key={t.id} className="flex items-center gap-3 py-2.5">
                   <span
                     className={cn(
                       "h-2 w-2 rounded-full shrink-0",
-                      t.priority === "high" && "bg-red-400",
+                      (t.priority === "high" || t.priority === "urgent") && "bg-red-400",
                       t.priority === "medium" && "bg-amber-400",
                       t.priority === "low" && "bg-sky-400",
                     )}
@@ -338,12 +412,9 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
                     <div className="text-sm truncate">{t.title}</div>
                     <div className="text-[11px] text-muted-foreground">
                       {t.due_date
-                        ? new Date(t.due_date).toLocaleDateString("nl-NL", {
-                            day: "numeric",
-                            month: "short",
-                          })
+                        ? format(new Date(t.due_date), "d MMM", { locale: nl })
                         : "geen deadline"}{" "}
-                      · {t.status}
+                      · {t.status === "in_progress" ? "bezig" : "open"}
                     </div>
                   </div>
                 </li>
@@ -352,40 +423,26 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
           )}
         </Card>
 
-        {/* Ads overzicht (placeholder pre-OAuth) */}
-        <Card title="Ads-overzicht" icon={Megaphone}>
-          <div className="space-y-3">
-            <AdsPlaceholderRow platform="Meta Ads" />
-            <AdsPlaceholderRow platform="Google Ads" />
-            <AdsPlaceholderRow platform="TikTok Ads" />
-            <p className="text-[10px] text-muted-foreground pt-1">
-              Live data verschijnt zodra de ads-accounts gekoppeld zijn in Account &amp; Bedrijf.
-            </p>
-          </div>
-        </Card>
-
         {/* Recente resultaten */}
-        <Card title="Recente resultaten" icon={TrendingUp} className="lg:col-span-3">
-          {(results ?? []).length === 0 ? (
+        <Card title="Recente resultaten" icon={TrendingUp}>
+          {resultsLoading ? (
+            <ListSkeleton rows={3} />
+          ) : (results ?? []).length === 0 ? (
             <Empty body="Nog geen goedgekeurde deliverables." />
           ) : (
-            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-              {results!.map((r: any) => (
-                <div key={r.id} className="rounded-lg bg-surface-elevated/50 p-3">
+            <ul className="space-y-2">
+              {(results ?? []).map((r) => (
+                <li key={r.id} className="rounded-lg bg-surface-elevated/50 p-3">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                     <div className="text-sm font-medium truncate">{r.title}</div>
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-1">
-                    {new Date(r.date).toLocaleDateString("nl-NL", {
-                      day: "numeric",
-                      month: "short",
-                    })}{" "}
-                    · {r.deliverable_type}
+                    {format(new Date(r.date), "d MMM", { locale: nl })} · {r.deliverable_type}
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </Card>
       </div>
@@ -393,54 +450,164 @@ function DashboardBody({ clientId, userId }: { clientId: string | null; userId?:
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  accent,
-}: {
-  icon: any;
-  label: string;
-  value: number;
-  sub?: string;
-  accent?: "gold" | "emerald" | "red";
-}) {
+type AgendaItem = {
+  id: string;
+  caption: string | null;
+  scheduled_at: string;
+  platform: Platform;
+  status: Tables<"scheduled_posts">["status"];
+  client_id: string;
+  clients: { name: string } | null;
+};
+
+function AgendaSection({ label, items }: { label: string; items: AgendaItem[] }) {
+  if (items.length === 0) return null;
   return (
-    <div className="glass rounded-2xl p-4 sm:p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-muted-foreground">
-          {label}
-        </span>
-        <Icon
-          className={cn(
-            "h-4 w-4",
-            accent === "gold" && "text-gold",
-            accent === "emerald" && "text-emerald-400",
-            accent === "red" && "text-red-400",
-            !accent && "text-muted-foreground",
-          )}
-        />
+    <div>
+      <div className="mb-1.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
       </div>
-      <div
-        className={cn(
-          "mt-2 font-display text-3xl sm:text-4xl",
-          accent === "gold" && "text-gradient-gold",
-          accent === "emerald" && "text-emerald-400",
-          accent === "red" && "text-red-400",
-          !accent && "text-foreground",
-        )}
-      >
-        {value}
-      </div>
-      {sub && <div className="text-[11px] text-muted-foreground mt-1">{sub}</div>}
+      <ul className="space-y-2">
+        {items.map((p) => {
+          const Icon = PLATFORM_ICONS[p.platform] ?? Instagram;
+          return (
+            <li key={p.id}>
+              <Link
+                to="/admin/planner"
+                className="flex items-center gap-3 rounded-lg bg-surface-elevated/50 p-3 transition hover:bg-accent/40"
+              >
+                <div className="w-12 shrink-0 text-sm font-medium tabular-nums text-gold">
+                  {format(new Date(p.scheduled_at), "HH:mm", { locale: nl })}
+                </div>
+                <div className="h-8 w-8 rounded-md bg-gold/10 ring-1 ring-gold/25 shrink-0 grid place-items-center">
+                  <Icon className="h-4 w-4 text-gold" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-medium truncate">
+                    {p.clients?.name ?? "Onbekende klant"}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {p.caption || <span className="italic">geen caption</span>}
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
+                    p.status === "scheduled" && "bg-gold/15 text-gold",
+                    p.status === "draft" && "bg-muted/40 text-muted-foreground",
+                    p.status === "publishing" && "bg-sky-500/15 text-sky-500",
+                    p.status === "published" && "bg-emerald-500/15 text-emerald-500",
+                  )}
+                >
+                  {p.status === "scheduled"
+                    ? "gepland"
+                    : p.status === "draft"
+                      ? "concept"
+                      : p.status === "publishing"
+                        ? "bezig"
+                        : "live"}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
 
-function Card({ title, icon: Icon, link, children, className }: any) {
+const KPI_ACCENTS = {
+  gold: "text-gold bg-gold/12",
+  amber: "text-amber-500 bg-amber-500/12",
+  sky: "text-sky-500 bg-sky-500/12",
+  emerald: "text-emerald-500 bg-emerald-500/12",
+} as const;
+
+function KpiTile({
+  to,
+  icon: Icon,
+  label,
+  value,
+  loading,
+  accent,
+}: {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  value: number | undefined;
+  loading: boolean;
+  accent: keyof typeof KPI_ACCENTS;
+}) {
   return (
-    <div className={cn("glass rounded-2xl p-5", className)}>
+    <Link
+      to={to}
+      className="group rounded-xl border border-gold/10 bg-card p-4 sm:p-5 transition hover:border-gold/30 hover:shadow-sm"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] sm:text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          {label}
+        </span>
+        <span
+          className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-lg", KPI_ACCENTS[accent])}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      {loading ? (
+        <Skeleton className="mt-3 h-9 w-14" />
+      ) : (
+        <div className="mt-2 font-display text-3xl sm:text-4xl">{value ?? 0}</div>
+      )}
+      <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-gold opacity-0 transition group-hover:opacity-100">
+        Bekijken <ArrowRight className="h-3 w-3" />
+      </div>
+    </Link>
+  );
+}
+
+function QuickAction({
+  to,
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  to: string;
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-3 rounded-xl border border-gold/10 bg-card p-4 transition hover:border-gold/30"
+    >
+      <div className="h-10 w-10 rounded-full bg-gold/15 grid place-items-center shrink-0 transition-transform group-hover:scale-105">
+        <Icon className="h-4.5 w-4.5 text-gold" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-display text-sm sm:text-base truncate">{title}</div>
+        <div className="text-[11px] text-muted-foreground truncate">{subtitle}</div>
+      </div>
+      <ArrowRight className="h-4 w-4 text-gold opacity-0 group-hover:opacity-100 transition shrink-0" />
+    </Link>
+  );
+}
+
+function Card({
+  title,
+  icon: Icon,
+  link,
+  children,
+  className,
+}: {
+  title: string;
+  icon: LucideIcon;
+  link?: { to: string; label: string };
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-xl border border-gold/10 bg-card p-5", className)}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-lg flex items-center gap-2">
           <Icon className="h-4 w-4 text-gold" /> {title}
@@ -448,7 +615,6 @@ function Card({ title, icon: Icon, link, children, className }: any) {
         {link && (
           <Link
             to={link.to}
-            params={link.params}
             className="text-xs text-gold hover:underline inline-flex items-center gap-1"
           >
             {link.label} <ArrowRight className="h-3 w-3" />
@@ -460,82 +626,16 @@ function Card({ title, icon: Icon, link, children, className }: any) {
   );
 }
 
+function ListSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: rows }, (_, i) => (
+        <Skeleton key={i} className="h-12 w-full rounded-lg" />
+      ))}
+    </div>
+  );
+}
+
 function Empty({ body }: { body: string }) {
   return <p className="text-sm text-muted-foreground text-center py-6">{body}</p>;
-}
-
-function QuickAction({ to, params, hash, icon: Icon, title, subtitle }: any) {
-  return (
-    <Link
-      to={to}
-      params={params}
-      hash={hash}
-      className="glass rounded-2xl p-4 transition hover:gold-ring group flex items-center gap-3"
-    >
-      <div className="h-11 w-11 rounded-full bg-gold/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-        <Icon className="h-5 w-5 text-gold" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="font-display text-base">{title}</div>
-        <div className="text-[11px] text-muted-foreground truncate">{subtitle}</div>
-      </div>
-      <ArrowRight className="h-4 w-4 text-gold opacity-0 group-hover:opacity-100 transition" />
-    </Link>
-  );
-}
-
-function NotifDot({ type }: { type: string }) {
-  const color =
-    type === "new_upload"
-      ? "bg-sky-400"
-      : type === "new_message"
-        ? "bg-fuchsia-400"
-        : type === "post_published"
-          ? "bg-emerald-400"
-          : type === "post_failed"
-            ? "bg-red-400"
-            : type === "awaiting_approval"
-              ? "bg-amber-400"
-              : type === "ad_budget"
-                ? "bg-orange-400"
-                : "bg-gold";
-  return <span className={cn("h-2 w-2 rounded-full shrink-0", color)} />;
-}
-
-function AdsPlaceholderRow({ platform }: { platform: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-lg bg-surface-elevated/40 p-2.5">
-      <div className="flex items-center gap-2">
-        <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-sm">{platform}</span>
-      </div>
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-        niet gekoppeld
-      </span>
-    </div>
-  );
-}
-
-function EmptyState({
-  title,
-  body,
-  cta,
-}: {
-  title: string;
-  body: string;
-  cta: { to: string; label: string };
-}) {
-  return (
-    <div className="glass rounded-2xl p-10 text-center">
-      <Sparkles className="h-8 w-8 text-gold mx-auto mb-3" />
-      <h2 className="font-display text-2xl">{title}</h2>
-      <p className="text-sm text-muted-foreground mt-2 mb-5">{body}</p>
-      <Link
-        to={cta.to}
-        className="inline-flex items-center gap-2 rounded-lg bg-gradient-gold px-4 py-2 text-sm font-medium text-primary-foreground"
-      >
-        <Plus className="h-4 w-4" /> {cta.label}
-      </Link>
-    </div>
-  );
 }

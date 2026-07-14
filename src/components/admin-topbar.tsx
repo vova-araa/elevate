@@ -1,10 +1,11 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { useUIStore } from "@/lib/stores/ui-store";
-import { useClientStore } from "@/lib/stores/client-store";
-import { Bell, Menu, Search } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme";
-import { Moon, Sun } from "lucide-react";
+import { Bell, Menu, Moon, Search, Sun } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { NotificationCenter, useNotificationCenter } from "@/components/notification-center";
 
 const TITLES: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
@@ -28,9 +29,12 @@ const TITLES: Record<string, string> = {
 export function AdminTopbar() {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const { setMobileSheetOpen, setCommandPaletteOpen } = useUIStore();
-  const { activeClient } = useClientStore();
   const { user } = useAuth();
   const { theme, toggle: toggleTheme } = useTheme();
+
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notificationCenter = useNotificationCenter();
+  const { unreadCount } = notificationCenter;
 
   const title = Object.entries(TITLES).find(([k]) => path.startsWith(k))?.[1] ?? "Elevate";
 
@@ -77,9 +81,28 @@ export function AdminTopbar() {
             <Moon className="h-4 w-4 text-gold" />
           )}
         </button>
-        <Link to="/admin/automations" className="rounded-full p-2 hover:bg-accent/40">
-          <Bell className="h-4 w-4 text-gold" />
-        </Link>
+        <Popover open={notifOpen} onOpenChange={setNotifOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className="relative rounded-full p-2 hover:bg-accent/40"
+              aria-label={unreadCount > 0 ? `Meldingen (${unreadCount} ongelezen)` : "Meldingen"}
+            >
+              <Bell className="h-4 w-4 text-gold" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            sideOffset={8}
+            className="w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] rounded-xl border border-gold/10 bg-card p-0 shadow-elegant"
+          >
+            <NotificationCenter center={notificationCenter} onClose={() => setNotifOpen(false)} />
+          </PopoverContent>
+        </Popover>
         <div className="h-8 w-8 rounded-full bg-gradient-gold grid place-items-center text-[11px] font-semibold text-white">
           {initials}
         </div>

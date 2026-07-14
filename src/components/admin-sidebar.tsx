@@ -76,11 +76,13 @@ export function AdminSidebar() {
           .from("notifications")
           .select("id", { count: "exact", head: true })
           .eq("read", false),
+        // `messages` heeft geen gelezen-kolom; de messages_notify-trigger maakt
+        // per klantbericht een notificatie aan — die tellen we hier.
         supabase
-          .from("messages")
+          .from("notifications")
           .select("id", { count: "exact", head: true })
-          .eq("sender_role", "client")
-          .is("read_at", null),
+          .eq("type", "new_message")
+          .eq("read", false),
       ]);
       return {
         scheduled: sched.count ?? 0,
