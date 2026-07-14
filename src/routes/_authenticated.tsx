@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import {
   Bell,
   LogOut,
@@ -249,7 +250,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const { user, role } = useAuth();
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Tables<"notifications">[]>([]);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isHome = pathname === "/dashboard" || pathname === "/";
 
@@ -281,7 +282,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
       .order("created_at", { ascending: false })
       .limit(20);
     setItems(data ?? []);
-    setUnread((data ?? []).filter((n: any) => !n.read).length);
+    setUnread((data ?? []).filter((n) => !n.read).length);
   }
 
   async function markAllRead() {

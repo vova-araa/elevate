@@ -59,7 +59,7 @@ function ClientsList() {
         }
       > = {};
 
-      (meetings.data ?? []).forEach((m: any) => {
+      (meetings.data ?? []).forEach((m) => {
         byClient[m.client_id] = byClient[m.client_id] || {
           meetings: 0,
           openTasks: 0,
@@ -70,7 +70,7 @@ function ClientsList() {
         byClient[m.client_id].meetings++;
       });
 
-      (tasks.data ?? []).forEach((t: any) => {
+      (tasks.data ?? []).forEach((t) => {
         byClient[t.client_id] = byClient[t.client_id] || {
           meetings: 0,
           openTasks: 0,
@@ -81,7 +81,7 @@ function ClientsList() {
         if (t.status !== "done") byClient[t.client_id].openTasks++;
       });
 
-      (deals.data ?? []).forEach((d: any) => {
+      (deals.data ?? []).forEach((d) => {
         byClient[d.client_id] = byClient[d.client_id] || {
           meetings: 0,
           openTasks: 0,
@@ -93,7 +93,7 @@ function ClientsList() {
           byClient[d.client_id].pipeline += (d.value_cents ?? 0) / 100;
       });
 
-      (evaluations.data ?? []).forEach((e: any) => {
+      (evaluations.data ?? []).forEach((e) => {
         byClient[e.client_id] = byClient[e.client_id] || {
           meetings: 0,
           openTasks: 0,
@@ -114,7 +114,7 @@ function ClientsList() {
 
   const industries = useMemo(() => {
     const set = new Set<string>();
-    (clients ?? []).forEach((c: any) => {
+    (clients ?? []).forEach((c) => {
       if (c.industry) set.add(c.industry);
     });
     return Array.from(set).sort();
@@ -127,7 +127,7 @@ function ClientsList() {
     if (q.trim()) {
       const s = q.toLowerCase();
       list = list.filter(
-        (c: any) =>
+        (c) =>
           c.name?.toLowerCase().includes(s) ||
           c.industry?.toLowerCase().includes(s) ||
           c.description?.toLowerCase().includes(s),
@@ -136,19 +136,19 @@ function ClientsList() {
 
     // Branchefilter
     if (industryFilter) {
-      list = list.filter((c: any) => c.industry === industryFilter);
+      list = list.filter((c) => c.industry === industryFilter);
     }
 
     // Minimale pipeline filter
     if (minPipeline) {
       const min = parseFloat(minPipeline);
       if (!isNaN(min)) {
-        list = list.filter((c: any) => (stats?.[c.id]?.pipeline ?? 0) >= min);
+        list = list.filter((c) => (stats?.[c.id]?.pipeline ?? 0) >= min);
       }
     }
 
     // Sortering
-    list = [...list].sort((a: any, b: any) => {
+    list = [...list].sort((a, b) => {
       const sa = stats?.[a.id];
       const sb = stats?.[b.id];
       let cmp = 0;
@@ -357,7 +357,7 @@ function ClientsList() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredSorted.map((c: any) => {
+        {filteredSorted.map((c) => {
           const s = stats?.[c.id] ?? {
             meetings: 0,
             openTasks: 0,
@@ -462,7 +462,7 @@ function Stat({
   value,
   highlight,
 }: {
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number | string;
   highlight?: boolean;

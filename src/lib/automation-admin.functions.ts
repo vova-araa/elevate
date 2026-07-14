@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
 
 function svc() {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -9,12 +10,12 @@ function svc() {
   });
 }
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", ctx.userId);
-  if (!roles?.some((r: any) => r.role === "admin")) {
+  if (!roles?.some((r) => r.role === "admin")) {
     throw new Error("Alleen admins mogen deze actie uitvoeren");
   }
 }
@@ -122,7 +123,7 @@ export const testWebhook = createServerFn({ method: "POST" })
     try {
       const res = await fetch(data.url, { method: "POST", headers, body, redirect: "manual" });
       return { ok: res.ok, status: res.status, body: (await res.text()).slice(0, 500) };
-    } catch (err: any) {
-      return { ok: false, status: 0, body: String(err?.message ?? err) };
+    } catch (err) {
+      return { ok: false, status: 0, body: err instanceof Error ? err.message : String(err) };
     }
   });

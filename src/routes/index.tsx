@@ -45,9 +45,7 @@ function Landing() {
 
       <main className="relative z-10 mx-auto max-w-6xl px-6">
         <section className="pt-24 pb-28 text-center md:pt-32">
-          <div
-            className="fade-in-up inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-[10px] uppercase tracking-[0.22em] text-gold/90 backdrop-blur-sm"
-          >
+          <div className="fade-in-up inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-[10px] uppercase tracking-[0.22em] text-gold/90 backdrop-blur-sm">
             <Sparkles className="h-3 w-3" /> Brand studio
           </div>
           <h1
@@ -77,7 +75,10 @@ function Landing() {
         </section>
 
         <section className="pb-28">
-          <div className="glass-strong fade-in-up rounded-2xl p-10 text-center shadow-elegant md:p-14" style={{ animationDelay: "320ms" }}>
+          <div
+            className="glass-strong fade-in-up rounded-2xl p-10 text-center shadow-elegant md:p-14"
+            style={{ animationDelay: "320ms" }}
+          >
             <p className="font-display text-2xl italic text-gradient-gold md:text-4xl">
               "Craft over noise."
             </p>

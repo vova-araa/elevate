@@ -23,7 +23,9 @@ import {
   Briefcase,
   CalendarDays,
   Inbox,
+  type LucideIcon,
 } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 import { ApprovalQueue } from "@/components/client-portal/approval-queue";
 
 export const Route = createFileRoute("/_authenticated/client/calendar")({
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/client/calendar")({
 type Status = "pending" | "delivered" | "approved";
 type Deliv = "image" | "video" | "copy" | "document" | "other";
 
-const DELIV_META: Record<Deliv, { label: string; Icon: any; tint: string }> = {
+const DELIV_META: Record<Deliv, { label: string; Icon: LucideIcon; tint: string }> = {
   image: {
     label: "Afbeelding",
     Icon: ImageIcon,
@@ -57,7 +59,7 @@ const DELIV_META: Record<Deliv, { label: string; Icon: any; tint: string }> = {
   other: { label: "Overig", Icon: Sparkles, tint: "text-gold bg-gold/10 border-gold/30" },
 };
 
-const STATUS_META: Record<Status, { label: string; Icon: any; cls: string; dot: string }> = {
+const STATUS_META: Record<Status, { label: string; Icon: LucideIcon; cls: string; dot: string }> = {
   pending: {
     label: "Open",
     Icon: Clock,
@@ -111,7 +113,7 @@ function ClientCalendar() {
       return data;
     },
   });
-  const myClientId = (membership as any)?.client_id as string | undefined;
+  const myClientId = membership?.client_id;
 
   const { data: draftCount } = useQuery({
     queryKey: ["client-draft-count", myClientId],
@@ -157,13 +159,13 @@ function ClientCalendar() {
     days.push(new Date(end.getFullYear(), end.getMonth(), end.getDate() + (days.length % 7)));
 
   const items = useMemo(
-    () => (data ?? []).filter((x: any) => statusFilter === "all" || x.status === statusFilter),
+    () => (data ?? []).filter((x) => statusFilter === "all" || x.status === statusFilter),
     [data, statusFilter],
   );
 
   const byDay = useMemo(() => {
-    const m: Record<string, any[]> = {};
-    items.forEach((x: any) => {
+    const m: Record<string, typeof items> = {};
+    items.forEach((x) => {
       (m[x.date] ||= []).push(x);
     });
     return m;
@@ -178,7 +180,7 @@ function ClientCalendar() {
       delivered = 0,
       approved = 0,
       overdue = 0;
-    (data ?? []).forEach((x: any) => {
+    (data ?? []).forEach((x) => {
       const d = new Date(x.date);
       if (d.getMonth() !== month.getMonth() || d.getFullYear() !== month.getFullYear()) return;
       if (x.status === "pending") pending++;
@@ -217,7 +219,7 @@ function ClientCalendar() {
       description: payload.description || null,
       date: selectedKey,
       status: "pending",
-    } as any);
+    });
     if (error) return toast.error(error.message);
     toast.success("Toegevoegd");
     setAdding(false);
@@ -225,10 +227,7 @@ function ClientCalendar() {
   }
 
   async function reassignItem(id: string, client_id: string) {
-    const { error } = await supabase
-      .from("calendar_items")
-      .update({ client_id } as any)
-      .eq("id", id);
+    const { error } = await supabase.from("calendar_items").update({ client_id }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Toegewezen");
     qc.invalidateQueries({ queryKey: ["client-cal"] });
@@ -370,7 +369,7 @@ function ClientCalendar() {
                     Status,
                     number
                   >;
-                  dayItems.forEach((it: any) => {
+                  dayItems.forEach((it) => {
                     counts[it.status as Status] = (counts[it.status as Status] ?? 0) + 1;
                   });
                   const overdue =
@@ -404,7 +403,7 @@ function ClientCalendar() {
                       </div>
                       {dayItems.length > 0 && (
                         <div className="mt-1.5 space-y-1">
-                          {dayItems.slice(0, 2).map((it: any) => {
+                          {dayItems.slice(0, 2).map((it) => {
                             const dv = DELIV_META[(it.deliverable_type as Deliv) ?? "other"];
                             const sm = STATUS_META[it.status as Status];
                             return (
@@ -477,7 +476,7 @@ function ClientCalendar() {
                     Geen deliverables op deze dag.
                   </div>
                 )}
-                {selectedItems.map((it: any) => {
+                {selectedItems.map((it) => {
                   const dv = DELIV_META[(it.deliverable_type as Deliv) ?? "other"];
                   const sm = STATUS_META[it.status as Status];
                   const overdue =
@@ -537,7 +536,7 @@ function ClientCalendar() {
                             onChange={(e) => reassignItem(it.id, e.target.value)}
                             className="w-full text-[11px] rounded-lg bg-input/60 hairline px-2 py-1.5 outline-none focus:ring-2 focus:ring-gold/40"
                           >
-                            {clients!.map((c: any) => (
+                            {clients!.map((c) => (
                               <option key={c.id} value={c.id}>
                                 {c.name}
                               </option>
@@ -621,7 +620,7 @@ function Kpi({
   label: string;
   value: number;
   tone: "amber" | "sky" | "emerald" | "red";
-  Icon: any;
+  Icon: LucideIcon;
 }) {
   const tones: Record<string, string> = {
     amber: "from-amber-500/15 to-transparent text-amber-300 border-amber-400/30",
@@ -645,7 +644,7 @@ function AddForm({
   onSubmit,
   onCancel,
 }: {
-  clients: any[];
+  clients: Pick<Tables<"clients">, "id" | "name" | "brand_color">[];
   onSubmit: (p: {
     client_id: string;
     title: string;

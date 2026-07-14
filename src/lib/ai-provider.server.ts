@@ -109,11 +109,17 @@ export interface ChatTurn {
   content: string;
 }
 
+/** JSON-serialiseerbare waarde (server functions moeten serialiseerbaar blijven). */
+export type JsonValue =
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
+export type ToolArgs = Record<string, JsonValue>;
+
 export interface ToolLoopOptions {
   system: string;
   messages: ChatTurn[];
   tools: Anthropic.Tool[];
-  executeTool: (name: string, args: any) => Promise<any>;
+  executeTool: (name: string, args: ToolArgs) => Promise<JsonValue>;
   maxIterations?: number;
   maxTokens?: number;
   effort?: Effort;
@@ -121,7 +127,7 @@ export interface ToolLoopOptions {
 
 export interface ToolLoopResult {
   reply: string;
-  actions: { tool: string; args: any; result: any }[];
+  actions: { tool: string; args: ToolArgs; result: JsonValue }[];
 }
 
 /**
@@ -176,8 +182,8 @@ export async function runToolLoop(opts: ToolLoopOptions): Promise<ToolLoopResult
 
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
       for (const toolUse of toolUses) {
-        const args = (toolUse.input ?? {}) as any;
-        let result: any;
+        const args = (toolUse.input ?? {}) as ToolArgs;
+        let result: JsonValue;
         try {
           result = await opts.executeTool(toolUse.name, args);
         } catch (e) {

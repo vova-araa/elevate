@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import {
   Upload,
@@ -203,7 +204,7 @@ function MediaPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: Sou
             className="rounded-lg bg-input/60 hairline px-3 py-2 text-sm"
           >
             <option value="">Kies klant…</option>
-            {clients?.map((c: any) => (
+            {clients?.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -216,7 +217,7 @@ function MediaPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: Sou
               className="rounded-lg bg-input/60 hairline px-3 py-2 text-sm"
             >
               <option value="">Hoofdmap</option>
-              {folders?.map((f: any) => (
+              {folders?.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
                 </option>
@@ -231,7 +232,7 @@ function MediaPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: Sou
             <div className="text-center text-muted-foreground py-12">Geen bestanden</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {uploads.map((u: any) => (
+              {uploads.map((u) => (
                 <PickTile
                   key={u.id}
                   u={u}
@@ -258,7 +259,7 @@ function MediaPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: Sou
   );
 }
 
-function PickTile({ u, onPick }: { u: any; onPick: () => void }) {
+function PickTile({ u, onPick }: { u: Tables<"uploads">; onPick: () => void }) {
   const [url, setUrl] = useState("");
   useEffect(() => {
     supabase.storage
@@ -486,7 +487,7 @@ function ImageEditor({
                     left: `${relX * 100}%`,
                     top: `${relY * 100}%`,
                     fontSize: `${(l.fontSize / area.width) * 100}cqw`,
-                    fontWeight: l.weight as any,
+                    fontWeight: l.weight,
                     color: l.color,
                     fontFamily: `${l.family}, sans-serif`,
                     textShadow: l.shadow ? "0 2px 8px rgba(0,0,0,0.55)" : "none",
@@ -629,8 +630,8 @@ function ImageEditor({
                 await uploadToLibrary({ blob, name, type: "image/png", clientId, folderId });
                 toast.success("Opgeslagen in mediabibliotheek");
                 onClose();
-              } catch (e: any) {
-                toast.error(e.message ?? "Opslaan mislukt");
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
               } finally {
                 setBusy(false);
               }
@@ -741,7 +742,9 @@ function VideoEditor({
     const v = videoRef.current;
     if (!v) throw new Error("Geen video");
     // capture using MediaRecorder by playing through the trim range
-    const stream = (v as any).captureStream?.() as MediaStream | undefined;
+    const stream = (
+      v as HTMLVideoElement & { captureStream?: () => MediaStream }
+    ).captureStream?.();
     if (!stream) throw new Error("Browser ondersteunt captureStream niet");
     const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
       ? "video/webm;codecs=vp9"
@@ -899,8 +902,8 @@ function VideoEditor({
                 await uploadToLibrary({ blob, name, type: "video/webm", clientId, folderId });
                 toast.success("Opgeslagen in mediabibliotheek");
                 onClose();
-              } catch (e: any) {
-                toast.error(e.message ?? "Opslaan mislukt");
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Opslaan mislukt");
               } finally {
                 setBusy(false);
               }
@@ -963,7 +966,7 @@ function SaveBar({
           className="w-full rounded-lg bg-input/60 hairline px-2 py-1.5 text-sm"
         >
           <option value="">Kies klant…</option>
-          {clients?.map((c: any) => (
+          {clients?.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -978,7 +981,7 @@ function SaveBar({
             className="w-full rounded-lg bg-input/60 hairline px-2 py-1.5 text-sm"
           >
             <option value="">Hoofdmap</option>
-            {folders?.map((f: any) => (
+            {folders?.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
               </option>
@@ -1008,7 +1011,7 @@ function Tab({
 }: {
   active: boolean;
   onClick: () => void;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
 }) {
   return (
@@ -1028,7 +1031,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
-function updateLayer(setLayers: any, id: string, patch: Partial<TextLayer>) {
+function updateLayer(
+  setLayers: React.Dispatch<React.SetStateAction<TextLayer[]>>,
+  id: string,
+  patch: Partial<TextLayer>,
+) {
   setLayers((ls: TextLayer[]) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
 }
 function loadImage(url: string): Promise<HTMLImageElement> {

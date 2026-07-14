@@ -2,16 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { generateJson } from "@/lib/ai-provider.server";
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", ctx.userId);
-  if (!roles?.some((r: any) => r.role === "admin")) {
+  if (!roles?.some((r) => r.role === "admin")) {
     throw new Error("Alleen admins mogen de AI Studio gebruiken");
   }
 }

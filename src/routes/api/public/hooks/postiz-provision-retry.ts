@@ -12,9 +12,12 @@ export const Route = createFileRoute("/api/public/hooks/postiz-provision-retry")
         try {
           const result = await runProvisionQueue();
           return Response.json({ ok: true, ...result });
-        } catch (e: any) {
+        } catch (e) {
           console.error("[postiz-provision-retry]", e);
-          return Response.json({ ok: false, error: e?.message ?? "unknown" }, { status: 500 });
+          return Response.json(
+            { ok: false, error: e instanceof Error ? e.message : "unknown" },
+            { status: 500 },
+          );
         }
       },
     },

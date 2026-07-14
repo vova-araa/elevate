@@ -32,7 +32,9 @@ import {
   X,
   ArrowRight,
   Circle,
+  type LucideIcon,
 } from "lucide-react";
+import type { Tables, Enums } from "@/integrations/supabase/types";
 import { exportReportPdf, exportAllReportsPdf } from "@/lib/report-pdf";
 import { MessagesThread } from "@/components/messages-thread";
 import { ClientTimeline } from "@/components/client-timeline";
@@ -56,7 +58,7 @@ type TabKey =
   | "tasks"
   | "socials";
 
-type TabItem = { k: TabKey; label: string; icon: any };
+type TabItem = { k: TabKey; label: string; icon: LucideIcon };
 const TAB_GROUPS: { group: string; items: TabItem[] }[] = [
   {
     group: "Algemeen",
@@ -189,7 +191,7 @@ function ClientDetail() {
 
 /* ───── Overview met KPI's ───── */
 
-function Overview({ client }: { client: any }) {
+function Overview({ client }: { client: Tables<"clients"> }) {
   const { data: stats } = useQuery({
     queryKey: ["client-stats", client.id],
     queryFn: async () => {
@@ -215,16 +217,14 @@ function Overview({ client }: { client: any }) {
           .select("id", { count: "exact", head: true })
           .eq("client_id", client.id),
       ]);
-      const openTasks = (t.data ?? []).filter((x: any) => x.status !== "done").length;
-      const wonDeals = (d.data ?? []).filter((x: any) => x.stage === "won");
-      const pipeline = (d.data ?? []).filter((x: any) => !["won", "lost"].includes(x.stage));
-      const wonValue =
-        wonDeals.reduce((acc: number, x: any) => acc + (x.value_cents ?? 0), 0) / 100;
-      const pipeValue =
-        pipeline.reduce((acc: number, x: any) => acc + (x.value_cents ?? 0), 0) / 100;
+      const openTasks = (t.data ?? []).filter((x) => x.status !== "done").length;
+      const wonDeals = (d.data ?? []).filter((x) => x.stage === "won");
+      const pipeline = (d.data ?? []).filter((x) => !["won", "lost"].includes(x.stage));
+      const wonValue = wonDeals.reduce((acc: number, x) => acc + (x.value_cents ?? 0), 0) / 100;
+      const pipeValue = pipeline.reduce((acc: number, x) => acc + (x.value_cents ?? 0), 0) / 100;
       const lastScore = (e.data ?? []).slice(-1)[0]?.score ?? null;
       const liveContent = (c.data ?? []).filter(
-        (x: any) => x.status === "scheduled" || x.status === "published",
+        (x) => x.status === "scheduled" || x.status === "published",
       ).length;
       return {
         meetings: m.count ?? 0,
@@ -324,7 +324,7 @@ function MeetingsPanel({ clientId }: { clientId: string }) {
   });
   const empty = {
     title: "",
-    meeting_type: "strategy" as const,
+    meeting_type: "strategy" as Enums<"meeting_type">,
     scheduled_at: "",
     duration_min: 60,
     location: "",
@@ -360,7 +360,7 @@ function MeetingsPanel({ clientId }: { clientId: string }) {
           <select
             className={inp}
             value={f.meeting_type}
-            onChange={(e) => setF({ ...f, meeting_type: e.target.value as any })}
+            onChange={(e) => setF({ ...f, meeting_type: e.target.value as Enums<"meeting_type"> })}
           >
             <option value="intake">Intake</option>
             <option value="strategy">Strategie</option>
@@ -410,7 +410,7 @@ function MeetingsPanel({ clientId }: { clientId: string }) {
         <button className={btnGold}>Opslaan</button>
       </SectionForm>
       <div className="space-y-3">
-        {data?.map((m: any) => (
+        {data?.map((m) => (
           <div key={m.id} className="glass rounded-2xl p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

@@ -1,16 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateText, runToolLoop } from "@/lib/ai-provider.server";
+import type { Database, Enums } from "@/integrations/supabase/types";
+import { generateText, runToolLoop, type JsonValue, type ToolArgs } from "@/lib/ai-provider.server";
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", ctx.userId);
-  if (!roles?.some((r: any) => r.role === "admin")) {
+  if (!roles?.some((r) => r.role === "admin")) {
     throw new Error("Alleen admins mogen deze actie uitvoeren");
   }
 }
@@ -121,8 +123,48 @@ const CAPTION_PLATFORM_HINTS: Record<string, string> = {
   threads: "Threads: max 500 tekens, conversationeel.",
 };
 
-async function runTool(name: string, args: any) {
+interface CreateTaskArgs {
+  client_id: string;
+  title: string;
+  description?: string;
+  priority?: Enums<"task_priority">;
+  status?: Enums<"task_status">;
+  due_date?: string;
+}
+
+interface CreateCalendarItemArgs {
+  client_id: string;
+  title: string;
+  date: string;
+  deliverable_type?: Enums<"deliverable_type">;
+  description?: string;
+}
+
+interface CreateStrategyNoteArgs {
+  client_id: string;
+  title: string;
+  body?: string;
+  category?: string;
+}
+
+interface GenerateCaptionArgs {
+  client_id?: string;
+  briefing: string;
+  tone?: string;
+  platforms?: string[];
+}
+
+interface SchedulePostArgs {
+  client_id?: string;
+  content: string;
+  integration_ids?: string[];
+  date: string;
+  type?: "schedule" | "now" | "draft";
+}
+
+async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
   if (name === "create_task") {
+    const args = rawArgs as unknown as CreateTaskArgs;
     const { error, data } = await supabaseAdmin
       .from("tasks")
       .insert({
@@ -139,6 +181,7 @@ async function runTool(name: string, args: any) {
     return { ok: true, id: data.id };
   }
   if (name === "create_calendar_item") {
+    const args = rawArgs as unknown as CreateCalendarItemArgs;
     const { error, data } = await supabaseAdmin
       .from("calendar_items")
       .insert({
@@ -154,6 +197,7 @@ async function runTool(name: string, args: any) {
     return { ok: true, id: data.id };
   }
   if (name === "create_strategy_note") {
+    const args = rawArgs as unknown as CreateStrategyNoteArgs;
     const { error, data } = await supabaseAdmin
       .from("strategy_notes")
       .insert({
@@ -168,6 +212,7 @@ async function runTool(name: string, args: any) {
     return { ok: true, id: data.id };
   }
   if (name === "generate_caption") {
+    const args = rawArgs as unknown as GenerateCaptionArgs;
     try {
       const results: { platform: string; text: string }[] = [];
       for (const platform of args.platforms ?? []) {
@@ -183,11 +228,12 @@ async function runTool(name: string, args: any) {
         });
       }
       return { ok: true, captions: results };
-    } catch (e: any) {
-      return { ok: false, error: e?.message ?? "Caption mislukt" };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Caption mislukt" };
     }
   }
   if (name === "schedule_post") {
+    const args = rawArgs as unknown as SchedulePostArgs;
     try {
       if (!args.client_id) return { ok: false, error: "client_id ontbreekt" };
       const first = (args.integration_ids?.[0] ?? "instagram") as string;
@@ -195,7 +241,7 @@ async function runTool(name: string, args: any) {
         ["facebook", "instagram", "linkedin", "tiktok", "youtube"].includes(first)
           ? first
           : "instagram"
-      ) as any;
+      ) as Enums<"social_platform">;
       const { error, data } = await supabaseAdmin
         .from("scheduled_posts")
         .insert({
@@ -210,8 +256,8 @@ async function runTool(name: string, args: any) {
         .single();
       if (error) return { ok: false, error: error.message };
       return { ok: true, id: data.id };
-    } catch (e: any) {
-      return { ok: false, error: e?.message ?? "Inplannen mislukt" };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Inplannen mislukt" };
     }
   }
   return { ok: false, error: "Onbekende tool" };

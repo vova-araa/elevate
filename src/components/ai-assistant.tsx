@@ -3,9 +3,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sparkles, X, Send, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { aiAssistant } from "@/lib/ai.functions";
+import type { JsonValue, ToolLoopResult } from "@/lib/ai-provider.server";
 import { cn } from "@/lib/utils";
 
-type Msg = { role: "user" | "assistant"; content: string; actions?: any[] };
+type AssistantAction = ToolLoopResult["actions"][number];
+
+type Msg = { role: "user" | "assistant"; content: string; actions?: AssistantAction[] };
+
+function actionOk(result: JsonValue): boolean {
+  return (
+    typeof result === "object" && result !== null && !Array.isArray(result) && result.ok === true
+  );
+}
 
 export function AiAssistant({ clientId }: { clientId?: string }) {
   const [open, setOpen] = useState(false);
@@ -44,13 +53,16 @@ export function AiAssistant({ clientId }: { clientId?: string }) {
         ...next,
         { role: "assistant", content: res.reply || "Klaar.", actions: res.actions },
       ]);
-      if (res.actions?.some((a: any) => a.result?.ok)) {
+      if (res.actions?.some((a) => actionOk(a.result))) {
         qc.invalidateQueries();
       }
-    } catch (e: any) {
+    } catch (e) {
       setMessages([
         ...next,
-        { role: "assistant", content: "⚠️ " + (e.message || "Er ging iets mis.") },
+        {
+          role: "assistant",
+          content: "⚠️ " + (e instanceof Error && e.message ? e.message : "Er ging iets mis."),
+        },
       ]);
     } finally {
       setBusy(false);
@@ -114,17 +126,17 @@ export function AiAssistant({ clientId }: { clientId?: string }) {
                     {m.content}
                     {m.actions && m.actions.length > 0 && (
                       <div className="mt-2 space-y-1">
-                        {m.actions.map((a: any, idx: number) => (
+                        {m.actions.map((a, idx: number) => (
                           <div
                             key={idx}
                             className={cn(
                               "text-[11px] rounded-md px-2 py-1 inline-flex items-center gap-1 mr-1",
-                              a.result?.ok
+                              actionOk(a.result)
                                 ? "bg-emerald-500/15 text-emerald-300"
                                 : "bg-red-500/15 text-red-300",
                             )}
                           >
-                            {a.result?.ok ? (
+                            {actionOk(a.result) ? (
                               <CheckCircle2 className="h-3 w-3" />
                             ) : (
                               <AlertTriangle className="h-3 w-3" />

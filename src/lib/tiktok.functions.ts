@@ -130,12 +130,12 @@ export const publishTikTokPost = createServerFn({ method: "POST" })
         .eq("id", post.id);
 
       return { ok: true, publishId };
-    } catch (e: any) {
+    } catch (e) {
       await supabase
         .from("scheduled_posts")
         .update({
           status: "failed",
-          error_message: e?.message ?? "Onbekende fout",
+          error_message: e instanceof Error ? e.message : "Onbekende fout",
         })
         .eq("id", post.id);
       throw e;

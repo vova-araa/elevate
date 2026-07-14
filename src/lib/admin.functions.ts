@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 const inviteSchema = z.object({
   email: z.string().email().max(255),
@@ -11,12 +13,12 @@ const inviteSchema = z.object({
   makeAdmin: z.boolean().optional(),
 });
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", ctx.userId);
-  if (!roles?.some((r: any) => r.role === "admin")) {
+  if (!roles?.some((r) => r.role === "admin")) {
     throw new Error("Alleen admins mogen deze actie uitvoeren");
   }
 }

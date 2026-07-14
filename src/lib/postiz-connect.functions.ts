@@ -1,8 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 const PLATFORM = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
+
+/** Subset van het Postiz integration-object dat wij gebruiken. */
+interface PostizIntegration {
+  id: string | number;
+  identifier?: string | null;
+  providerIdentifier?: string | null;
+  platform?: string | null;
+  name?: string | null;
+  profile?: string | null;
+  username?: string | null;
+  picture?: string | null;
+}
 
 const BASE = () => process.env.POSTIZ_BASE_URL?.replace(/\/$/, "") || "https://api.postiz.com";
 
@@ -26,11 +40,14 @@ function normalizePostizPlatform(
   return null;
 }
 
-function integrationHandle(integration: any) {
+function integrationHandle(integration: PostizIntegration) {
   return integration.profile ?? integration.username ?? integration.name ?? "Postiz account";
 }
 
-function clientNameMatchesIntegration(clientName: string | null | undefined, integration: any) {
+function clientNameMatchesIntegration(
+  clientName: string | null | undefined,
+  integration: PostizIntegration,
+) {
   const client = String(clientName ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
@@ -58,9 +75,12 @@ async function postizFetch<T>(path: string, init: RequestInit = {}): Promise<T> 
 }
 
 /** Lookup primary client voor de huidige user (eerste client-membership). */
-async function getUserClientId(supabase: any, userId: string): Promise<string | null> {
+async function getUserClientId(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<string | null> {
   const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-  const isAdmin = roles?.some((r: any) => r.role === "admin");
+  const isAdmin = roles?.some((r) => r.role === "admin");
   if (isAdmin) return null;
   const { data } = await supabase
     .from("client_members")
@@ -71,7 +91,11 @@ async function getUserClientId(supabase: any, userId: string): Promise<string | 
   return data?.client_id ?? null;
 }
 
-async function assertClientAccess(supabase: any, userId: string, clientId: string) {
+async function assertClientAccess(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  clientId: string,
+) {
   const { data, error } = await supabase.rpc("user_has_client_access", {
     _user_id: userId,
     _client_id: clientId,
@@ -95,12 +119,13 @@ export const initPostizConnect = createServerFn({ method: "POST" })
       const result = await postizFetch<{ url?: string }>(`/social/${encodeURIComponent(provider)}`);
       if (!result?.url) throw new Error("Postiz gaf geen autorisatie-link terug");
       return { redirectUrl: result.url, external: true as const, provider };
-    } catch (e: any) {
+    } catch (e) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.from("connection_errors").insert({
         client_id: clientId,
         platform: data.platform,
-        error_message: e?.message ?? "Postiz autorisatie-link kon niet worden aangemaakt",
+        error_message:
+          e instanceof Error ? e.message : "Postiz autorisatie-link kon niet worden aangemaakt",
       });
       throw e;
     }
@@ -128,7 +153,7 @@ export const completePostizConnect = createServerFn({ method: "POST" })
     await assertClientAccess(supabase, userId, clientId);
 
     try {
-      const integrations = await postizFetch<any[]>("/integrations");
+      const integrations = await postizFetch<PostizIntegration[]>("/integrations");
       const match = integrations.find(
         (i) =>
           normalizePostizPlatform(i.identifier ?? i.providerIdentifier ?? i.platform) ===
@@ -163,12 +188,12 @@ export const completePostizConnect = createServerFn({ method: "POST" })
       );
       if (error) throw new Error(error.message);
       return { ok: true, handle, integrationId };
-    } catch (e: any) {
+    } catch (e) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.from("connection_errors").insert({
         client_id: clientId,
         platform: data.platform,
-        error_message: e?.message ?? "onbekende fout",
+        error_message: e instanceof Error ? e.message : "onbekende fout",
       });
       throw e;
     }
@@ -211,7 +236,7 @@ export const syncPostizConnection = createServerFn({ method: "POST" })
       .select("id, name")
       .eq("id", clientId)
       .maybeSingle();
-    const integrations = await postizFetch<any[]>("/integrations");
+    const integrations = await postizFetch<PostizIntegration[]>("/integrations");
     const candidates = integrations.filter(
       (i) =>
         normalizePostizPlatform(i.identifier ?? i.providerIdentifier ?? i.platform) ===
@@ -226,9 +251,9 @@ export const syncPostizConnection = createServerFn({ method: "POST" })
           .from("social_connections")
           .select("client_id, postiz_integration_id")
           .in("postiz_integration_id", ids)
-      : { data: [] as any[] };
+      : { data: [] as { client_id: string; postiz_integration_id: string | null }[] };
     const assigned = new Map(
-      (existing ?? []).map((row: any) => [row.postiz_integration_id, row.client_id]),
+      (existing ?? []).map((row) => [row.postiz_integration_id, row.client_id]),
     );
 
     const unassigned = candidates.filter((i) => !assigned.has(String(i.id)));
@@ -296,7 +321,7 @@ export const claimPostizIntegration = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await assertClientAccess(supabase, userId, data.clientId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const integrations = await postizFetch<any[]>("/integrations");
+    const integrations = await postizFetch<PostizIntegration[]>("/integrations");
     const match = integrations.find((i) => String(i.id) === data.integrationId);
     if (!match) throw new Error("Postiz-account niet gevonden");
     const platform = normalizePostizPlatform(

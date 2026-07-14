@@ -1,6 +1,31 @@
 // Server-only automation engine: dispatches scheduled posts,
 // evaluates rules, fires outgoing webhooks.
 import { createClient } from "@supabase/supabase-js";
+import type { Enums, Tables } from "@/integrations/supabase/types";
+
+type WebhookEndpoint = Tables<"webhook_endpoints">;
+type AutomationRule = Tables<"automation_rules">;
+
+interface ActionConfig {
+  user_id?: string;
+  title?: string;
+  body?: string;
+  link?: string;
+  client_id?: string;
+  description?: string;
+  priority?: Enums<"task_priority">;
+  due_in_days?: number | string;
+  url?: string;
+  to_status?: Enums<"scheduled_post_status">;
+  from_status?: Enums<"scheduled_post_status">;
+}
+
+interface TriggerConfig {
+  frequency?: "daily" | "weekly" | "monthly";
+  hour?: number | string;
+  day_of_week?: number | string;
+  day_of_month?: number | string;
+}
 
 function admin() {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -37,11 +62,11 @@ export async function dispatchEvent(
 
   if (!endpoints?.length) return;
   const filtered = clientId
-    ? endpoints.filter((e: any) => !e.client_id || e.client_id === clientId)
+    ? endpoints.filter((e: WebhookEndpoint) => !e.client_id || e.client_id === clientId)
     : endpoints;
 
   await Promise.all(
-    filtered.map(async (ep: any) => {
+    filtered.map(async (ep: WebhookEndpoint) => {
       const body = JSON.stringify({ event, timestamp: new Date().toISOString(), data: payload });
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -66,12 +91,12 @@ export async function dispatchEvent(
             failure_count: res.ok ? 0 : (ep.failure_count ?? 0) + 1,
           })
           .eq("id", ep.id);
-      } catch (err: any) {
+      } catch (err) {
         await sb.from("webhook_deliveries").insert({
           endpoint_id: ep.id,
           event,
           payload,
-          error_message: String(err?.message ?? err),
+          error_message: err instanceof Error ? err.message : String(err),
         });
         await sb
           .from("webhook_endpoints")
@@ -84,15 +109,15 @@ export async function dispatchEvent(
   );
 }
 
-async function executeAction(rule: any, context: Record<string, unknown> = {}) {
+async function executeAction(rule: AutomationRule, context: Record<string, unknown> = {}) {
   const sb = admin();
-  const cfg = rule.action_config ?? {};
+  const cfg = (rule.action_config ?? {}) as ActionConfig;
   try {
     if (rule.action_type === "create_notification") {
       const { data: admins } = await sb.from("user_roles").select("user_id").eq("role", "admin");
       const userIds: string[] = cfg.user_id
         ? [cfg.user_id]
-        : (admins ?? []).map((a: any) => a.user_id);
+        : (admins ?? []).map((a: { user_id: string }) => a.user_id);
       for (const uid of userIds) {
         await sb.rpc("enqueue_notification", {
           _user_id: uid,
@@ -142,19 +167,19 @@ async function executeAction(rule: any, context: Record<string, unknown> = {}) {
       .from("automation_runs")
       .insert({ rule_id: rule.id, status: "success", payload: context });
     return true;
-  } catch (err: any) {
+  } catch (err) {
     await sb.from("automation_runs").insert({
       rule_id: rule.id,
       status: "error",
       payload: context,
-      error_message: String(err?.message ?? err),
+      error_message: err instanceof Error ? err.message : String(err),
     });
     return false;
   }
 }
 
-function isDue(rule: any, now: Date): boolean {
-  const cfg = rule.trigger_config ?? {};
+function isDue(rule: AutomationRule, now: Date): boolean {
+  const cfg = (rule.trigger_config ?? {}) as TriggerConfig;
   const last = rule.last_run_at ? new Date(rule.last_run_at) : null;
   const freq = cfg.frequency ?? "daily";
   const minIntervalMs =
@@ -180,7 +205,7 @@ function isDue(rule: any, now: Date): boolean {
 export async function runTick() {
   const sb = admin();
   const now = new Date();
-  const summary: any = { published: 0, rules_run: 0, errors: 0 };
+  const summary = { published: 0, rules_run: 0, errors: 0 };
 
   // 1) Publish scheduled posts whose time has come
   const { data: due } = await sb
@@ -222,7 +247,7 @@ export async function runTick() {
 // Helper for API key auth
 export async function authenticateApiKey(
   req: Request,
-): Promise<{ ok: boolean; key?: any; error?: string }> {
+): Promise<{ ok: boolean; key?: Tables<"api_keys">; error?: string }> {
   const auth = req.headers.get("authorization") ?? "";
   const m = auth.match(/^Bearer\s+(.+)$/i);
   if (!m) return { ok: false, error: "Missing bearer token" };

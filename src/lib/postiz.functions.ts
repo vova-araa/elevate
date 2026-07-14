@@ -1,6 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
+
+/** Subset van het Postiz integration-object dat wij gebruiken. */
+interface PostizIntegration {
+  id: string | number;
+  identifier?: string | null;
+  providerIdentifier?: string | null;
+  platform?: string | null;
+  name?: string | null;
+  profile?: string | null;
+  username?: string | null;
+  picture?: string | null;
+}
+
+interface AssignedConnectionRow {
+  client_id: string | null;
+  platform: string;
+  postiz_integration_id: string | null;
+  account_username: string | null;
+  clients: { name: string } | null;
+}
 
 const BASE = () => process.env.POSTIZ_BASE_URL?.replace(/\/$/, "") || "https://api.postiz.com";
 
@@ -32,12 +54,12 @@ function normalizePlatform(identifier: string | null | undefined) {
   return raw;
 }
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", ctx.userId);
-  if (!roles?.some((r: any) => r.role === "admin")) {
+  if (!roles?.some((r) => r.role === "admin")) {
     throw new Error("Alleen admins mogen Postiz beheren");
   }
 }
@@ -48,17 +70,17 @@ export const listPostizIntegrations = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const integrations = await postizFetch("/integrations");
     if (!Array.isArray(integrations)) return [];
-    const ids = integrations.map((i: any) => String(i.id)).filter(Boolean);
+    const ids = integrations.map((i: PostizIntegration) => String(i.id)).filter(Boolean);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: assigned } = ids.length
       ? await supabaseAdmin
           .from("social_connections")
           .select("client_id, platform, postiz_integration_id, account_username, clients(name)")
           .in("postiz_integration_id", ids)
-      : { data: [] as any[] };
-    const byId = new Map<string, any>();
-    for (const row of (assigned as any[]) ?? []) byId.set(String(row.postiz_integration_id), row);
-    return integrations.map((integration: any) => {
+      : { data: [] as AssignedConnectionRow[] };
+    const byId = new Map<string, AssignedConnectionRow>();
+    for (const row of assigned ?? []) byId.set(String(row.postiz_integration_id), row);
+    return integrations.map((integration: PostizIntegration) => {
       const identifier =
         integration.providerIdentifier ?? integration.identifier ?? integration.platform ?? "";
       const assignedRow = byId.get(String(integration.id));

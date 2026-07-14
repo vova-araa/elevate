@@ -59,13 +59,13 @@ export const provisionClientPostiz = createServerFn({ method: "POST" })
         .update({ status: "done", last_attempt_at: new Date().toISOString(), error_message: null })
         .eq("client_id", client.id);
       return { ok: true, organizationId: res.organizationId };
-    } catch (e: any) {
+    } catch (e) {
       await supabaseAdmin.from("provision_queue").upsert(
         {
           client_id: client.id,
           status: "failed",
           last_attempt_at: new Date().toISOString(),
-          error_message: e?.message ?? "onbekende fout",
+          error_message: e instanceof Error ? e.message : "onbekende fout",
         },
         { onConflict: "client_id" },
       );
@@ -138,13 +138,13 @@ export async function runProvisionQueue() {
         .update({ status: "done", error_message: null })
         .eq("id", row.id);
       success++;
-    } catch (e: any) {
+    } catch (e) {
       const nextAttempts = row.attempts + 1;
       await supabaseAdmin
         .from("provision_queue")
         .update({
           status: nextAttempts >= MAX_ATTEMPTS ? "failed" : "pending",
-          error_message: e?.message ?? "onbekende fout",
+          error_message: e instanceof Error ? e.message : "onbekende fout",
         })
         .eq("id", row.id);
     }
