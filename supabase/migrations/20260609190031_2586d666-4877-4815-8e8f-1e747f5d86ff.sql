@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enqueue_notification(uuid, text, text, text, text) FROM PUBLIC, anon;
