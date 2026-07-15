@@ -25,6 +25,7 @@ import { Route as AuthenticatedClientCalendarRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminWebhooksRouteImport } from './routes/_authenticated/admin/webhooks'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminTrashRouteImport } from './routes/_authenticated/admin/trash'
+import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminTasksRouteImport } from './routes/_authenticated/admin/tasks'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminSearchRouteImport } from './routes/_authenticated/admin/search'
@@ -40,6 +41,7 @@ import { Route as AuthenticatedAdminEditorRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminCreateRouteImport } from './routes/_authenticated/admin/create'
 import { Route as AuthenticatedAdminComposeRouteImport } from './routes/_authenticated/admin/compose'
+import { Route as AuthenticatedAdminBulkRouteImport } from './routes/_authenticated/admin/bulk'
 import { Route as AuthenticatedAdminBesttimeRouteImport } from './routes/_authenticated/admin/besttime'
 import { Route as AuthenticatedAdminAutomationsRouteImport } from './routes/_authenticated/admin/automations'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin/approvals'
@@ -143,6 +145,11 @@ const AuthenticatedAdminTrashRoute = AuthenticatedAdminTrashRouteImport.update({
   path: '/trash',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminTasksRoute = AuthenticatedAdminTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -229,6 +236,11 @@ const AuthenticatedAdminComposeRoute =
     path: '/compose',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminBulkRoute = AuthenticatedAdminBulkRouteImport.update({
+  id: '/bulk',
+  path: '/bulk',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminBesttimeRoute =
   AuthenticatedAdminBesttimeRouteImport.update({
     id: '/besttime',
@@ -328,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
+  '/admin/bulk': typeof AuthenticatedAdminBulkRoute
   '/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/admin/create': typeof AuthenticatedAdminCreateRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -343,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/admin/search': typeof AuthenticatedAdminSearchRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/tasks': typeof AuthenticatedAdminTasksRoute
+  '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/trash': typeof AuthenticatedAdminTrashRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
@@ -375,6 +389,7 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
+  '/admin/bulk': typeof AuthenticatedAdminBulkRoute
   '/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/admin/create': typeof AuthenticatedAdminCreateRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -390,6 +405,7 @@ export interface FileRoutesByTo {
   '/admin/search': typeof AuthenticatedAdminSearchRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/tasks': typeof AuthenticatedAdminTasksRoute
+  '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/trash': typeof AuthenticatedAdminTrashRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
@@ -424,6 +440,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/_authenticated/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
+  '/_authenticated/admin/bulk': typeof AuthenticatedAdminBulkRoute
   '/_authenticated/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/_authenticated/admin/create': typeof AuthenticatedAdminCreateRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -439,6 +456,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/search': typeof AuthenticatedAdminSearchRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/tasks': typeof AuthenticatedAdminTasksRoute
+  '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/trash': typeof AuthenticatedAdminTrashRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
@@ -473,6 +491,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/automations'
     | '/admin/besttime'
+    | '/admin/bulk'
     | '/admin/compose'
     | '/admin/create'
     | '/admin/dashboard'
@@ -488,6 +507,7 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/settings'
     | '/admin/tasks'
+    | '/admin/team'
     | '/admin/trash'
     | '/admin/users'
     | '/admin/webhooks'
@@ -520,6 +540,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/automations'
     | '/admin/besttime'
+    | '/admin/bulk'
     | '/admin/compose'
     | '/admin/create'
     | '/admin/dashboard'
@@ -535,6 +556,7 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/settings'
     | '/admin/tasks'
+    | '/admin/team'
     | '/admin/trash'
     | '/admin/users'
     | '/admin/webhooks'
@@ -568,6 +590,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/automations'
     | '/_authenticated/admin/besttime'
+    | '/_authenticated/admin/bulk'
     | '/_authenticated/admin/compose'
     | '/_authenticated/admin/create'
     | '/_authenticated/admin/dashboard'
@@ -583,6 +606,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/search'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/tasks'
+    | '/_authenticated/admin/team'
     | '/_authenticated/admin/trash'
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/webhooks'
@@ -729,6 +753,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTrashRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/team': {
+      id: '/_authenticated/admin/team'
+      path: '/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AuthenticatedAdminTeamRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/tasks': {
       id: '/_authenticated/admin/tasks'
       path: '/tasks'
@@ -832,6 +863,13 @@ declare module '@tanstack/react-router' {
       path: '/compose'
       fullPath: '/admin/compose'
       preLoaderRoute: typeof AuthenticatedAdminComposeRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/bulk': {
+      id: '/_authenticated/admin/bulk'
+      path: '/bulk'
+      fullPath: '/admin/bulk'
+      preLoaderRoute: typeof AuthenticatedAdminBulkRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/besttime': {
@@ -963,6 +1001,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
   AuthenticatedAdminAutomationsRoute: typeof AuthenticatedAdminAutomationsRoute
   AuthenticatedAdminBesttimeRoute: typeof AuthenticatedAdminBesttimeRoute
+  AuthenticatedAdminBulkRoute: typeof AuthenticatedAdminBulkRoute
   AuthenticatedAdminComposeRoute: typeof AuthenticatedAdminComposeRoute
   AuthenticatedAdminCreateRoute: typeof AuthenticatedAdminCreateRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
@@ -978,6 +1017,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSearchRoute: typeof AuthenticatedAdminSearchRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminTasksRoute: typeof AuthenticatedAdminTasksRoute
+  AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminTrashRoute: typeof AuthenticatedAdminTrashRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminWebhooksRoute: typeof AuthenticatedAdminWebhooksRoute
@@ -995,6 +1035,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
     AuthenticatedAdminAutomationsRoute: AuthenticatedAdminAutomationsRoute,
     AuthenticatedAdminBesttimeRoute: AuthenticatedAdminBesttimeRoute,
+    AuthenticatedAdminBulkRoute: AuthenticatedAdminBulkRoute,
     AuthenticatedAdminComposeRoute: AuthenticatedAdminComposeRoute,
     AuthenticatedAdminCreateRoute: AuthenticatedAdminCreateRoute,
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
@@ -1010,6 +1051,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSearchRoute: AuthenticatedAdminSearchRoute,
     AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
     AuthenticatedAdminTasksRoute: AuthenticatedAdminTasksRoute,
+    AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
     AuthenticatedAdminTrashRoute: AuthenticatedAdminTrashRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
     AuthenticatedAdminWebhooksRoute: AuthenticatedAdminWebhooksRoute,

@@ -21,6 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Upload,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -156,6 +158,7 @@ export function AdminSidebar() {
           badge: counts?.drafts ? { value: counts.drafts, tone: "amber" } : undefined,
         },
         { to: "/admin/media", label: "Media", icon: ImageIcon },
+        { to: "/admin/bulk", label: "Bulk import", icon: Upload },
       ],
     },
     {
@@ -194,6 +197,7 @@ export function AdminSidebar() {
           badge: counts?.unread ? { value: counts.unread, tone: "red" } : undefined,
         },
         { to: "/admin/clients", label: "Klanten", icon: Building2 },
+        { to: "/admin/team", label: "Team", icon: Users },
         {
           to: "/admin/settings",
           label: "Instellingen",

@@ -1,5 +1,6 @@
-import { FileBarChart, Download, Sparkles, CalendarRange } from "lucide-react";
+import { FileBarChart, Download, FileDown, Sparkles, CalendarRange } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { generateReportPdf, type ReportRow } from "@/lib/report-pdf";
 
 /** Vertaal veelvoorkomende metric-keys naar Nederlandse labels. */
 const METRIC_LABELS: Record<string, string> = {
@@ -40,6 +41,20 @@ function formatMetricValue(v: unknown): string {
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
 
+function downloadReportPdf(report: Tables<"reports">) {
+  const row: ReportRow = {
+    title: report.title,
+    report_type: report.report_type,
+    period_start: report.period_start,
+    period_end: report.period_end,
+    summary: report.summary,
+    highlights: report.highlights,
+    created_at: report.created_at,
+    metrics: report.metrics,
+  };
+  generateReportPdf(row, { fileName: `${report.title.replace(/\s+/g, "_")}.pdf` });
+}
+
 export function ReportCard({ report }: { report: Tables<"reports"> }) {
   const metrics =
     report.metrics && typeof report.metrics === "object" && !Array.isArray(report.metrics)
@@ -72,16 +87,24 @@ export function ReportCard({ report }: { report: Tables<"reports"> }) {
             </div>
           )}
         </div>
-        {report.file_path && (
-          <a
-            href={report.file_path}
-            target="_blank"
-            rel="noreferrer"
-            className="min-h-11 rounded-lg bg-gold/15 text-gold hover:bg-gold/25 px-4 text-xs font-medium inline-flex items-center justify-center gap-1.5 shrink-0 w-full sm:w-auto"
+        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+          <button
+            onClick={() => downloadReportPdf(report)}
+            className="min-h-11 rounded-lg bg-gold/15 text-gold hover:bg-gold/25 px-4 text-xs font-medium inline-flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
           >
-            <Download className="h-3.5 w-3.5" /> Download
-          </a>
-        )}
+            <FileDown className="h-3.5 w-3.5" /> Download PDF
+          </button>
+          {report.file_path && (
+            <a
+              href={report.file_path}
+              target="_blank"
+              rel="noreferrer"
+              className="min-h-11 rounded-lg border border-gold/20 hover:bg-gold/10 px-4 text-xs font-medium inline-flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
+            >
+              <Download className="h-3.5 w-3.5" /> Bestand
+            </a>
+          )}
+        </div>
       </div>
 
       {report.summary && (

@@ -14,6 +14,7 @@ const TITLES: Record<string, string> = {
   "/admin/postiz": "Posts",
   "/admin/queue": "Concepten",
   "/admin/media": "Media",
+  "/admin/bulk": "Bulk import",
   "/admin/ai": "AI Studio",
   "/admin/besttime": "Best time",
   "/admin/reach": "Bereik & groei",
@@ -22,6 +23,7 @@ const TITLES: Record<string, string> = {
   "/admin/approvals": "Goedkeuring",
   "/admin/automations": "Alerts",
   "/admin/clients": "Klanten",
+  "/admin/team": "Team",
   "/admin/webhooks": "Kanalen",
   "/admin/settings": "Instellingen",
 };

@@ -23,6 +23,8 @@ import {
   PanelLeft,
   ListChecks,
   Plug,
+  Upload,
+  Users,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -55,6 +57,7 @@ const NAV_ITEMS = [
   { to: "/admin/postiz", label: "Posts", icon: Send, keywords: "gepland gepubliceerd" },
   { to: "/admin/queue", label: "Concepten", icon: FileText, keywords: "drafts wachtrij" },
   { to: "/admin/media", label: "Media", icon: ImageIcon, keywords: "bibliotheek fotos videos" },
+  { to: "/admin/bulk", label: "Bulk import", icon: Upload, keywords: "csv import massa inplannen" },
   {
     to: "/admin/ai",
     label: "AI Studio",
@@ -84,6 +87,12 @@ const NAV_ITEMS = [
   { to: "/admin/messages", label: "Berichten", icon: MessageSquare, keywords: "chat inbox" },
   { to: "/admin/tasks", label: "Taken", icon: ListChecks, keywords: "todo actiepunten" },
   { to: "/admin/clients", label: "Klanten", icon: Building2, keywords: "accounts bedrijven" },
+  {
+    to: "/admin/team",
+    label: "Team",
+    icon: Users,
+    keywords: "rollen teamleden toewijzing activiteit",
+  },
   {
     to: "/admin/webhooks",
     label: "Kanalen",

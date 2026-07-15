@@ -8,6 +8,36 @@ export type Database = {
   };
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string;
+          actor_id: string | null;
+          created_at: string;
+          entity_id: string | null;
+          entity_type: string | null;
+          id: string;
+          meta: Json | null;
+        };
+        Insert: {
+          action: string;
+          actor_id?: string | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_type?: string | null;
+          id?: string;
+          meta?: Json | null;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_type?: string | null;
+          id?: string;
+          meta?: Json | null;
+        };
+        Relationships: [];
+      };
       ai_generations: {
         Row: {
           briefing: string;
@@ -273,6 +303,41 @@ export type Database = {
             columns: ["step_id"];
             isOneToOne: false;
             referencedRelation: "roadmap_steps";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      client_assignments: {
+        Row: {
+          assigned_by: string | null;
+          client_id: string;
+          created_at: string;
+          id: string;
+          note: string | null;
+          user_id: string;
+        };
+        Insert: {
+          assigned_by?: string | null;
+          client_id: string;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          user_id: string;
+        };
+        Update: {
+          assigned_by?: string | null;
+          client_id?: string;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "client_assignments_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
             referencedColumns: ["id"];
           },
         ];
@@ -1657,7 +1722,7 @@ export type Database = {
       };
     };
     Enums: {
-      app_role: "admin" | "client" | "editor";
+      app_role: "admin" | "client" | "editor" | "viewer";
       automation_action:
         "create_notification" | "create_task" | "send_webhook" | "change_post_status";
       automation_trigger:
@@ -1813,7 +1878,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "client", "editor"],
+      app_role: ["admin", "client", "editor", "viewer"],
       automation_action: [
         "create_notification",
         "create_task",
