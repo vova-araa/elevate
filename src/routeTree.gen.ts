@@ -41,6 +41,7 @@ import { Route as AuthenticatedAdminEditorRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminCreateRouteImport } from './routes/_authenticated/admin/create'
 import { Route as AuthenticatedAdminComposeRouteImport } from './routes/_authenticated/admin/compose'
+import { Route as AuthenticatedAdminCampaignsRouteImport } from './routes/_authenticated/admin/campaigns'
 import { Route as AuthenticatedAdminBulkRouteImport } from './routes/_authenticated/admin/bulk'
 import { Route as AuthenticatedAdminBesttimeRouteImport } from './routes/_authenticated/admin/besttime'
 import { Route as AuthenticatedAdminAutomationsRouteImport } from './routes/_authenticated/admin/automations'
@@ -236,6 +237,12 @@ const AuthenticatedAdminComposeRoute =
     path: '/compose',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminCampaignsRoute =
+  AuthenticatedAdminCampaignsRouteImport.update({
+    id: '/campaigns',
+    path: '/campaigns',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBulkRoute = AuthenticatedAdminBulkRouteImport.update({
   id: '/bulk',
   path: '/bulk',
@@ -341,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
   '/admin/bulk': typeof AuthenticatedAdminBulkRoute
+  '/admin/campaigns': typeof AuthenticatedAdminCampaignsRoute
   '/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/admin/create': typeof AuthenticatedAdminCreateRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -390,6 +398,7 @@ export interface FileRoutesByTo {
   '/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
   '/admin/bulk': typeof AuthenticatedAdminBulkRoute
+  '/admin/campaigns': typeof AuthenticatedAdminCampaignsRoute
   '/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/admin/create': typeof AuthenticatedAdminCreateRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -441,6 +450,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/_authenticated/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
   '/_authenticated/admin/bulk': typeof AuthenticatedAdminBulkRoute
+  '/_authenticated/admin/campaigns': typeof AuthenticatedAdminCampaignsRoute
   '/_authenticated/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/_authenticated/admin/create': typeof AuthenticatedAdminCreateRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/admin/automations'
     | '/admin/besttime'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/compose'
     | '/admin/create'
     | '/admin/dashboard'
@@ -541,6 +552,7 @@ export interface FileRouteTypes {
     | '/admin/automations'
     | '/admin/besttime'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/compose'
     | '/admin/create'
     | '/admin/dashboard'
@@ -591,6 +603,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/automations'
     | '/_authenticated/admin/besttime'
     | '/_authenticated/admin/bulk'
+    | '/_authenticated/admin/campaigns'
     | '/_authenticated/admin/compose'
     | '/_authenticated/admin/create'
     | '/_authenticated/admin/dashboard'
@@ -865,6 +878,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminComposeRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/campaigns': {
+      id: '/_authenticated/admin/campaigns'
+      path: '/campaigns'
+      fullPath: '/admin/campaigns'
+      preLoaderRoute: typeof AuthenticatedAdminCampaignsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/bulk': {
       id: '/_authenticated/admin/bulk'
       path: '/bulk'
@@ -1002,6 +1022,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAutomationsRoute: typeof AuthenticatedAdminAutomationsRoute
   AuthenticatedAdminBesttimeRoute: typeof AuthenticatedAdminBesttimeRoute
   AuthenticatedAdminBulkRoute: typeof AuthenticatedAdminBulkRoute
+  AuthenticatedAdminCampaignsRoute: typeof AuthenticatedAdminCampaignsRoute
   AuthenticatedAdminComposeRoute: typeof AuthenticatedAdminComposeRoute
   AuthenticatedAdminCreateRoute: typeof AuthenticatedAdminCreateRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
@@ -1036,6 +1057,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminAutomationsRoute: AuthenticatedAdminAutomationsRoute,
     AuthenticatedAdminBesttimeRoute: AuthenticatedAdminBesttimeRoute,
     AuthenticatedAdminBulkRoute: AuthenticatedAdminBulkRoute,
+    AuthenticatedAdminCampaignsRoute: AuthenticatedAdminCampaignsRoute,
     AuthenticatedAdminComposeRoute: AuthenticatedAdminComposeRoute,
     AuthenticatedAdminCreateRoute: AuthenticatedAdminCreateRoute,
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,

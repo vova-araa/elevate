@@ -23,6 +23,7 @@ import {
   Plus,
   Upload,
   Users,
+  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -170,6 +171,7 @@ export function AdminSidebar() {
           icon: Sparkles,
           badge: aiBadgeDismissed ? undefined : { value: "Nieuw", tone: "green" },
         },
+        { to: "/admin/campaigns", label: "Campagnes", icon: Wand2 },
         { to: "/admin/besttime", label: "Best time", icon: Clock },
       ],
     },

@@ -25,6 +25,7 @@ import {
   Plug,
   Upload,
   Users,
+  Wand2,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -63,6 +64,12 @@ const NAV_ITEMS = [
     label: "AI Studio",
     icon: Sparkles,
     keywords: "assistent captions hashtags hooks hergebruik",
+  },
+  {
+    to: "/admin/campaigns",
+    label: "Campagnes",
+    icon: Wand2,
+    keywords: "ai contentplan campagne genereren maand",
   },
   { to: "/admin/besttime", label: "Best time", icon: Clock, keywords: "beste tijd posten" },
   {
