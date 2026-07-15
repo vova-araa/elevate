@@ -17,7 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { repurposeContent, type StudioPlatform } from "@/lib/ai-studio.functions";
 import { CopyButton } from "./copy-button";
 import { ClientSelect, type StudioClient } from "./client-select";
-import { PlatformChips, platformLabel, STUDIO_PLATFORMS } from "./platform-chips";
+import { PlatformChips } from "./platform-chips";
+import { platformLabel, STUDIO_PLATFORMS } from "./platform-meta";
 
 export function RepurposeTab({ clients }: { clients: StudioClient[] }) {
   const [source, setSource] = useState("");

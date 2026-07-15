@@ -38,5 +38,21 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
+  {
+    // react-refresh/only-export-components is een dev-only HMR-hint zonder
+    // runtime-impact. We staan hem uit voor:
+    //  - shadcn/ui-basiscomponenten die per conventie hun variants mee-exporteren;
+    //  - context-providers die bewust samen met hun hook in één bestand leven
+    //    (idiomatisch React; de hook los trekken zou 18+ imports raken).
+    files: [
+      "src/components/ui/**/*.tsx",
+      "src/lib/theme.tsx",
+      "src/lib/auth-context.tsx",
+      "src/components/notification-center.tsx",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
   eslintPluginPrettier,
 );

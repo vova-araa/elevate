@@ -135,7 +135,7 @@ export function CommandPalette() {
       setOpen(false);
       fn();
     },
-    [],
+    [setOpen],
   );
 
   return (

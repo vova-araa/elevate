@@ -171,7 +171,8 @@ function ClientCalendar() {
     return m;
   }, [items]);
 
-  const today = new Date();
+  // Eén keer per mount vastzetten zodat afhankelijke memo's niet elke render herberekenen.
+  const today = useMemo(() => new Date(), []);
   const selectedKey = toKey(selected);
   const selectedItems = byDay[selectedKey] || [];
 
@@ -189,7 +190,7 @@ function ClientCalendar() {
       if (x.status === "pending" && d < new Date(today.toDateString())) overdue++;
     });
     return { pending, delivered, approved, overdue };
-  }, [data, month]);
+  }, [data, month, today]);
 
   async function setStatus(id: string, status: Status) {
     const { error } = await supabase.from("calendar_items").update({ status }).eq("id", id);

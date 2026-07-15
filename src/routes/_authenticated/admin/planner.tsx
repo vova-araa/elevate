@@ -123,7 +123,7 @@ function PlannerPage() {
       setCursor(initialDate);
       setSelectedDate(initialDate);
     }
-  }, [dateParam]);
+  }, [dateParam, initialDate]);
   const [composeOpen, setComposeOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [composeDate, setComposeDate] = useState<Date | null>(null);

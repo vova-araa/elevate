@@ -22,7 +22,8 @@ import {
 } from "@/lib/ai-studio.functions";
 import { CopyButton } from "./copy-button";
 import { ClientSelect, type StudioClient } from "./client-select";
-import { PlatformChips, platformLabel, STUDIO_PLATFORMS } from "./platform-chips";
+import { PlatformChips } from "./platform-chips";
+import { platformLabel, STUDIO_PLATFORMS } from "./platform-meta";
 import { cn } from "@/lib/utils";
 
 const TONES = ["professioneel", "informeel", "energiek", "inspirerend"] as const;
