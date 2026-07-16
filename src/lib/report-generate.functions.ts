@@ -32,7 +32,8 @@ const PLATFORM_LABELS: Record<string, string> = {
 /**
  * Genereert een maandrapport-rij op basis van echte cijfers uit `scheduled_posts`.
  * Bereik/engagement worden geschat op basis van gepubliceerde posts — dezelfde
- * conventie als de Analytics-pagina, totdat de Postiz analytics-koppeling live cijfers levert.
+ * conventie als de Analytics-pagina, totdat een analytics-koppeling per platform live cijfers
+ * levert.
  */
 export const createReportFromAnalytics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -73,7 +74,7 @@ export const createReportFromAnalytics = createServerFn({ method: "POST" })
     }
 
     // Schatting o.b.v. gepubliceerde posts — zelfde conventie als de Analytics-module,
-    // totdat de Postiz analytics-koppeling live bereik/interactie-cijfers levert.
+    // totdat een analytics-koppeling per platform live bereik/interactie-cijfers levert.
     const estimatedReach = published * 1200;
     const estimatedEngagement = published * 86;
 

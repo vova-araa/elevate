@@ -87,9 +87,11 @@ export function verifyState(state: string): OAuthState {
   const expected = createHmac("sha256", stateSecret()).update(body).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error("OAuth-state signature klopt niet");
+  if (a.length !== b.length || !timingSafeEqual(a, b))
+    throw new Error("OAuth-state signature klopt niet");
   const parsed = JSON.parse(unb64url(body)) as OAuthState;
-  if (Date.now() > parsed.exp) throw new Error("OAuth-state is verlopen — probeer opnieuw te koppelen");
+  if (Date.now() > parsed.exp)
+    throw new Error("OAuth-state is verlopen — probeer opnieuw te koppelen");
   return parsed;
 }
 
@@ -151,7 +153,10 @@ export interface TokenSet {
   raw: Record<string, unknown>;
 }
 
-async function postForm(url: string, form: Record<string, string>): Promise<Record<string, unknown>> {
+async function postForm(
+  url: string,
+  form: Record<string, string>,
+): Promise<Record<string, unknown>> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -160,7 +165,8 @@ async function postForm(url: string, form: Record<string, string>): Promise<Reco
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     const msg =
-      (json as { error_description?: string; error?: { message?: string } | string }).error_description ??
+      (json as { error_description?: string; error?: { message?: string } | string })
+        .error_description ??
       (typeof (json as { error?: unknown }).error === "object"
         ? ((json as { error?: { message?: string } }).error?.message ?? JSON.stringify(json))
         : String((json as { error?: unknown }).error ?? res.statusText));
@@ -186,7 +192,10 @@ export async function exchangeCode(platform: SocialPlatform, code: string): Prom
       u.searchParams.set("redirect_uri", redirect);
       u.searchParams.set("code", code);
       const res = await fetch(u);
-      const shortLived = (await res.json()) as { access_token?: string; error?: { message?: string } };
+      const shortLived = (await res.json()) as {
+        access_token?: string;
+        error?: { message?: string };
+      };
       if (!res.ok || !shortLived.access_token)
         throw new Error(`Meta-token mislukt: ${shortLived.error?.message ?? res.statusText}`);
       // …en direct inwisselen voor een long-lived token (~60 dagen).
@@ -310,12 +319,17 @@ export interface SocialProfile {
 }
 
 async function getJson(url: string, token?: string): Promise<Record<string, unknown>> {
-  const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+  const res = await fetch(
+    url,
+    token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+  );
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     const err = json as { error?: { message?: string } | string; message?: string };
     const msg =
-      typeof err.error === "object" ? err.error?.message : (err.error ?? err.message ?? res.statusText);
+      typeof err.error === "object"
+        ? err.error?.message
+        : (err.error ?? err.message ?? res.statusText);
     throw new Error(String(msg ?? "Profiel ophalen mislukt"));
   }
   return json;

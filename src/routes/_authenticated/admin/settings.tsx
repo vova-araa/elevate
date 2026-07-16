@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
@@ -16,25 +15,13 @@ import {
   Plus,
   Trash2,
   Save,
-  Instagram,
-  Music2,
-  Linkedin,
-  Youtube,
-  Facebook,
   ShieldCheck,
   UserPlus,
-  Zap,
   Plug,
   Key,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  initPostizConnect,
-  disconnectPostizChannel,
-  syncPostizConnection,
-  claimPostizIntegration,
-} from "@/lib/postiz-connect.functions";
-import { listPostizIntegrations } from "@/lib/postiz.functions";
 
 const searchSchema = z.object({
   clientId: z.string().uuid().optional(),
@@ -45,14 +32,6 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
   validateSearch: searchSchema,
   component: SettingsPage,
 });
-
-const PLATFORMS = [
-  { k: "instagram", label: "Instagram", icon: Instagram, color: "#E4405F" },
-  { k: "tiktok", label: "TikTok", icon: Music2, color: "#000000" },
-  { k: "linkedin", label: "LinkedIn", icon: Linkedin, color: "#0A66C2" },
-  { k: "youtube", label: "YouTube", icon: Youtube, color: "#FF0000" },
-  { k: "facebook", label: "Facebook", icon: Facebook, color: "#1877F2" },
-] as const;
 
 function SettingsPage() {
   const { clientId, tab } = Route.useSearch();
@@ -387,281 +366,36 @@ function Field({
   );
 }
 
-type Platform = (typeof PLATFORMS)[number]["k"];
-
-interface PostizIntegrationView {
-  id: string | number;
-  username?: string | null;
-  name?: string | null;
-  platform?: string | null;
-  assignedClientId?: string | null;
-  assignedClientName?: string | null;
-}
-
-interface SyncResult {
-  ok: true;
-  connected: boolean;
-  reason?: string;
-  handle?: string;
-  integrationId?: string;
-  claimable?: { id: string; name: string; picture: string | null }[];
-}
-
-/* ──────────────  SOCIAL (Postiz OAuth)  ────────────── */
+/* ──────────────  SOCIAL  ────────────── */
 function SocialTab({ clientId }: { clientId: string }) {
-  const qc = useQueryClient();
   const { data: conns } = useQuery({
     queryKey: ["social-conns", clientId],
     queryFn: async () =>
       (await supabase.from("social_connections").select("*").eq("client_id", clientId)).data ?? [],
   });
-  const listIntegrationsFn = useServerFn(listPostizIntegrations);
-  const { data: postizIntegrations, isFetching: refreshing } = useQuery({
-    queryKey: ["postiz-integrations"],
-    queryFn: async () => (await listIntegrationsFn()) as PostizIntegrationView[],
-    refetchOnWindowFocus: true,
-  });
-  const [busy, setBusy] = useState<string | null>(null);
-
-  const init = useServerFn(initPostizConnect);
-  const disconnect = useServerFn(disconnectPostizChannel);
-  const sync = useServerFn(syncPostizConnection);
-  const claim = useServerFn(claimPostizIntegration);
-
-  async function refreshAll() {
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: ["postiz-integrations"] }),
-      qc.invalidateQueries({ queryKey: ["social-conns", clientId] }),
-    ]);
-  }
-
-  async function syncPlatform(platform: Platform, showToast = true) {
-    setBusy(platform);
-    try {
-      const result: SyncResult = await sync({ data: { clientId, platform } });
-      await refreshAll();
-      if (showToast) {
-        toast[result?.connected ? "success" : "info"](
-          result?.connected
-            ? `${platform} gekoppeld${result?.handle ? `: ${result.handle}` : ""}`
-            : (result?.reason ?? "Nog geen nieuwe Postiz-koppeling gevonden"),
-        );
-      }
-      return result;
-    } catch (e) {
-      if (showToast) toast.error(e instanceof Error ? e.message : "Postiz-status ophalen mislukt");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function connectPlatform(platform: Platform) {
-    setBusy(platform);
-    try {
-      const { redirectUrl } = await init({ data: { clientId, platform } });
-      const opened = window.open(redirectUrl, "_blank", "noopener,noreferrer");
-      if (!opened)
-        throw new Error(
-          "De browser blokkeerde het Postiz-tabblad. Sta pop-ups toe en probeer opnieuw.",
-        );
-      toast.info(`Rond ${platform} af in het Postiz-tabblad. We checken de status automatisch.`);
-      // Poll several times — covers fast and slow OAuth flows.
-      [4000, 9000, 18000, 35000].forEach((ms) =>
-        window.setTimeout(() => syncPlatform(platform, false), ms),
-      );
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Koppelen mislukt");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function remove(conn: Tables<"social_connections">) {
-    if (!confirm("Verbinding verwijderen?")) return;
-    try {
-      await disconnect({ data: { clientId, platform: conn.platform as Platform } });
-      await refreshAll();
-      toast.success("Losgekoppeld");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Loskoppelen mislukt");
-    }
-  }
-
-  // Re-sync alle platformen wanneer tab focus terugkomt (na OAuth tab sluiten).
-  useEffect(() => {
-    function onFocus() {
-      refreshAll();
-    }
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId]);
-
-  const integrationsList: PostizIntegrationView[] = Array.isArray(postizIntegrations)
-    ? postizIntegrations
-    : [];
-  // Per platform: voor déze klant gereserveerd of nog vrij (claimable).
-  const integrationsByPlatform = new Map<string, PostizIntegrationView[]>();
-  for (const i of integrationsList) {
-    const platform = String(i.platform ?? "").toLowerCase();
-    if (!platform) continue;
-    if (!integrationsByPlatform.has(platform)) integrationsByPlatform.set(platform, []);
-    integrationsByPlatform.get(platform)!.push(i);
-  }
+  const linkedCount = conns?.filter((c) => c.status === "active").length ?? 0;
 
   return (
-    <div className="space-y-3">
-      <div className="glass-strong rounded-xl p-4 text-xs text-muted-foreground flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Zap className="h-3.5 w-3.5 text-gold shrink-0" />
-          Platforms worden gekoppeld via je Postiz workspace. Na autoriseren synct deze pagina
-          automatisch.
+    <div className="glass-strong rounded-xl p-6 flex items-center justify-between gap-4 max-w-3xl">
+      <div className="flex items-start gap-3 min-w-0">
+        <div className="h-10 w-10 rounded-lg bg-gold/10 grid place-items-center shrink-0">
+          <Plug className="h-5 w-5 text-gold" />
         </div>
-        <button
-          onClick={async () => {
-            setBusy("__all__");
-            for (const p of PLATFORMS) {
-              await syncPlatform(p.k, false);
-            }
-            setBusy(null);
-            toast.success("Synchronisatie afgerond");
-          }}
-          disabled={busy !== null}
-          className="text-[10px] uppercase tracking-wider text-gold/80 rounded-lg border border-gold/20 px-2 py-1 hover:bg-gold/10 disabled:opacity-50 flex items-center gap-1.5"
-        >
-          {(busy === "__all__" || refreshing) && <Loader2 className="h-3 w-3 animate-spin" />}
-          Sync alle
-        </button>
+        <div className="min-w-0">
+          <div className="text-sm font-medium">Social-koppelingen</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Beheer per klant welke accounts gekoppeld zijn.
+            {linkedCount > 0 &&
+              ` Momenteel ${linkedCount} account${linkedCount === 1 ? "" : "s"} gekoppeld voor deze klant.`}
+          </p>
+        </div>
       </div>
-      <div className="grid sm:grid-cols-2 gap-3">
-        {PLATFORMS.map((p) => {
-          const conn = conns?.find((c) => c.platform === p.k);
-          const platformIntegrations = integrationsByPlatform.get(p.k) ?? [];
-          const ownIntegration = conn?.postiz_integration_id
-            ? platformIntegrations.find((i) => String(i.id) === String(conn.postiz_integration_id))
-            : platformIntegrations.find((i) => i.assignedClientId === clientId);
-          const claimable = platformIntegrations.filter((i) => !i.assignedClientId);
-          const otherClient =
-            !conn && !ownIntegration && claimable.length === 0
-              ? platformIntegrations.find(
-                  (i) => i.assignedClientId && i.assignedClientId !== clientId,
-                )
-              : null;
-          const Icon = p.icon;
-          const isBusy = busy === p.k;
-          const handle = conn?.account_username ?? ownIntegration?.username ?? ownIntegration?.name;
-          const isLinked = Boolean(conn && conn.status === "active");
-
-          return (
-            <div key={p.k} className="glass-strong rounded-xl p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon className="h-5 w-5 shrink-0" style={{ color: p.color }} />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium flex items-center gap-1.5">
-                      {p.label}
-                      <Zap className="h-3 w-3 text-gold" aria-label="Postiz OAuth" />
-                      {isLinked && (
-                        <span className="text-[10px] rounded-full bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5">
-                          gekoppeld
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {isLinked ? (
-                        <>
-                          {handle ?? "Gekoppeld via Postiz"}
-                          {typeof conn?.follower_count === "number" && (
-                            <span className="ml-1 text-muted-foreground/70">
-                              · {conn.follower_count.toLocaleString("nl-NL")} volgers
-                            </span>
-                          )}
-                        </>
-                      ) : otherClient ? (
-                        <span className="text-amber-400/80">
-                          In gebruik door {otherClient.assignedClientName ?? "andere klant"}
-                        </span>
-                      ) : claimable.length > 0 ? (
-                        <>
-                          Postiz-account beschikbaar (
-                          {claimable[0].username ?? claimable[0].name ?? "naamloos"})
-                        </>
-                      ) : (
-                        "Niet gekoppeld"
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {isLinked ? (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={() => syncPlatform(p.k)}
-                      disabled={isBusy}
-                      title="Status verversen"
-                      className="text-[10px] uppercase tracking-wider text-muted-foreground rounded-lg border border-gold/10 px-2 py-1 hover:bg-gold/10 disabled:opacity-50"
-                    >
-                      {isBusy ? "…" : "Sync"}
-                    </button>
-                    <button
-                      onClick={() => conn && remove(conn)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : claimable.length > 1 ? (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <select
-                      defaultValue=""
-                      disabled={isBusy}
-                      onChange={async (e) => {
-                        const integrationId = e.target.value;
-                        if (!integrationId) return;
-                        setBusy(p.k);
-                        try {
-                          await claim({ data: { clientId, platform: p.k, integrationId } });
-                          await refreshAll();
-                          toast.success(`${p.label} gekoppeld`);
-                        } catch (err) {
-                          toast.error(err instanceof Error ? err.message : "Koppelen mislukt");
-                        } finally {
-                          setBusy(null);
-                        }
-                      }}
-                      className="text-xs rounded-lg border border-gold/20 bg-background/60 px-2 py-1.5 max-w-[140px]"
-                    >
-                      <option value="">Kies account…</option>
-                      {claimable.map((i) => (
-                        <option key={i.id} value={i.id}>
-                          {i.username ?? i.name ?? i.id}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : claimable.length === 1 || ownIntegration ? (
-                  <button
-                    onClick={() => syncPlatform(p.k)}
-                    disabled={isBusy}
-                    className="text-xs rounded-lg bg-gradient-gold px-3 py-1.5 text-primary-foreground disabled:opacity-50 flex items-center gap-1.5 shrink-0"
-                  >
-                    {isBusy && <Loader2 className="h-3 w-3 animate-spin" />}
-                    Koppelen
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => connectPlatform(p.k)}
-                    disabled={isBusy}
-                    className="text-xs rounded-lg bg-gradient-gold px-3 py-1.5 text-primary-foreground disabled:opacity-50 flex items-center gap-1.5 shrink-0"
-                  >
-                    {isBusy && <Loader2 className="h-3 w-3 animate-spin" />}
-                    Verbind via Postiz
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <Link
+        to="/admin/channels"
+        className="shrink-0 rounded-lg bg-gradient-gold px-4 py-2 text-sm font-medium text-primary-foreground inline-flex items-center gap-2"
+      >
+        Naar kanalen <ArrowRight className="h-4 w-4" />
+      </Link>
     </div>
   );
 }

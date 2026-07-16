@@ -17,7 +17,6 @@ import {
   Paperclip,
 } from "lucide-react";
 import { aiAssistant } from "@/lib/ai.functions";
-import { uploadPostizMediaFromUrl } from "@/lib/postiz.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
 import { cn } from "@/lib/utils";
@@ -30,10 +29,6 @@ type Msg = {
 };
 
 function isJsonRecord(value: JsonValue): value is { [key: string]: JsonValue } {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -65,12 +60,13 @@ export function AssistantTab() {
     },
   ]);
   const [input, setInput] = useState("");
-  const [media, setMedia] = useState<{ url: string; postizId?: string; name: string }[]>([]);
+  const [media, setMedia] = useState<{ url: string; path: string; type: string; name: string }[]>(
+    [],
+  );
   const [dragOver, setDragOver] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const assistant = useServerFn(aiAssistant);
-  const uploadFn = useServerFn(uploadPostizMediaFromUrl);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -86,17 +82,7 @@ export function AssistantTab() {
       const { error } = await supabase.storage.from("client-uploads").upload(path, file);
       if (error) throw error;
       const { data } = supabase.storage.from("client-uploads").getPublicUrl(path);
-      let postizId: string | undefined;
-      try {
-        const r: unknown = await uploadFn({ data: { url: data.publicUrl, filename: file.name } });
-        const first: unknown = Array.isArray(r) ? r[0] : undefined;
-        const firstId = isRecord(first) && typeof first.id === "string" ? first.id : undefined;
-        const topId = isRecord(r) && typeof r.id === "string" ? r.id : undefined;
-        postizId = firstId ?? topId;
-      } catch {
-        /* postiz upload optional here — compose will retry */
-      }
-      return { url: data.publicUrl, postizId, name: file.name };
+      return { url: data.publicUrl, path, type: file.type, name: file.name };
     },
     onSuccess: (m) => {
       setMedia((prev) => [...prev, m]);

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
@@ -41,7 +41,7 @@ function ReachPage() {
     },
   });
 
-  // Build daily series — uses post-count as proxy for reach until Postiz analytics endpoint is wired
+  // Build daily series — uses post-count as proxy for reach until a live analytics endpoint is wired
   const days = Number(period);
   const buckets: Record<string, number> = {};
   for (let i = days - 1; i >= 0; i--) {
@@ -111,8 +111,12 @@ function ReachPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Live bereik-cijfers per platform vereisen de Postiz analytics-koppeling. Zodra die endpoint
-        actief is, worden hier follower-aantallen, impressies en profielbezoeken getoond.
+        Live bereik-cijfers per platform vereisen een analytics-koppeling per{" "}
+        <Link to="/admin/channels" className="text-gold underline">
+          gekoppeld account
+        </Link>
+        . Zodra die endpoints actief zijn, worden hier follower-aantallen, impressies en
+        profielbezoeken getoond.
       </p>
     </div>
   );

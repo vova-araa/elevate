@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
-import { publishTikTokPost } from "@/lib/tiktok.functions";
+import { publishScheduledPost } from "@/lib/publish.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -256,26 +256,17 @@ function PlannerPage() {
     toast.success("Goedgekeurd & ingepland");
     qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
   }
-  const publishTikTok = useServerFn(publishTikTokPost);
+  const publishPost = useServerFn(publishScheduledPost);
   async function markPublished(id: string) {
     const post = (posts ?? []).find((p) => p.id === id);
-    if (post?.platform === "tiktok") {
-      const t = toast.loading("Publiceren naar TikTok...");
-      try {
-        await publishTikTok({ data: { postId: id } });
-        toast.success("Gepubliceerd op TikTok", { id: t });
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Publiceren mislukt", { id: t });
-      }
-      qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
-      return;
+    const meta = post ? PLATFORMS.find((x) => x.id === post.platform) : undefined;
+    const t = toast.loading(`Publiceren naar ${meta?.label ?? "platform"}...`);
+    try {
+      await publishPost({ data: { postId: id } });
+      toast.success(`Gepubliceerd op ${meta?.label ?? "platform"}`, { id: t });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Publiceren mislukt", { id: t });
     }
-    const { error } = await supabase
-      .from("scheduled_posts")
-      .update({ status: "published", published_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Gepubliceerd");
     qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
   }
   async function removePost(id: string) {

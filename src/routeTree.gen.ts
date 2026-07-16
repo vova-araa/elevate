@@ -32,7 +32,6 @@ import { Route as AuthenticatedAdminSearchRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
 import { Route as AuthenticatedAdminReachRouteImport } from './routes/_authenticated/admin/reach'
 import { Route as AuthenticatedAdminQueueRouteImport } from './routes/_authenticated/admin/queue'
-import { Route as AuthenticatedAdminPostizRouteImport } from './routes/_authenticated/admin/postiz'
 import { Route as AuthenticatedAdminPlannerRouteImport } from './routes/_authenticated/admin/planner'
 import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin/messages'
 import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
@@ -53,8 +52,7 @@ import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminClientsIndexRouteImport } from './routes/_authenticated/admin/clients.index'
 import { Route as ApiPublicV1PostsRouteImport } from './routes/api/public/v1/posts'
 import { Route as ApiPublicV1ClientsRouteImport } from './routes/api/public/v1/clients'
-import { Route as ApiPublicHooksPostizProvisionRetryRouteImport } from './routes/api/public/hooks/postiz-provision-retry'
-import { Route as AuthenticatedClientChannelsCallbackRouteImport } from './routes/_authenticated/client/channels.callback'
+import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/oauth/callback'
 import { Route as AuthenticatedAdminClientsNewRouteImport } from './routes/_authenticated/admin/clients.new'
 import { Route as AuthenticatedAdminClientsIntakeRouteImport } from './routes/_authenticated/admin/clients.intake'
 import { Route as AuthenticatedAdminClientsIdRouteImport } from './routes/_authenticated/admin/clients.$id'
@@ -185,12 +183,6 @@ const AuthenticatedAdminQueueRoute = AuthenticatedAdminQueueRouteImport.update({
   path: '/queue',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
-const AuthenticatedAdminPostizRoute =
-  AuthenticatedAdminPostizRouteImport.update({
-    id: '/postiz',
-    path: '/postiz',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
 const AuthenticatedAdminPlannerRoute =
   AuthenticatedAdminPlannerRouteImport.update({
     id: '/planner',
@@ -306,18 +298,11 @@ const ApiPublicV1ClientsRoute = ApiPublicV1ClientsRouteImport.update({
   path: '/api/public/v1/clients',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksPostizProvisionRetryRoute =
-  ApiPublicHooksPostizProvisionRetryRouteImport.update({
-    id: '/api/public/hooks/postiz-provision-retry',
-    path: '/api/public/hooks/postiz-provision-retry',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AuthenticatedClientChannelsCallbackRoute =
-  AuthenticatedClientChannelsCallbackRouteImport.update({
-    id: '/callback',
-    path: '/callback',
-    getParentRoute: () => AuthenticatedClientChannelsRoute,
-  } as any)
+const ApiPublicOauthCallbackRoute = ApiPublicOauthCallbackRouteImport.update({
+  id: '/api/public/oauth/callback',
+  path: '/api/public/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminClientsNewRoute =
   AuthenticatedAdminClientsNewRouteImport.update({
     id: '/clients/new',
@@ -365,7 +350,6 @@ export interface FileRoutesByFullPath {
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/planner': typeof AuthenticatedAdminPlannerRoute
-  '/admin/postiz': typeof AuthenticatedAdminPostizRoute
   '/admin/queue': typeof AuthenticatedAdminQueueRoute
   '/admin/reach': typeof AuthenticatedAdminReachRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
@@ -377,7 +361,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
   '/client/calendar': typeof AuthenticatedClientCalendarRoute
-  '/client/channels': typeof AuthenticatedClientChannelsRouteWithChildren
+  '/client/channels': typeof AuthenticatedClientChannelsRoute
   '/client/messages': typeof AuthenticatedClientMessagesRoute
   '/client/reports': typeof AuthenticatedClientReportsRoute
   '/client/roadmap': typeof AuthenticatedClientRoadmapRoute
@@ -387,8 +371,7 @@ export interface FileRoutesByFullPath {
   '/admin/clients/$id': typeof AuthenticatedAdminClientsIdRouteWithChildren
   '/admin/clients/intake': typeof AuthenticatedAdminClientsIntakeRoute
   '/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
-  '/client/channels/callback': typeof AuthenticatedClientChannelsCallbackRoute
-  '/api/public/hooks/postiz-provision-retry': typeof ApiPublicHooksPostizProvisionRetryRoute
+  '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
@@ -416,7 +399,6 @@ export interface FileRoutesByTo {
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/planner': typeof AuthenticatedAdminPlannerRoute
-  '/admin/postiz': typeof AuthenticatedAdminPostizRoute
   '/admin/queue': typeof AuthenticatedAdminQueueRoute
   '/admin/reach': typeof AuthenticatedAdminReachRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
@@ -428,7 +410,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
   '/client/calendar': typeof AuthenticatedClientCalendarRoute
-  '/client/channels': typeof AuthenticatedClientChannelsRouteWithChildren
+  '/client/channels': typeof AuthenticatedClientChannelsRoute
   '/client/messages': typeof AuthenticatedClientMessagesRoute
   '/client/reports': typeof AuthenticatedClientReportsRoute
   '/client/roadmap': typeof AuthenticatedClientRoadmapRoute
@@ -438,8 +420,7 @@ export interface FileRoutesByTo {
   '/admin/clients/$id': typeof AuthenticatedAdminClientsIdRouteWithChildren
   '/admin/clients/intake': typeof AuthenticatedAdminClientsIntakeRoute
   '/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
-  '/client/channels/callback': typeof AuthenticatedClientChannelsCallbackRoute
-  '/api/public/hooks/postiz-provision-retry': typeof ApiPublicHooksPostizProvisionRetryRoute
+  '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/admin/clients': typeof AuthenticatedAdminClientsIndexRoute
@@ -469,7 +450,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/media': typeof AuthenticatedAdminMediaRoute
   '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/admin/planner': typeof AuthenticatedAdminPlannerRoute
-  '/_authenticated/admin/postiz': typeof AuthenticatedAdminPostizRoute
   '/_authenticated/admin/queue': typeof AuthenticatedAdminQueueRoute
   '/_authenticated/admin/reach': typeof AuthenticatedAdminReachRoute
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
@@ -481,7 +461,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
   '/_authenticated/client/calendar': typeof AuthenticatedClientCalendarRoute
-  '/_authenticated/client/channels': typeof AuthenticatedClientChannelsRouteWithChildren
+  '/_authenticated/client/channels': typeof AuthenticatedClientChannelsRoute
   '/_authenticated/client/messages': typeof AuthenticatedClientMessagesRoute
   '/_authenticated/client/reports': typeof AuthenticatedClientReportsRoute
   '/_authenticated/client/roadmap': typeof AuthenticatedClientRoadmapRoute
@@ -491,8 +471,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/clients/$id': typeof AuthenticatedAdminClientsIdRouteWithChildren
   '/_authenticated/admin/clients/intake': typeof AuthenticatedAdminClientsIntakeRoute
   '/_authenticated/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
-  '/_authenticated/client/channels/callback': typeof AuthenticatedClientChannelsCallbackRoute
-  '/api/public/hooks/postiz-provision-retry': typeof ApiPublicHooksPostizProvisionRetryRoute
+  '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/_authenticated/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
@@ -522,7 +501,6 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/messages'
     | '/admin/planner'
-    | '/admin/postiz'
     | '/admin/queue'
     | '/admin/reach'
     | '/admin/reports'
@@ -544,8 +522,7 @@ export interface FileRouteTypes {
     | '/admin/clients/$id'
     | '/admin/clients/intake'
     | '/admin/clients/new'
-    | '/client/channels/callback'
-    | '/api/public/hooks/postiz-provision-retry'
+    | '/api/public/oauth/callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
     | '/admin/clients/'
@@ -573,7 +550,6 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/messages'
     | '/admin/planner'
-    | '/admin/postiz'
     | '/admin/queue'
     | '/admin/reach'
     | '/admin/reports'
@@ -595,8 +571,7 @@ export interface FileRouteTypes {
     | '/admin/clients/$id'
     | '/admin/clients/intake'
     | '/admin/clients/new'
-    | '/client/channels/callback'
-    | '/api/public/hooks/postiz-provision-retry'
+    | '/api/public/oauth/callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
     | '/admin/clients'
@@ -625,7 +600,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/media'
     | '/_authenticated/admin/messages'
     | '/_authenticated/admin/planner'
-    | '/_authenticated/admin/postiz'
     | '/_authenticated/admin/queue'
     | '/_authenticated/admin/reach'
     | '/_authenticated/admin/reports'
@@ -647,8 +621,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/clients/$id'
     | '/_authenticated/admin/clients/intake'
     | '/_authenticated/admin/clients/new'
-    | '/_authenticated/client/channels/callback'
-    | '/api/public/hooks/postiz-provision-retry'
+    | '/api/public/oauth/callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
     | '/_authenticated/admin/clients/'
@@ -660,7 +633,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicAutomationTickRoute: typeof ApiPublicAutomationTickRoute
-  ApiPublicHooksPostizProvisionRetryRoute: typeof ApiPublicHooksPostizProvisionRetryRoute
+  ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
   ApiPublicV1ClientsRoute: typeof ApiPublicV1ClientsRoute
   ApiPublicV1PostsRoute: typeof ApiPublicV1PostsRoute
 }
@@ -828,13 +801,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminQueueRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/postiz': {
-      id: '/_authenticated/admin/postiz'
-      path: '/postiz'
-      fullPath: '/admin/postiz'
-      preLoaderRoute: typeof AuthenticatedAdminPostizRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
     '/_authenticated/admin/planner': {
       id: '/_authenticated/admin/planner'
       path: '/planner'
@@ -975,19 +941,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1ClientsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/postiz-provision-retry': {
-      id: '/api/public/hooks/postiz-provision-retry'
-      path: '/api/public/hooks/postiz-provision-retry'
-      fullPath: '/api/public/hooks/postiz-provision-retry'
-      preLoaderRoute: typeof ApiPublicHooksPostizProvisionRetryRouteImport
+    '/api/public/oauth/callback': {
+      id: '/api/public/oauth/callback'
+      path: '/api/public/oauth/callback'
+      fullPath: '/api/public/oauth/callback'
+      preLoaderRoute: typeof ApiPublicOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/client/channels/callback': {
-      id: '/_authenticated/client/channels/callback'
-      path: '/callback'
-      fullPath: '/client/channels/callback'
-      preLoaderRoute: typeof AuthenticatedClientChannelsCallbackRouteImport
-      parentRoute: typeof AuthenticatedClientChannelsRoute
     }
     '/_authenticated/admin/clients/new': {
       id: '/_authenticated/admin/clients/new'
@@ -1052,7 +1011,6 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMediaRoute: typeof AuthenticatedAdminMediaRoute
   AuthenticatedAdminMessagesRoute: typeof AuthenticatedAdminMessagesRoute
   AuthenticatedAdminPlannerRoute: typeof AuthenticatedAdminPlannerRoute
-  AuthenticatedAdminPostizRoute: typeof AuthenticatedAdminPostizRoute
   AuthenticatedAdminQueueRoute: typeof AuthenticatedAdminQueueRoute
   AuthenticatedAdminReachRoute: typeof AuthenticatedAdminReachRoute
   AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
@@ -1088,7 +1046,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminMediaRoute: AuthenticatedAdminMediaRoute,
     AuthenticatedAdminMessagesRoute: AuthenticatedAdminMessagesRoute,
     AuthenticatedAdminPlannerRoute: AuthenticatedAdminPlannerRoute,
-    AuthenticatedAdminPostizRoute: AuthenticatedAdminPostizRoute,
     AuthenticatedAdminQueueRoute: AuthenticatedAdminQueueRoute,
     AuthenticatedAdminReachRoute: AuthenticatedAdminReachRoute,
     AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
@@ -1111,26 +1068,11 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
-interface AuthenticatedClientChannelsRouteChildren {
-  AuthenticatedClientChannelsCallbackRoute: typeof AuthenticatedClientChannelsCallbackRoute
-}
-
-const AuthenticatedClientChannelsRouteChildren: AuthenticatedClientChannelsRouteChildren =
-  {
-    AuthenticatedClientChannelsCallbackRoute:
-      AuthenticatedClientChannelsCallbackRoute,
-  }
-
-const AuthenticatedClientChannelsRouteWithChildren =
-  AuthenticatedClientChannelsRoute._addFileChildren(
-    AuthenticatedClientChannelsRouteChildren,
-  )
-
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedClientCalendarRoute: typeof AuthenticatedClientCalendarRoute
-  AuthenticatedClientChannelsRoute: typeof AuthenticatedClientChannelsRouteWithChildren
+  AuthenticatedClientChannelsRoute: typeof AuthenticatedClientChannelsRoute
   AuthenticatedClientMessagesRoute: typeof AuthenticatedClientMessagesRoute
   AuthenticatedClientReportsRoute: typeof AuthenticatedClientReportsRoute
   AuthenticatedClientRoadmapRoute: typeof AuthenticatedClientRoadmapRoute
@@ -1142,8 +1084,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedClientCalendarRoute: AuthenticatedClientCalendarRoute,
-  AuthenticatedClientChannelsRoute:
-    AuthenticatedClientChannelsRouteWithChildren,
+  AuthenticatedClientChannelsRoute: AuthenticatedClientChannelsRoute,
   AuthenticatedClientMessagesRoute: AuthenticatedClientMessagesRoute,
   AuthenticatedClientReportsRoute: AuthenticatedClientReportsRoute,
   AuthenticatedClientRoadmapRoute: AuthenticatedClientRoadmapRoute,
@@ -1160,8 +1101,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicAutomationTickRoute: ApiPublicAutomationTickRoute,
-  ApiPublicHooksPostizProvisionRetryRoute:
-    ApiPublicHooksPostizProvisionRetryRoute,
+  ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
   ApiPublicV1ClientsRoute: ApiPublicV1ClientsRoute,
   ApiPublicV1PostsRoute: ApiPublicV1PostsRoute,
 }

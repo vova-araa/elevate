@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
@@ -181,12 +181,17 @@ function EngagementPage() {
           </ul>
         )}
         <p className="text-[11px] text-muted-foreground mt-3">
-          Reactietellingen worden gesynchroniseerd zodra de Postiz analytics-koppeling actief is.
+          Reactietellingen worden gesynchroniseerd zodra de analytics-koppeling per platform actief
+          is.
         </p>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Engagement-rates (likes/comments/shares) per post vereisen de Postiz analytics-koppeling.
+        Engagement-rates (likes/comments/shares) per post vereisen een analytics-koppeling per{" "}
+        <Link to="/admin/channels" className="text-gold underline">
+          gekoppeld account
+        </Link>
+        .
       </p>
     </div>
   );

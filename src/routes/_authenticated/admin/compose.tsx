@@ -16,11 +16,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
-import {
-  listPostizIntegrations,
-  createPostizPost,
-  uploadPostizMediaFromUrl,
-} from "@/lib/postiz.functions";
+import { publishScheduledPost } from "@/lib/publish.functions";
+import type { Platform } from "@/components/planner/planner-shared";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
 type PostType = { id: string; label: string };
@@ -64,8 +62,6 @@ const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }
       { id: "story", label: "Story" },
     ],
   },
-  { id: "x", label: "X", limit: 280, types: [{ id: "tweet", label: "Tweet" }] },
-  { id: "threads", label: "Threads", limit: 500, types: [{ id: "post", label: "Post" }] },
   {
     id: "youtube",
     label: "YouTube",
@@ -84,18 +80,6 @@ export const Route = createFileRoute("/_authenticated/admin/compose")({
   component: ComposePage,
 });
 
-/** Subset van de Postiz-integratie zoals die van de server terugkomt. */
-interface PostizIntegrationOption {
-  id: string;
-  name?: string | null;
-  identifier?: string | null;
-  providerIdentifier?: string | null;
-  platform?: string | null;
-}
-
-/** Response van uploadPostizMediaFromUrl — kan een object of array zijn. */
-type PostizUploadResult = { id?: string } | { id?: string }[];
-
 function ComposePage() {
   const search = useSearch({ from: "/_authenticated/admin/compose" });
   const navigate = useNavigate();
@@ -105,12 +89,12 @@ function ComposePage() {
   const [content, setContent] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["instagram"]);
   const [postTypes, setPostTypes] = useState<Record<string, string>>({ instagram: "feed" });
-  const [selectedIntegrations, setSelectedIntegrations] = useState<Record<string, boolean>>({});
   const [mode, setMode] = useState<"schedule" | "now" | "draft">("schedule");
   const [scheduleAt, setScheduleAt] = useState<string>(
     search.at ?? new Date(Date.now() + 60 * 60000).toISOString().slice(0, 16),
   );
-  const [media, setMedia] = useState<{ url: string; postizId?: string; name: string }[]>([]);
+  const [mediaPath, setMediaPath] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<string | null>(null);
   const [previewPlatform, setPreviewPlatform] = useState<string>("instagram");
 
   useEffect(() => {
@@ -119,27 +103,23 @@ function ComposePage() {
     sessionStorage.removeItem("compose-pending-media");
     try {
       const parsed = JSON.parse(raw) as {
-        media?: { url: string; postizId?: string; name: string }[];
+        media?: { path: string; type?: string; name: string }[];
         caption?: string;
       };
-      if (parsed.media?.length) setMedia(parsed.media);
+      const first = parsed.media?.[0];
+      if (first) {
+        setMediaPath(first.path);
+        setMediaType(first.type ?? null);
+      }
       if (parsed.caption) setContent(parsed.caption);
     } catch {
       /* ignore */
     }
   }, []);
 
-  const listFn = useServerFn(listPostizIntegrations);
-  const createFn = useServerFn(createPostizPost);
-  const uploadFn = useServerFn(uploadPostizMediaFromUrl);
+  const publishFn = useServerFn(publishScheduledPost);
 
-  const { data: integrations } = useQuery({
-    queryKey: ["postiz-integrations"],
-    queryFn: () => listFn(),
-  });
-
-  // Per-klant gekoppelde kanalen: waarschuw als een gekozen platform niet
-  // voor déze klant gekoppeld is (workspace-integratie ≠ klantkoppeling).
+  // Per-klant gekoppelde kanalen — bepaalt welke platforms beschikbaar zijn om naar te posten.
   const { data: clientChannels } = useQuery({
     queryKey: ["client-social-connections", activeClient?.id],
     enabled: !!activeClient?.id,
@@ -158,55 +138,71 @@ function ComposePage() {
     ? selectedPlatforms.filter((p) => !clientConnected.has(p))
     : [];
 
-  const integrationsData: unknown = integrations;
-  const integrationsList: PostizIntegrationOption[] = Array.isArray(integrationsData)
-    ? (integrationsData as PostizIntegrationOption[])
-    : [];
+  const mediaUrl = mediaPath
+    ? supabase.storage.from("client-uploads").getPublicUrl(mediaPath).data.publicUrl
+    : null;
 
   const uploadMut = useMutation({
     mutationFn: async (file: File) => {
       if (!activeClient) throw new Error("Selecteer een klant in de sidebar");
       const path = `${activeClient.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("client-uploads").upload(path, file);
+      const { error } = await supabase.storage
+        .from("client-uploads")
+        .upload(path, file, { contentType: file.type });
       if (error) throw error;
-      const { data } = supabase.storage.from("client-uploads").getPublicUrl(path);
-      const r: PostizUploadResult = await uploadFn({
-        data: { url: data.publicUrl, filename: file.name },
-      });
-      const postizId = Array.isArray(r) ? r[0]?.id : r?.id;
-      return { url: data.publicUrl, postizId, name: file.name };
+      return { path, type: file.type };
     },
-    onSuccess: (m) => setMedia((prev) => [...prev, m]),
+    onSuccess: ({ path, type }) => {
+      setMediaPath(path);
+      setMediaType(type);
+    },
     onError: (e: Error) => toast.error(e?.message ?? "Upload mislukt"),
   });
 
   const submitMut = useMutation({
     mutationFn: async () => {
-      const chosen = integrationsList.filter((i) => selectedIntegrations[i.id]);
-      if (chosen.length === 0) throw new Error("Selecteer minstens één kanaal");
+      if (!activeClient) throw new Error("Selecteer een klant in de sidebar");
+      if (selectedPlatforms.length === 0) throw new Error("Selecteer minstens één platform");
       if (!content.trim()) throw new Error("Schrijf eerst een caption");
-      const dateISO =
+      const status: "draft" | "scheduled" = mode === "draft" ? "draft" : "scheduled";
+      const scheduledISO =
         mode === "now" ? new Date().toISOString() : new Date(scheduleAt).toISOString();
-      const image = media.length ? media.map((m) => ({ id: m.postizId, path: m.url })) : undefined;
-      return await createFn({
-        data: {
-          type: mode,
-          date: dateISO,
-          shortLink: false,
-          tags: [],
-          posts: chosen.map((i) => ({
-            integration: { id: i.id },
-            value: [{ content, image }],
-          })),
-        },
-      });
+      const rows: TablesInsert<"scheduled_posts">[] = selectedPlatforms.map((p) => ({
+        client_id: activeClient.id,
+        platform: p as Platform,
+        caption: content,
+        media_path: mediaPath,
+        media_type: mediaType,
+        scheduled_at: scheduledISO,
+        status,
+      }));
+      const { data: inserted, error } = await supabase
+        .from("scheduled_posts")
+        .insert(rows)
+        .select("id, platform");
+      if (error) throw new Error(error.message);
+
+      if (mode === "now" && inserted) {
+        const failures: string[] = [];
+        for (const row of inserted) {
+          try {
+            await publishFn({ data: { postId: row.id } });
+          } catch (e) {
+            const label = PLATFORMS.find((pl) => pl.id === row.platform)?.label ?? row.platform;
+            failures.push(`${label}: ${e instanceof Error ? e.message : "onbekende fout"}`);
+          }
+        }
+        if (failures.length > 0) throw new Error(failures.join(" · "));
+      }
     },
     onSuccess: () => {
-      toast.success("Post ingepland");
-      qc.invalidateQueries({ queryKey: ["postiz-posts"] });
-      navigate({ to: "/admin/planner" });
+      toast.success(
+        mode === "now" ? "Gepubliceerd" : mode === "draft" ? "Concept opgeslagen" : "Ingepland",
+      );
+      qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
+      navigate({ to: "/admin/planner", search: { clientId: activeClient?.id } });
     },
-    onError: (e: Error) => toast.error(e?.message ?? "Inplannen mislukt"),
+    onError: (e: Error) => toast.error(e?.message ?? "Opslaan mislukt"),
   });
 
   const longest = Math.max(
@@ -254,12 +250,7 @@ function ComposePage() {
 
         {/* Platforms + per-platform post type */}
         {(() => {
-          const connectedIds = new Set(
-            integrationsList
-              .map((i) => String(i.providerIdentifier ?? i.platform ?? "").toLowerCase())
-              .filter(Boolean),
-          );
-          const available = PLATFORMS.filter((p) => connectedIds.has(p.id));
+          const available = PLATFORMS.filter((p) => clientConnected.has(p.id));
           return (
             <div className="rounded-xl border border-gold/15 bg-card p-4 space-y-3">
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -321,38 +312,6 @@ function ComposePage() {
           );
         })()}
 
-        {/* Channels (Postiz integrations) */}
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
-            Kanalen
-          </div>
-          {integrationsList.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Geen Postiz integraties gevonden.</p>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-2">
-              {integrationsList.map((i) => (
-                <label
-                  key={i.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer rounded-lg border border-border px-3 py-2 hover:bg-accent/40"
-                >
-                  <input
-                    type="checkbox"
-                    checked={!!selectedIntegrations[i.id]}
-                    onChange={(e) =>
-                      setSelectedIntegrations((p) => ({ ...p, [i.id]: e.target.checked }))
-                    }
-                    className="accent-[var(--gold)]"
-                  />
-                  <span className="font-medium">{i.name ?? i.identifier ?? i.id}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {i.providerIdentifier ?? i.platform ?? ""}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* Textarea */}
         <div className="rounded-xl border border-gold/15 bg-card p-4">
           <div className="flex items-center justify-between mb-2">
@@ -397,22 +356,24 @@ function ComposePage() {
               </span>
             )}
           </label>
-          {media.length > 0 && (
+          {mediaPath && (
             <div className="mt-3 flex gap-2 flex-wrap">
-              {media.map((m, i) => (
-                <div
-                  key={i}
-                  className="relative h-16 w-16 rounded-lg overflow-hidden border border-border"
+              <div className="relative h-16 w-16 rounded-lg overflow-hidden border border-border">
+                {mediaType?.startsWith("video") ? (
+                  <video src={mediaUrl ?? undefined} className="h-full w-full object-cover" />
+                ) : (
+                  <img src={mediaUrl ?? undefined} alt="" className="h-full w-full object-cover" />
+                )}
+                <button
+                  onClick={() => {
+                    setMediaPath(null);
+                    setMediaType(null);
+                  }}
+                  className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-background/80 grid place-items-center"
                 >
-                  <img src={m.url} alt="" className="h-full w-full object-cover" />
-                  <button
-                    onClick={() => setMedia((p) => p.filter((_, j) => j !== i))}
-                    className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-background/80 grid place-items-center"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -489,7 +450,7 @@ function ComposePage() {
             platform={previewPlatform}
             type={postTypes[previewPlatform]}
             content={content}
-            mediaUrl={media[0]?.url}
+            mediaUrl={mediaUrl ?? undefined}
             clientName={activeClient?.name ?? "Klant"}
             clientLogo={activeClient?.logo_url}
           />

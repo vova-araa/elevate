@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   CalendarDays,
-  Send,
   FileText,
   Image as ImageIcon,
   Sparkles,
@@ -55,7 +54,6 @@ const NAV_ITEMS = [
     icon: PenSquare,
     keywords: "schrijven maken opstellen",
   },
-  { to: "/admin/postiz", label: "Posts", icon: Send, keywords: "gepland gepubliceerd" },
   { to: "/admin/queue", label: "Concepten", icon: FileText, keywords: "drafts wachtrij" },
   { to: "/admin/media", label: "Media", icon: ImageIcon, keywords: "bibliotheek fotos videos" },
   { to: "/admin/bulk", label: "Bulk import", icon: Upload, keywords: "csv import massa inplannen" },
@@ -98,7 +96,7 @@ const NAV_ITEMS = [
     to: "/admin/channels",
     label: "Kanalen",
     icon: Plug,
-    keywords: "koppelingen social instagram tiktok linkedin youtube facebook postiz",
+    keywords: "koppelingen social instagram tiktok linkedin youtube facebook",
   },
   {
     to: "/admin/team",
@@ -108,9 +106,9 @@ const NAV_ITEMS = [
   },
   {
     to: "/admin/webhooks",
-    label: "Kanalen",
+    label: "Webhooks",
     icon: Plug,
-    keywords: "koppelingen integraties webhooks",
+    keywords: "integraties webhooks automatisch",
   },
   {
     to: "/admin/settings",

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   Instagram,
   Linkedin,
@@ -13,18 +14,25 @@ import {
   Loader2,
   Link2,
   X,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   listClientChannels,
-  initPostizConnect,
-  disconnectPostizChannel,
-  syncPostizConnection,
-} from "@/lib/postiz-connect.functions";
+  startSocialConnect,
+  disconnectChannel,
+} from "@/lib/channels.functions";
 import { supabase } from "@/integrations/supabase/client";
 
+const searchSchema = z.object({
+  connected: z.string().optional(),
+  handle: z.string().optional(),
+  error: z.string().optional(),
+});
+
 export const Route = createFileRoute("/_authenticated/client/channels")({
+  validateSearch: searchSchema,
   component: ChannelsPage,
 });
 
@@ -66,17 +74,25 @@ const PLATFORMS: { id: Platform; label: string; Icon: LucideIcon; tint: string }
 function ChannelsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { connected, handle, error } = Route.useSearch();
   const list = useServerFn(listClientChannels);
-  const init = useServerFn(initPostizConnect);
-  const disc = useServerFn(disconnectPostizChannel);
-  const sync = useServerFn(syncPostizConnection);
+  const connect = useServerFn(startSocialConnect);
+  const disc = useServerFn(disconnectChannel);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["client-channels"],
     queryFn: () => list({ data: {} }),
   });
 
-  // Realtime: refetch wanneer er iets verandert in social_connections of clients
+  // Toon eenmalig een toast voor de OAuth-callback-redirect, wis daarna de querystring.
+  useEffect(() => {
+    if (!connected && !error) return;
+    if (error) toast.error(error);
+    else if (connected) toast.success(`${handle ?? "Account"} gekoppeld via ${connected}`);
+    navigate({ to: "/client/channels", search: {}, replace: true });
+  }, [connected, handle, error, navigate]);
+
+  // Realtime: refetch wanneer er iets verandert in social_connections van deze klant
   useEffect(() => {
     if (!data?.clientId) return;
     const ch = supabase
@@ -91,11 +107,6 @@ function ChannelsPage() {
         },
         () => qc.invalidateQueries({ queryKey: ["client-channels"] }),
       )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "clients", filter: `id=eq.${data.clientId}` },
-        () => qc.invalidateQueries({ queryKey: ["client-channels"] }),
-      )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -104,41 +115,13 @@ function ChannelsPage() {
 
   const [confirm, setConfirm] = useState<Platform | null>(null);
 
-  const syncAfterConnect = async (platform: Platform, notify = false) => {
-    const result = await sync({ data: { platform } });
-    await refetch();
-    if (notify)
-      toast[result?.connected ? "success" : "info"](
-        result?.connected
-          ? "Account gekoppeld"
-          : (result?.reason ?? "Nog geen nieuwe koppeling gevonden"),
-      );
-  };
-
   const connectMut = useMutation({
     mutationFn: async (platform: Platform) => {
-      const res = await init({ data: { platform } });
-      if (res?.external) {
-        const opened = window.open(res.redirectUrl, "_blank", "noopener,noreferrer");
-        if (!opened)
-          throw new Error(
-            "De browser blokkeerde het Postiz-tabblad. Sta pop-ups toe en probeer opnieuw.",
-          );
-      }
-      return { ...res, platform };
+      const res = await connect({ data: { platform, returnTo: "client" } });
+      return res;
     },
     onSuccess: (res) => {
-      setConfirm(null);
-      if (res?.external) {
-        toast.info(
-          "Rond de autorisatie af in het nieuwe tabblad. De status wordt automatisch ververst.",
-        );
-        [4000, 12000, 30000].forEach((ms) =>
-          window.setTimeout(() => syncAfterConnect(res.platform), ms),
-        );
-      } else {
-        navigate({ to: res.redirectUrl });
-      }
+      window.location.href = res.redirectUrl;
     },
     onError: (e: Error) => toast.error(e.message ?? "Verbinden mislukt"),
   });
@@ -169,18 +152,13 @@ function ChannelsPage() {
         </div>
       )}
 
-      {data?.clientId && !data.provisioned && (
-        <div className="rounded-xl border border-amber-400/30 bg-amber-500/5 text-amber-200 p-4 text-sm">
-          Account wordt voorbereid, probeer over een minuut opnieuw.
-        </div>
-      )}
-
       {isLoading && <div className="text-sm text-muted-foreground">Laden…</div>}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {PLATFORMS.map(({ id, label, Icon, tint }) => {
           const ch = channelsByPlatform.get(id);
-          const connected = !!ch && ch.status === "active";
+          const connectedActive = !!ch && ch.status === "active";
+          const expired = !!ch && ch.status === "expired";
           return (
             <div
               key={id}
@@ -190,9 +168,14 @@ function ChannelsPage() {
                 tint,
               )}
             >
-              {connected && (
+              {connectedActive && (
                 <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-400/30 rounded-full px-2 py-0.5">
                   <CheckCircle2 className="h-3 w-3" /> Gekoppeld
+                </span>
+              )}
+              {expired && (
+                <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-full px-2 py-0.5">
+                  <AlertTriangle className="h-3 w-3" /> Verlopen — koppel opnieuw
                 </span>
               )}
               <div className="flex items-center gap-3">
@@ -201,7 +184,7 @@ function ChannelsPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="font-medium">{label}</div>
-                  {connected ? (
+                  {ch ? (
                     <div className="text-xs text-muted-foreground truncate">
                       {ch.account_username ?? "—"}
                       {typeof ch.follower_count === "number" && (
@@ -215,7 +198,7 @@ function ChannelsPage() {
               </div>
 
               <div className="mt-4 flex items-center gap-2">
-                {connected ? (
+                {connectedActive ? (
                   <button
                     onClick={() => {
                       if (window.confirm("Weet je het zeker? Posts vanuit dit kanaal stoppen.")) {
@@ -233,8 +216,8 @@ function ChannelsPage() {
                   </button>
                 ) : (
                   <button
-                    onClick={() => data?.provisioned && setConfirm(id)}
-                    disabled={!data?.provisioned || connectMut.isPending}
+                    onClick={() => setConfirm(id)}
+                    disabled={connectMut.isPending}
                     className="text-xs h-8 px-3 rounded-lg bg-gold/20 text-gold font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <Link2 className="h-3.5 w-3.5" /> Koppelen

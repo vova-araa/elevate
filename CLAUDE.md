@@ -16,7 +16,7 @@ Nederlands social-media-agency platform. UI-taal is **Nederlands**; codecommenta
 - **Server functions**: `createServerFn` + `requireSupabaseAuth` middleware (zie `src/lib/*.functions.ts`). Admin-check via het `assertAdmin`-patroon. Bestanden met `.server.ts` suffix worden nooit in de client gebundeld.
 - **Supabase**: client-side `@/integrations/supabase/client`, server-side (service role) `@/integrations/supabase/client.server`. Types in `integrations/supabase/types.ts` — bij schemawijzigingen zowel een migration in `supabase/migrations/` toevoegen als types.ts bijwerken.
 - **AI**: alle AI-aanroepen via `src/lib/ai-provider.server.ts` (Anthropic Claude API — `generateText`, `generateJson`, `runToolLoop`). Nooit rechtstreeks fetchen naar AI-endpoints elders in de code.
-- **Publiceren**: via Postiz REST (`src/lib/postiz*.functions.ts`).
+- **Publiceren**: direct via eigen OAuth-koppelingen (`src/lib/social-oauth.server.ts`, `social-publish.server.ts`, `channels.functions.ts`); callback op `/api/public/oauth/callback`.
 
 ## UI-conventies
 

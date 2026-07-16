@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 
-const FAB_ROUTES = ["/admin/dashboard", "/admin/planner", "/admin/postiz", "/admin/queue"];
+const FAB_ROUTES = ["/admin/dashboard", "/admin/planner", "/admin/queue"];
 
 export function MobileFab() {
   const path = useRouterState({ select: (r) => r.location.pathname });

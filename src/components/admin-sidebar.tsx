@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   CalendarDays,
-  Send,
   FileText,
   Image as ImageIcon,
   Sparkles,
@@ -151,7 +150,6 @@ export function AdminSidebar() {
           icon: CalendarDays,
           badge: counts?.scheduled ? { value: counts.scheduled, tone: "default" } : undefined,
         },
-        { to: "/admin/postiz", label: "Posts", icon: Send },
         {
           to: "/admin/queue",
           label: "Concepten",

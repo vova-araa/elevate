@@ -9,7 +9,7 @@ import type { SocialPlatform } from "@/lib/social-oauth.server";
 
 /**
  * Publiceer een geplande post direct naar het platform via de eigen
- * social-koppelingen. Vervangt de vroegere Postiz-publicatieroute.
+ * social-koppelingen (OAuth), zonder tussenkomst van een externe publishing-partij.
  */
 
 async function assertClientAccess(

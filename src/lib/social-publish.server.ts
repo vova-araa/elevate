@@ -36,7 +36,9 @@ async function getConnection(clientId: string, platform: SocialPlatform) {
     .eq("platform", platform)
     .maybeSingle();
   if (!conn?.access_token || conn.status !== "active")
-    throw new Error(`Geen actieve ${platform}-koppeling voor deze klant — koppel eerst via Kanalen`);
+    throw new Error(
+      `Geen actieve ${platform}-koppeling voor deze klant — koppel eerst via Kanalen`,
+    );
 
   // Token verversen wanneer (bijna) verlopen en het platform dat ondersteunt.
   let accessToken = conn.access_token;
@@ -78,7 +80,8 @@ async function graphPost(path: string, params: Record<string, string>): Promise<
 }
 
 const isVideo = (input: PublishInput) =>
-  (input.mediaType ?? "").startsWith("video") || /\.(mp4|mov|webm)(\?|$)/i.test(input.mediaUrl ?? "");
+  (input.mediaType ?? "").startsWith("video") ||
+  /\.(mp4|mov|webm)(\?|$)/i.test(input.mediaUrl ?? "");
 
 async function publishFacebook(clientId: string, input: PublishInput): Promise<PublishResult> {
   const { meta } = await getConnection(clientId, "facebook");

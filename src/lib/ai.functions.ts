@@ -99,7 +99,7 @@ const tools: Anthropic.Tool[] = [
   {
     name: "schedule_post",
     description:
-      "Plan een post in via Postiz. Roep dit aan zodra je tekst hebt en een datum/tijd én tenminste één Postiz integratie-id.",
+      "Plan een post in. Roep dit aan zodra je tekst hebt en een datum/tijd én tenminste één gekoppeld platform.",
     input_schema: {
       type: "object",
       properties: {
