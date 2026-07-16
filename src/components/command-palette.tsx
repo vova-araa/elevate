@@ -95,6 +95,12 @@ const NAV_ITEMS = [
   { to: "/admin/tasks", label: "Taken", icon: ListChecks, keywords: "todo actiepunten" },
   { to: "/admin/clients", label: "Klanten", icon: Building2, keywords: "accounts bedrijven" },
   {
+    to: "/admin/channels",
+    label: "Kanalen",
+    icon: Plug,
+    keywords: "koppelingen social instagram tiktok linkedin youtube facebook postiz",
+  },
+  {
     to: "/admin/team",
     label: "Team",
     icon: Users,

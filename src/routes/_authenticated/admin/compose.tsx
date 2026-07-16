@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -138,6 +138,26 @@ function ComposePage() {
     queryFn: () => listFn(),
   });
 
+  // Per-klant gekoppelde kanalen: waarschuw als een gekozen platform niet
+  // voor déze klant gekoppeld is (workspace-integratie ≠ klantkoppeling).
+  const { data: clientChannels } = useQuery({
+    queryKey: ["client-social-connections", activeClient?.id],
+    enabled: !!activeClient?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("social_connections")
+        .select("platform, status")
+        .eq("client_id", activeClient!.id);
+      return data ?? [];
+    },
+  });
+  const clientConnected = new Set<string>(
+    (clientChannels ?? []).filter((c) => c.status === "active").map((c) => c.platform),
+  );
+  const missingForClient = activeClient
+    ? selectedPlatforms.filter((p) => !clientConnected.has(p))
+    : [];
+
   const integrationsData: unknown = integrations;
   const integrationsList: PostizIntegrationOption[] = Array.isArray(integrationsData)
     ? (integrationsData as PostizIntegrationOption[])
@@ -218,6 +238,18 @@ function ComposePage() {
           <div className="text-sm font-medium">
             {activeClient?.name ?? "Selecteer een klant in de sidebar"}
           </div>
+          {missingForClient.length > 0 && (
+            <p className="mt-2 text-xs text-amber-600 dark:text-amber-300">
+              ⚠ Nog niet gekoppeld voor {activeClient?.name}:{" "}
+              {missingForClient
+                .map((id) => PLATFORMS.find((p) => p.id === id)?.label ?? id)
+                .join(", ")}{" "}
+              —{" "}
+              <Link to="/admin/channels" className="underline text-gold">
+                koppel eerst
+              </Link>
+            </p>
+          )}
         </div>
 
         {/* Platforms + per-platform post type */}

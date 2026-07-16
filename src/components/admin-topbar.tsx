@@ -25,7 +25,8 @@ const TITLES: Record<string, string> = {
   "/admin/automations": "Alerts",
   "/admin/clients": "Klanten",
   "/admin/team": "Team",
-  "/admin/webhooks": "Kanalen",
+  "/admin/channels": "Kanalen",
+  "/admin/webhooks": "Webhooks",
   "/admin/settings": "Instellingen",
 };
 

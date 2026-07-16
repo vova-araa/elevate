@@ -199,6 +199,7 @@ export function AdminSidebar() {
           badge: counts?.unread ? { value: counts.unread, tone: "red" } : undefined,
         },
         { to: "/admin/clients", label: "Klanten", icon: Building2 },
+        { to: "/admin/channels", label: "Kanalen", icon: Plug },
         { to: "/admin/team", label: "Team", icon: Users },
         {
           to: "/admin/settings",
