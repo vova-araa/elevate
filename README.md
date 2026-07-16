@@ -49,6 +49,8 @@ Publiceren en koppelen loopt via eigen OAuth-integraties per platform (`src/lib/
 
 ## Build & deploy
 
+🚀 **Live gaan in ±20 minuten: volg [docs/LIVE-GAAN.md](docs/LIVE-GAAN.md).**
+
 ```sh
 bun run build      # productie-build (Nitro, node-server preset)
 bun run start      # draait .output/server/index.mjs
