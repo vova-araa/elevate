@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -50,29 +51,22 @@ type Post = Pick<
   | "error_message"
 >;
 
-type SocialConnection = Tables<"social_connections">;
+type ConnectionInfo = Pick<
+  Tables<"social_connections">,
+  "id" | "account_username" | "status" | "connected_at"
+>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function InstagramScheduler({
-  clientId,
-  igUrl,
-}: {
-  clientId: string;
-  igUrl: string | null;
-}) {
+export function InstagramScheduler({ clientId }: { clientId: string; igUrl: string | null }) {
   const qc = useQueryClient();
-  const [connecting, setConnecting] = useState(false);
 
-  const { data: connection } = useQuery<SocialConnection | null>({
+  // Alleen veilige kolommen — tokens blijven server-side (kolom-privileges in DB).
+  const { data: connection } = useQuery<ConnectionInfo | null>({
     queryKey: ["social-conn", clientId, "instagram"],
     queryFn: async () =>
       (
         await supabase
           .from("social_connections")
-          .select("*")
+          .select("id, account_username, status, connected_at")
           .eq("client_id", clientId)
           .eq("platform", "instagram")
           .maybeSingle()
@@ -91,42 +85,7 @@ export function InstagramScheduler({
       ).data ?? [],
   });
 
-  async function connectInstagram() {
-    setConnecting(true);
-    // Phase 1: registreer de bekende IG-handle als koppeling. Echte OAuth
-    // (Meta App review verplicht) wordt toegevoegd zodra alle vereiste
-    // permissies zijn goedgekeurd. We slaan handle + placeholder op zodat
-    // het platform al kan plannen.
-    const handle = prompt(
-      "Instagram-gebruikersnaam (zonder @)",
-      igUrl?.split("/").filter(Boolean).pop() ?? "",
-    );
-    if (!handle) {
-      setConnecting(false);
-      return;
-    }
-    const { error } = await supabase.from("social_connections").upsert(
-      {
-        client_id: clientId,
-        platform: "instagram",
-        account_username: handle,
-        meta: { pending_oauth: true, note: "Wacht op Meta App review" },
-      },
-      { onConflict: "client_id,platform" },
-    );
-    setConnecting(false);
-    if (error) return toast.error(error.message);
-    toast.success(`Instagram @${handle} voorlopig gekoppeld`);
-    qc.invalidateQueries({ queryKey: ["social-conn", clientId, "instagram"] });
-  }
-
-  async function disconnect() {
-    if (!connection) return;
-    if (!confirm("Instagram loskoppelen? Geplande posts blijven staan.")) return;
-    await supabase.from("social_connections").delete().eq("id", connection.id);
-    toast.success("Losgekoppeld");
-    qc.invalidateQueries({ queryKey: ["social-conn", clientId, "instagram"] });
-  }
+  // Koppelen/ontkoppelen loopt via de Kanalen-pagina (echte OAuth-flow).
 
   // Combined grid: scheduled (newest first) → mock feed
   const planned = (posts ?? []).filter((p) => p.status !== "published");
@@ -144,9 +103,9 @@ export function InstagramScheduler({
           {connection ? (
             <div className="text-sm text-muted-foreground">
               @{connection.account_username} — gekoppeld
-              {isRecord(connection.meta) && connection.meta.pending_oauth === true && (
+              {connection.status !== "active" && (
                 <span className="ml-2 text-amber-400 text-xs inline-flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> wacht op Meta App-review
+                  <AlertCircle className="h-3 w-3" /> koppeling verlopen
                 </span>
               )}
             </div>
@@ -154,24 +113,13 @@ export function InstagramScheduler({
             <div className="text-sm text-muted-foreground">Nog niet gekoppeld</div>
           )}
         </div>
-        {connection ? (
-          <button onClick={disconnect} className="text-xs text-destructive hover:underline">
-            Loskoppelen
-          </button>
-        ) : (
-          <button
-            onClick={connectInstagram}
-            disabled={connecting}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-amber-400 px-4 py-2 text-sm font-medium text-white"
-          >
-            {connecting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Instagram className="h-4 w-4" />
-            )}
-            Verbind Instagram
-          </button>
-        )}
+        <Link
+          to="/admin/channels"
+          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-amber-400 px-4 py-2 text-sm font-medium text-white"
+        >
+          <Instagram className="h-4 w-4" />
+          {connection ? "Beheer koppeling" : "Verbind via Kanalen"}
+        </Link>
       </div>
 
       {/* New post */}

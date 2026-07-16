@@ -371,7 +371,12 @@ function SocialTab({ clientId }: { clientId: string }) {
   const { data: conns } = useQuery({
     queryKey: ["social-conns", clientId],
     queryFn: async () =>
-      (await supabase.from("social_connections").select("*").eq("client_id", clientId)).data ?? [],
+      (
+        await supabase
+          .from("social_connections")
+          .select("platform, status")
+          .eq("client_id", clientId)
+      ).data ?? [],
   });
   const linkedCount = conns?.filter((c) => c.status === "active").length ?? 0;
 
