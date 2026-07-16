@@ -45,6 +45,8 @@ Publiceren en koppelen loopt via eigen OAuth-integraties per platform (`src/lib/
 3. Vul de bijbehorende client-id's/secrets in als server-secrets (zie tabel hierboven).
 4. YouTube-publicatie wordt nog niet ondersteund — koppelen en statistieken ophalen werkt al wel.
 
+👉 **Stap-voor-stap in gewone taal: [docs/KOPPELINGEN.md](docs/KOPPELINGEN.md).** De Kanalen-pagina in de app toont bovendien zelf per platform wat er nog ingesteld moet worden (met kopieerknop voor de redirect-URI). `APP_URL` is optioneel — zonder die variabele gebruikt de app automatisch het domein waarop hij draait.
+
 ## Build & deploy
 
 ```sh

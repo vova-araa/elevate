@@ -27,7 +27,60 @@ import {
   startSocialConnect,
   disconnectChannel,
   refreshChannel,
+  getSocialSetupStatus,
 } from "@/lib/channels.functions";
+
+/** Klik-voor-klik instructies per platform voor de eenmalige app-registratie. */
+const SETUP_GUIDE: Record<string, { portal: string; portalLabel: string; steps: string[] }> = {
+  instagram: {
+    portal: "https://developers.facebook.com/apps/",
+    portalLabel: "developers.facebook.com",
+    steps: [
+      "Maak (eenmalig) een app aan van het type 'Business'.",
+      "Voeg het product 'Facebook Login for Business' toe.",
+      "Plak de redirect-URI hieronder bij 'Valid OAuth Redirect URIs'.",
+      "Kopieer App-ID en App-secret naar de omgeving als META_APP_ID en META_APP_SECRET.",
+      "Zorg dat het Instagram-account een Business-account is, gekoppeld aan een Facebook-pagina.",
+    ],
+  },
+  facebook: {
+    portal: "https://developers.facebook.com/apps/",
+    portalLabel: "developers.facebook.com",
+    steps: [
+      "Zelfde Meta-app als Instagram — één keer instellen is genoeg.",
+      "Kopieer App-ID en App-secret naar META_APP_ID en META_APP_SECRET.",
+    ],
+  },
+  tiktok: {
+    portal: "https://developers.tiktok.com/",
+    portalLabel: "developers.tiktok.com",
+    steps: [
+      "Maak een app aan en vraag de 'Content Posting API' aan.",
+      "Plak de redirect-URI hieronder bij 'Redirect URI'.",
+      "Kopieer Client key en Client secret naar TIKTOK_CLIENT_KEY en TIKTOK_CLIENT_SECRET.",
+    ],
+  },
+  linkedin: {
+    portal: "https://www.linkedin.com/developers/apps",
+    portalLabel: "linkedin.com/developers",
+    steps: [
+      "Maak een app aan (koppel je bedrijfspagina).",
+      "Vraag de producten 'Sign In with LinkedIn' en 'Share on LinkedIn' aan.",
+      "Plak de redirect-URI hieronder bij 'Authorized redirect URLs'.",
+      "Kopieer Client ID en Client Secret naar LINKEDIN_CLIENT_ID en LINKEDIN_CLIENT_SECRET.",
+    ],
+  },
+  youtube: {
+    portal: "https://console.cloud.google.com/apis/credentials",
+    portalLabel: "console.cloud.google.com",
+    steps: [
+      "Maak een project + OAuth Client ID (type 'Webapplicatie').",
+      "Zet de YouTube Data API v3 aan.",
+      "Plak de redirect-URI hieronder bij 'Geautoriseerde omleidings-URI's'.",
+      "Kopieer Client-ID en Client-secret naar GOOGLE_CLIENT_ID en GOOGLE_CLIENT_SECRET.",
+    ],
+  },
+};
 
 const searchSchema = z.object({
   connected: z.string().optional(),
@@ -105,7 +158,9 @@ function AdminChannels() {
   const connectMut = useMutation({
     mutationFn: async (platform: Platform) => {
       if (!clientId) throw new Error("Selecteer eerst een klant in de sidebar");
-      const res = await connect({ data: { clientId, platform, returnTo: "admin" } });
+      const res = await connect({
+        data: { clientId, platform, returnTo: "admin", origin: window.location.origin },
+      });
       return res;
     },
     onSuccess: (res) => {
@@ -138,6 +193,19 @@ function AdminChannels() {
     },
     onError: (e: Error) => toast.error(e.message ?? "Ontkoppelen mislukt"),
   });
+
+  const setupFn = useServerFn(getSocialSetupStatus);
+  const { data: setup } = useQuery({
+    queryKey: ["social-setup-status"],
+    queryFn: () => setupFn(),
+    staleTime: 60_000,
+  });
+  const redirectUri =
+    typeof window !== "undefined" ? `${window.location.origin}/api/public/oauth/callback` : "";
+  const copyRedirect = async () => {
+    await navigator.clipboard.writeText(redirectUri);
+    toast.success("Redirect-URI gekopieerd");
+  };
 
   const channelsByPlatform = new Map((data?.channels ?? []).map((c) => [c.platform, c]));
 
@@ -255,6 +323,44 @@ function AdminChannels() {
                       Ontkoppel
                     </button>
                   </>
+                ) : setup && !setup.platforms[id]?.configured ? (
+                  <details className="w-full text-xs">
+                    <summary className="cursor-pointer inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-amber-400/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium">
+                      ⚙ Eenmalig instellen (±10 min)
+                    </summary>
+                    <ol className="mt-3 space-y-1.5 list-decimal pl-4 text-muted-foreground">
+                      <li>
+                        Ga naar{" "}
+                        <a
+                          href={SETUP_GUIDE[id].portal}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline text-gold"
+                        >
+                          {SETUP_GUIDE[id].portalLabel}
+                        </a>
+                        .
+                      </li>
+                      {SETUP_GUIDE[id].steps.map((s) => (
+                        <li key={s}>{s}</li>
+                      ))}
+                      <li>
+                        Herstart/redeploy de app — deze kaart wordt dan vanzelf een Koppelen-knop.
+                      </li>
+                    </ol>
+                    <button
+                      onClick={copyRedirect}
+                      className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-gold/20 hover:bg-gold/10 font-medium"
+                    >
+                      <Link2 className="h-3.5 w-3.5" /> Kopieer redirect-URI
+                    </button>
+                    <div className="mt-1.5 break-all font-mono text-[10.5px] text-muted-foreground">
+                      {redirectUri}
+                    </div>
+                    <div className="mt-1.5 text-[10.5px] text-muted-foreground">
+                      Nog in te stellen: {setup.platforms[id]?.missing.join(", ")}
+                    </div>
+                  </details>
                 ) : (
                   <button
                     onClick={() => connectMut.mutate(id)}

@@ -8,8 +8,8 @@ import { verifyState, exchangeCode, fetchProfile, appUrl } from "@/lib/social-oa
  * De state is HMAC-getekend en bevat clientId + platform + return-pagina.
  */
 
-function redirectTo(path: string, params: Record<string, string>): Response {
-  const u = new URL(path, appUrl());
+function redirectTo(base: string, path: string, params: Record<string, string>): Response {
+  const u = new URL(path, base);
   Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
   return Response.redirect(u.toString(), 302);
 }
@@ -26,18 +26,20 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
 
         // Zonder geldige state weten we niet waarheen — val terug op admin.
         let returnTo = "/admin/channels";
+        let base = appUrl(url.origin);
         try {
           const state = verifyState(stateRaw);
           returnTo = state.returnTo;
+          base = state.origin ?? base;
 
           if (oauthError || !code) {
-            return redirectTo(returnTo, {
+            return redirectTo(base, returnTo, {
               error: oauthError ?? "Autorisatie geannuleerd",
               platform: state.platform,
             });
           }
 
-          const tokens = await exchangeCode(state.platform, code);
+          const tokens = await exchangeCode(state.platform, code, state.origin);
           const profile = await fetchProfile(state.platform, tokens);
 
           const { error } = await supabaseAdmin.from("social_connections").upsert(
@@ -60,7 +62,7 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
           );
           if (error) throw new Error(error.message);
 
-          return redirectTo(returnTo, { connected: state.platform, handle: profile.handle });
+          return redirectTo(base, returnTo, { connected: state.platform, handle: profile.handle });
         } catch (e) {
           const message = e instanceof Error ? e.message : "Koppelen mislukt";
           // Best effort foutregistratie wanneer de state nog leesbaar was.
@@ -74,7 +76,7 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
           } catch {
             /* state onleesbaar — niets te registreren */
           }
-          return redirectTo(returnTo, { error: message });
+          return redirectTo(base, returnTo, { error: message });
         }
       },
     },

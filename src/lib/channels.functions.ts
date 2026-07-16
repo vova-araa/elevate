@@ -9,6 +9,7 @@ import {
   signState,
   refreshAccessToken,
   fetchProfile,
+  platformEnvStatus,
   type SocialPlatform,
 } from "@/lib/social-oauth.server";
 
@@ -48,6 +49,19 @@ async function assertClientAccess(
   if (error || !data) throw new Error("Geen toegang tot deze klant");
 }
 
+/**
+ * Setup-status voor de kanalen-wizard: welke platform-keys zijn al ingesteld
+ * in de omgeving. Alleen booleans + namen van ontbrekende variabelen.
+ */
+export const getSocialSetupStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    return {
+      platforms: platformEnvStatus(),
+      appUrlConfigured: !!process.env.APP_URL,
+    };
+  });
+
 /** Start de OAuth-flow: geeft de authorize-URL terug om te openen. */
 export const startSocialConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -57,6 +71,9 @@ export const startSocialConnect = createServerFn({ method: "POST" })
         clientId: z.string().uuid().optional(),
         platform: PLATFORM,
         returnTo: z.enum(["admin", "client"]).default("admin"),
+        // Browser-origin als fallback wanneer APP_URL niet gezet is; het
+        // platform valideert de redirect-URI tegen de geregistreerde lijst.
+        origin: z.string().url().max(200).optional(),
       })
       .parse(d),
   )
@@ -68,8 +85,9 @@ export const startSocialConnect = createServerFn({ method: "POST" })
 
     try {
       const returnTo = data.returnTo === "client" ? "/client/channels" : "/admin/channels";
-      const state = signState({ clientId, platform: data.platform, returnTo });
-      const redirectUrl = buildAuthorizeUrl(data.platform, state);
+      const origin = data.origin?.replace(/\/$/, "");
+      const state = signState({ clientId, platform: data.platform, returnTo, origin });
+      const redirectUrl = buildAuthorizeUrl(data.platform, state, origin);
       return { redirectUrl, external: true as const };
     } catch (e) {
       await supabaseAdmin.from("connection_errors").insert({

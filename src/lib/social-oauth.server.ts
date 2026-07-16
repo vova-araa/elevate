@@ -19,14 +19,37 @@ export type SocialPlatform = "instagram" | "tiktok" | "linkedin" | "youtube" | "
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-export function appUrl(): string {
-  const url = process.env.APP_URL;
-  if (!url) throw new Error("APP_URL ontbreekt — zet de publieke basis-URL van de app");
+export function appUrl(fallbackOrigin?: string): string {
+  const url = process.env.APP_URL ?? fallbackOrigin;
+  if (!url)
+    throw new Error(
+      "APP_URL ontbreekt — zet de publieke basis-URL van de app (of open via de browser)",
+    );
   return url.replace(/\/$/, "");
 }
 
-export function oauthRedirectUri(): string {
-  return `${appUrl()}/api/public/oauth/callback`;
+export function oauthRedirectUri(origin?: string): string {
+  return `${appUrl(origin)}/api/public/oauth/callback`;
+}
+
+/** Welke platforms zijn geconfigureerd (env-keys aanwezig)? Alleen booleans — nooit waarden. */
+export function platformEnvStatus(): Record<
+  SocialPlatform,
+  { configured: boolean; missing: string[] }
+> {
+  const need: Record<SocialPlatform, string[]> = {
+    facebook: ["META_APP_ID", "META_APP_SECRET"],
+    instagram: ["META_APP_ID", "META_APP_SECRET"],
+    tiktok: ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"],
+    linkedin: ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"],
+    youtube: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
+  };
+  const out = {} as Record<SocialPlatform, { configured: boolean; missing: string[] }>;
+  (Object.keys(need) as SocialPlatform[]).forEach((p) => {
+    const missing = need[p].filter((n) => !process.env[n]);
+    out[p] = { configured: missing.length === 0, missing };
+  });
+  return out;
 }
 
 function env(name: string): string {
@@ -65,6 +88,8 @@ interface OAuthState {
   clientId: string;
   platform: SocialPlatform;
   returnTo: string;
+  /** Origin waarmee de flow gestart is; token-uitwisseling moet dezelfde redirect-URI gebruiken. */
+  origin?: string;
   exp: number;
 }
 
@@ -97,9 +122,13 @@ export function verifyState(state: string): OAuthState {
 
 // ── Authorize-URL ────────────────────────────────────────────────────────────
 
-export function buildAuthorizeUrl(platform: SocialPlatform, state: string): string {
+export function buildAuthorizeUrl(
+  platform: SocialPlatform,
+  state: string,
+  origin?: string,
+): string {
   const { id } = credentialsFor(platform);
-  const redirect = oauthRedirectUri();
+  const redirect = oauthRedirectUri(origin);
   const scope = SCOPES[platform];
   switch (platform) {
     case "facebook":
@@ -178,9 +207,13 @@ async function postForm(
 const expiry = (expiresIn: unknown): string | null =>
   typeof expiresIn === "number" ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
 
-export async function exchangeCode(platform: SocialPlatform, code: string): Promise<TokenSet> {
+export async function exchangeCode(
+  platform: SocialPlatform,
+  code: string,
+  origin?: string,
+): Promise<TokenSet> {
   const { id, secret } = credentialsFor(platform);
-  const redirect = oauthRedirectUri();
+  const redirect = oauthRedirectUri(origin);
 
   switch (platform) {
     case "facebook":

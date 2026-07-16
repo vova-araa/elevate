@@ -117,7 +117,9 @@ function ChannelsPage() {
 
   const connectMut = useMutation({
     mutationFn: async (platform: Platform) => {
-      const res = await connect({ data: { platform, returnTo: "client" } });
+      const res = await connect({
+        data: { platform, returnTo: "client", origin: window.location.origin },
+      });
       return res;
     },
     onSuccess: (res) => {
