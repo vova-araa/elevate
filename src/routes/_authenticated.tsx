@@ -43,6 +43,8 @@ import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
+  // Privé-portaal: niet indexeren door zoekmachines.
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });

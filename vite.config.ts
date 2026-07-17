@@ -14,7 +14,21 @@ export default defineConfig({
       // src/server.ts wikkelt de SSR-handler in een nette error-pagina.
       server: { entry: "server" },
     }),
-    nitro({ preset: process.env.NITRO_PRESET ?? "node-server" }),
+    nitro({
+      preset: process.env.NITRO_PRESET ?? "node-server",
+      // Security-headers op elke response (clickjacking/MIME-sniffing/referrer).
+      routeRules: {
+        "/**": {
+          headers: {
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+            "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+          },
+        },
+      },
+    }),
     viteReact(),
     tailwindcss(),
   ],

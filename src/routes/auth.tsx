@@ -5,7 +5,12 @@ import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Inloggen — Elevate Design" }] }),
+  head: () => ({
+    meta: [
+      { title: "Inloggen — Elevate Design" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: AuthPage,
 });
 
