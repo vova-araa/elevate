@@ -1,0 +1,17 @@
+{
+  "name": "Elevate Social",
+  "short_name": "Elevate",
+  "lang": "nl",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#faf7f0",
+  "theme_color": "#c6a05b",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
-import { BellOff, CheckCheck } from "lucide-react";
+import { Bell, BellOff, CheckCheck } from "lucide-react";
+import type { RealtimePostgresInsertPayload } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
@@ -34,6 +35,24 @@ const TYPE_DOT: Record<string, string> = {
 };
 
 /**
+ * Toont een native browser-melding voor een nieuwe notificatie, maar alleen als het tabblad
+ * niet zichtbaar is en de gebruiker toestemming heeft gegeven. Faalt stil als de browser
+ * de Notification-API niet ondersteunt of blokkeert.
+ */
+function showBrowserNotification(notification: Notification) {
+  if (typeof window === "undefined" || !("Notification" in window)) return;
+  if (typeof document === "undefined" || document.visibilityState === "visible") return;
+  if (window.Notification.permission !== "granted") return;
+  try {
+    new window.Notification("Elevate Social", {
+      body: notification.body ?? notification.title,
+    });
+  } catch {
+    // browser-meldingen niet beschikbaar; stil negeren
+  }
+}
+
+/**
  * Hook voor het notificatiecentrum: laadt de laatste meldingen + ongelezen-teller,
  * abonneert op realtime inserts en levert mutaties voor gelezen-markeren.
  * Eén keer aanroepen (in de topbar) en het resultaat doorgeven aan <NotificationCenter />.
@@ -42,6 +61,24 @@ export function useNotificationCenter() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const userId = user?.id;
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotificationPermission(window.Notification.permission);
+    }
+  }, []);
+
+  const requestNotificationPermission = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    try {
+      const permission = await window.Notification.requestPermission();
+      setNotificationPermission(permission);
+    } catch {
+      // browser-meldingen niet beschikbaar; stil negeren
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["notification-center", userId ?? "anon"],
@@ -77,9 +114,10 @@ export function useNotificationCenter() {
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        () => {
+        (payload: RealtimePostgresInsertPayload<Notification>) => {
           qc.invalidateQueries({ queryKey: ["notification-center"] });
           qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
+          showBrowserNotification(payload.new);
         },
       )
       .subscribe();
@@ -118,6 +156,8 @@ export function useNotificationCenter() {
     isLoading,
     markRead,
     markAllRead,
+    notificationPermission,
+    requestNotificationPermission,
   };
 }
 
@@ -132,7 +172,15 @@ export function NotificationCenter({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const { notifications, unreadCount, isLoading, markRead, markAllRead } = center;
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    markRead,
+    markAllRead,
+    notificationPermission,
+    requestNotificationPermission,
+  } = center;
 
   function openNotification(n: Notification) {
     if (!n.read) markRead.mutate(n.id);
@@ -161,6 +209,16 @@ export function NotificationCenter({
           Alles gelezen
         </button>
       </div>
+
+      {notificationPermission === "default" && (
+        <button
+          onClick={() => requestNotificationPermission()}
+          className="flex w-full items-center gap-2 border-b border-gold/10 px-4 py-2.5 text-left text-xs text-gold transition hover:bg-gold/10"
+        >
+          <Bell className="h-3.5 w-3.5 shrink-0" />
+          Browser-meldingen aanzetten
+        </button>
+      )}
 
       <div className="max-h-96 overflow-y-auto scrollbar-thin">
         {isLoading ? (
