@@ -25,6 +25,7 @@ import {
   Upload,
   Users,
   Wand2,
+  Bot,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -68,6 +69,12 @@ const NAV_ITEMS = [
     label: "Campagnes",
     icon: Wand2,
     keywords: "ai contentplan campagne genereren maand",
+  },
+  {
+    to: "/admin/assistant",
+    label: "AI Assistent",
+    icon: Bot,
+    keywords: "ai chat assistent posts inplannen taken vragen",
   },
   { to: "/admin/besttime", label: "Best time", icon: Clock, keywords: "beste tijd posten" },
   {

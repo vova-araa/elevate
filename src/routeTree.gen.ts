@@ -46,6 +46,7 @@ import { Route as AuthenticatedAdminCampaignsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminBulkRouteImport } from './routes/_authenticated/admin/bulk'
 import { Route as AuthenticatedAdminBesttimeRouteImport } from './routes/_authenticated/admin/besttime'
 import { Route as AuthenticatedAdminAutomationsRouteImport } from './routes/_authenticated/admin/automations'
+import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin/assistant'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin/approvals'
 import { Route as AuthenticatedAdminApiKeysRouteImport } from './routes/_authenticated/admin/api-keys'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
@@ -266,6 +267,12 @@ const AuthenticatedAdminAutomationsRoute =
     path: '/automations',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminAssistantRoute =
+  AuthenticatedAdminAssistantRouteImport.update({
+    id: '/assistant',
+    path: '/assistant',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminApprovalsRoute =
   AuthenticatedAdminApprovalsRouteImport.update({
     id: '/approvals',
@@ -344,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/api-keys': typeof AuthenticatedAdminApiKeysRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
   '/admin/bulk': typeof AuthenticatedAdminBulkRoute
@@ -394,6 +402,7 @@ export interface FileRoutesByTo {
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/api-keys': typeof AuthenticatedAdminApiKeysRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
   '/admin/bulk': typeof AuthenticatedAdminBulkRoute
@@ -446,6 +455,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/api-keys': typeof AuthenticatedAdminApiKeysRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
+  '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/automations': typeof AuthenticatedAdminAutomationsRoute
   '/_authenticated/admin/besttime': typeof AuthenticatedAdminBesttimeRoute
   '/_authenticated/admin/bulk': typeof AuthenticatedAdminBulkRoute
@@ -498,6 +508,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/api-keys'
     | '/admin/approvals'
+    | '/admin/assistant'
     | '/admin/automations'
     | '/admin/besttime'
     | '/admin/bulk'
@@ -548,6 +559,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/api-keys'
     | '/admin/approvals'
+    | '/admin/assistant'
     | '/admin/automations'
     | '/admin/besttime'
     | '/admin/bulk'
@@ -599,6 +611,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/api-keys'
     | '/_authenticated/admin/approvals'
+    | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/automations'
     | '/_authenticated/admin/besttime'
     | '/_authenticated/admin/bulk'
@@ -912,6 +925,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAutomationsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/assistant': {
+      id: '/_authenticated/admin/assistant'
+      path: '/assistant'
+      fullPath: '/admin/assistant'
+      preLoaderRoute: typeof AuthenticatedAdminAssistantRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/approvals': {
       id: '/_authenticated/admin/approvals'
       path: '/approvals'
@@ -1018,6 +1038,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminApiKeysRoute: typeof AuthenticatedAdminApiKeysRoute
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
+  AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedAdminAutomationsRoute: typeof AuthenticatedAdminAutomationsRoute
   AuthenticatedAdminBesttimeRoute: typeof AuthenticatedAdminBesttimeRoute
   AuthenticatedAdminBulkRoute: typeof AuthenticatedAdminBulkRoute
@@ -1053,6 +1074,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminApiKeysRoute: AuthenticatedAdminApiKeysRoute,
     AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
+    AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
     AuthenticatedAdminAutomationsRoute: AuthenticatedAdminAutomationsRoute,
     AuthenticatedAdminBesttimeRoute: AuthenticatedAdminBesttimeRoute,
     AuthenticatedAdminBulkRoute: AuthenticatedAdminBulkRoute,
