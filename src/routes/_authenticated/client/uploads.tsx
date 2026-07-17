@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Upload as UploadIcon, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import type { Tables } from "@/integrations/supabase/types";
 
 type ClientMember = { client_id: string; clients: { id: string; name: string } | null };
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/client/uploads")({
 
 function ClientUploads() {
   const qc = useQueryClient();
-  const { data: members } = useQuery({
+  const { data: members, isLoading: loadingMembers } = useQuery({
     queryKey: ["my-clients"],
     queryFn: async () =>
       (await supabase.from("client_members").select("client_id, clients(id,name)")).data ?? [],
@@ -42,7 +43,9 @@ function ClientUploads() {
     const files = Array.from(e.target.files ?? []);
     const { data: u } = await supabase.auth.getUser();
     for (const file of files) {
-      const path = `${clientId}/${Date.now()}-${file.name}`;
+      // Sanitize bestandsnaam zodat er nooit buiten de map van deze klant geschreven kan worden.
+      const safeName = file.name.replace(/[\\/]/g, "_");
+      const path = `${clientId}/${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from("client-uploads").upload(path, file);
       if (error) {
         toast.error(error.message);
@@ -61,14 +64,37 @@ function ClientUploads() {
     qc.invalidateQueries({ queryKey: ["uploads-client", clientId] });
   }
 
+  if (loadingMembers) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-gold" />
+      </div>
+    );
+  }
+
+  if (!members || members.length === 0) {
+    return (
+      <div className="glass rounded-2xl p-10 text-center">
+        <UploadIcon className="h-8 w-8 text-gold mx-auto mb-3" />
+        <h2 className="font-display text-2xl">Geen actieve klantkoppeling</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          Zodra je gekoppeld bent aan een bedrijf kun je hier beeld en video aanleveren.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Beeld & video</p>
           <h1 className="font-display text-4xl sm:text-5xl mt-2">Uploads</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Deel je materiaal met je Elevate-team — direct zichtbaar zodra het geüpload is.
+          </p>
         </div>
-        {members && members.length > 1 && (
+        {members.length > 1 && (
           <select
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
@@ -95,11 +121,19 @@ function ClientUploads() {
         />
       </label>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {uploads?.map((u) => (
-          <Tile key={u.id} u={u} />
-        ))}
-      </div>
+      {(uploads?.length ?? 0) === 0 ? (
+        <EmptyState
+          icon={<UploadIcon className="h-5 w-5" />}
+          title="Nog geen uploads"
+          description="Sleep hierboven je eerste bestand naartoe om te delen met je Elevate-team."
+        />
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {uploads?.map((u) => (
+            <Tile key={u.id} u={u} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

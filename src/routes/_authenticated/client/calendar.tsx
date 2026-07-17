@@ -129,15 +129,19 @@ function ClientCalendar() {
     },
   });
 
+  // Admin ziet (net als op deze pagina van oudsher) de kalender van alle klanten;
+  // een klant ziet expliciet alléén de eigen klant (defense-in-depth naast RLS).
   const { data } = useQuery({
-    queryKey: ["client-cal"],
-    queryFn: async () =>
-      (
-        await supabase
-          .from("calendar_items")
-          .select("*, clients(id,name,brand_color)")
-          .order("date")
-      ).data ?? [],
+    queryKey: ["client-cal", isAdmin ? "all" : myClientId],
+    enabled: isAdmin || !!myClientId,
+    queryFn: async () => {
+      let query = supabase
+        .from("calendar_items")
+        .select("*, clients(id,name,brand_color)")
+        .order("date");
+      if (!isAdmin) query = query.eq("client_id", myClientId!);
+      return (await query).data ?? [];
+    },
   });
 
   const { data: clients } = useQuery({

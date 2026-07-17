@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { Compass, Clock, CheckCircle2, Circle, ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/empty-state";
 import type { Tables } from "@/integrations/supabase/types";
 
 type RoadmapWithSteps = Tables<"roadmaps"> & { roadmap_steps: Tables<"roadmap_steps">[] };
@@ -47,14 +49,38 @@ const DELIVERABLE_LABELS: Record<string, string> = {
 };
 
 export function ClientRoadmap() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["client-roadmaps"],
-    queryFn: async () =>
-      (await supabase.from("roadmaps").select("*, roadmap_steps(*)").order("created_at")).data ??
-      [],
+  const { user } = useAuth();
+
+  const { data: membership, isLoading: loadingMembership } = useQuery({
+    queryKey: ["my-client", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("client_members")
+        .select("client_id, clients(name)")
+        .eq("user_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
   });
 
-  if (isLoading) {
+  const clientId = (membership as { client_id?: string } | null)?.client_id;
+
+  const { data, isLoading: loadingRoadmaps } = useQuery({
+    queryKey: ["client-roadmaps", clientId],
+    enabled: !!clientId,
+    queryFn: async () =>
+      (
+        await supabase
+          .from("roadmaps")
+          .select("*, roadmap_steps(*)")
+          .eq("client_id", clientId!)
+          .order("created_at")
+      ).data ?? [],
+  });
+
+  if (loadingMembership || (clientId && loadingRoadmaps)) {
     return (
       <div className="space-y-8">
         <div>
@@ -68,6 +94,18 @@ export function ClientRoadmap() {
     );
   }
 
+  if (!membership) {
+    return (
+      <div className="glass rounded-2xl p-10 text-center">
+        <Compass className="h-8 w-8 text-gold mx-auto mb-3" />
+        <h2 className="font-display text-2xl">Geen actieve klantkoppeling</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          Zodra je gekoppeld bent aan een bedrijf verschijnt hier je stappenplan.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-10">
       <div>
@@ -76,9 +114,11 @@ export function ClientRoadmap() {
       </div>
 
       {data?.length === 0 && (
-        <div className="glass rounded-2xl p-10 text-center text-sm text-muted-foreground">
-          Er staat nog geen stappenplan voor je klaar.
-        </div>
+        <EmptyState
+          icon={<Compass className="h-5 w-5" />}
+          title="Nog geen stappenplan"
+          description="Er staat nog geen stappenplan voor je klaar. Zodra je Elevate-team ermee start verschijnt het hier."
+        />
       )}
 
       {data?.map((r: RoadmapWithSteps) => {

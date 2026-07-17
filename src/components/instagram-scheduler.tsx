@@ -169,7 +169,7 @@ function PlannedTile({ post }: { post: Post }) {
   useEffect(() => {
     if (!post.media_path) return;
     supabase.storage
-      .from("social-media")
+      .from("client-uploads")
       .createSignedUrl(post.media_path, 3600)
       .then(({ data }) => {
         if (data?.signedUrl) setUrl(data.signedUrl);
@@ -198,7 +198,7 @@ function PublishedTile({ post }: { post: Post }) {
   useEffect(() => {
     if (!post.media_path) return;
     supabase.storage
-      .from("social-media")
+      .from("client-uploads")
       .createSignedUrl(post.media_path, 3600)
       .then(({ data }) => {
         if (data?.signedUrl) setUrl(data.signedUrl);
@@ -232,7 +232,7 @@ function PlannedRow({
   useEffect(() => {
     if (!post.media_path) return;
     supabase.storage
-      .from("social-media")
+      .from("client-uploads")
       .createSignedUrl(post.media_path, 3600)
       .then(({ data }) => {
         if (data?.signedUrl) setThumb(data.signedUrl);
@@ -352,7 +352,7 @@ function NewPostForm({ clientId }: { clientId: string }) {
     if (!file) return toast.error("Kies een afbeelding");
     setBusy(true);
     const path = `${clientId}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("social-media").upload(path, file);
+    const { error: upErr } = await supabase.storage.from("client-uploads").upload(path, file);
     if (upErr) {
       setBusy(false);
       return toast.error(upErr.message);

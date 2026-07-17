@@ -266,7 +266,7 @@ function MediaPreview({ path, mediaType }: { path: string; mediaType: string | n
   useEffect(() => {
     let cancelled = false;
     supabase.storage
-      .from("social-media")
+      .from("client-uploads")
       .createSignedUrl(path, 3600)
       .then(({ data }) => {
         if (!cancelled) setUrl(data?.signedUrl || "");
