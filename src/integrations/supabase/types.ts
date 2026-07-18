@@ -129,6 +129,44 @@ export type Database = {
           },
         ];
       };
+      approval_links: {
+        Row: {
+          client_id: string;
+          created_at: string;
+          created_by: string;
+          expires_at: string;
+          id: string;
+          revoked_at: string | null;
+          token_hash: string;
+        };
+        Insert: {
+          client_id: string;
+          created_at?: string;
+          created_by: string;
+          expires_at: string;
+          id?: string;
+          revoked_at?: string | null;
+          token_hash: string;
+        };
+        Update: {
+          client_id?: string;
+          created_at?: string;
+          created_by?: string;
+          expires_at?: string;
+          id?: string;
+          revoked_at?: string | null;
+          token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "approval_links_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       automation_rules: {
         Row: {
           action_config: Json;
