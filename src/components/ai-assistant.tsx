@@ -61,7 +61,7 @@ export function AiAssistant({ clientId }: { clientId?: string }) {
         ...next,
         {
           role: "assistant",
-          content: "⚠️ " + (e instanceof Error && e.message ? e.message : "Er ging iets mis."),
+          content: e instanceof Error && e.message ? e.message : "Er ging iets mis.",
         },
       ]);
     } finally {

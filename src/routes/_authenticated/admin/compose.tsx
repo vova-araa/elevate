@@ -236,7 +236,7 @@ function ComposePage() {
           </div>
           {missingForClient.length > 0 && (
             <p className="mt-2 text-xs text-amber-600 dark:text-amber-300">
-              ⚠ Nog niet gekoppeld voor {activeClient?.name}:{" "}
+              Nog niet gekoppeld voor {activeClient?.name}:{" "}
               {missingForClient
                 .map((id) => PLATFORMS.find((p) => p.id === id)?.label ?? id)
                 .join(", ")}{" "}

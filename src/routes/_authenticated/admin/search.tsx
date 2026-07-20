@@ -11,6 +11,7 @@ import {
   Linkedin,
   Youtube,
   Facebook,
+  StickyNote,
   type LucideIcon,
 } from "lucide-react";
 
@@ -146,7 +147,11 @@ function SearchPage() {
                 <p className="text-sm mt-1.5 line-clamp-2 whitespace-pre-wrap">
                   {p.caption || <em className="text-muted-foreground">Geen caption</em>}
                 </p>
-                {p.notes && <p className="text-xs text-gold/80 mt-1">📝 {p.notes}</p>}
+                {p.notes && (
+                  <p className="text-xs text-gold/80 mt-1 flex items-center gap-1.5">
+                    <StickyNote className="h-3 w-3 shrink-0" /> {p.notes}
+                  </p>
+                )}
               </Link>
             );
           })}

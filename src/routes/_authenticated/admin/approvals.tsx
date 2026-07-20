@@ -243,7 +243,7 @@ function ApprovalsPage() {
       ) : filtered.length === 0 ? (
         <div className="glass-strong rounded-xl p-12 text-center">
           <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Niets in afwachting. Alles goedgekeurd 🎉</p>
+          <p className="text-sm text-muted-foreground">Niets in afwachting. Alles is goedgekeurd.</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

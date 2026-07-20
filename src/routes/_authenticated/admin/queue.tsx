@@ -360,7 +360,7 @@ function BulkUpload({
 
   function downloadTemplate() {
     const csv =
-      'platform,caption,scheduled_at\ninstagram,"Hello world!",2026-06-10T10:00\ntiktok,"Quick tip 👋",\nlinkedin,"Insightful post",2026-06-12T08:30\n';
+      'platform,caption,scheduled_at\ninstagram,"Hello world!",2026-06-10T10:00\ntiktok,"Quick tip",\nlinkedin,"Insightful post",2026-06-12T08:30\n';
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

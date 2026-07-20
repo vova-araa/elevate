@@ -193,7 +193,7 @@ export function AssistantTab() {
                       <span className="text-muted-foreground">
                         ·{" "}
                         {isJsonRecord(a.result) && a.result.ok
-                          ? "✓ klaar"
+                          ? "klaar"
                           : `fout: ${isJsonRecord(a.result) ? String(a.result.error) : ""}`}
                       </span>
                     </div>

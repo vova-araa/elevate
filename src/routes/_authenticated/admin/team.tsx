@@ -8,7 +8,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 import { toast } from "sonner";
-import { Users, Building2, History } from "lucide-react";
+import { Users, Building2, History, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listTeam,
@@ -269,9 +269,9 @@ function TeamAdmin() {
                         <button
                           key={c.id}
                           onClick={() => (linked ? handleUnassign(c.id) : handleAssign(c.id))}
-                          className={`text-xs rounded-full px-3 py-1 hairline transition ${linked ? "bg-gold/20 text-gold" : "bg-input/30 text-muted-foreground hover:text-foreground"}`}
+                          className={`text-xs rounded-full px-3 py-1 hairline transition inline-flex items-center gap-1 ${linked ? "bg-gold/20 text-gold" : "bg-input/30 text-muted-foreground hover:text-foreground"}`}
                         >
-                          {linked ? "✓ " : ""}
+                          {linked && <Check className="h-3 w-3" />}
                           {c.name}
                         </button>
                       );

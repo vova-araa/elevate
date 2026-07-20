@@ -326,7 +326,7 @@ function AdminChannels() {
                 ) : setup && !setup.platforms[id]?.configured ? (
                   <details className="w-full text-xs">
                     <summary className="cursor-pointer inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-amber-400/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium">
-                      ⚙ Eenmalig instellen (±10 min)
+                      Eenmalig instellen (±10 min)
                     </summary>
                     <ol className="mt-3 space-y-1.5 list-decimal pl-4 text-muted-foreground">
                       <li>

@@ -8,6 +8,7 @@ import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminTopbar } from "@/components/admin-topbar";
 import { CommandPalette } from "@/components/command-palette";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { MobileNavSheet } from "@/components/mobile-nav-sheet";
 import { MobileFab } from "@/components/mobile-fab";
 import { useUIStore } from "@/lib/stores/ui-store";
 
@@ -55,8 +56,7 @@ function AdminLayout() {
       <div
         className={cn(
           "flex-1 min-w-0 flex flex-col transition-[margin] duration-200 ease-out",
-          "md:" + (collapsed ? "ml-14" : "ml-[260px]"),
-          collapsed ? "md:ml-14" : "md:ml-[260px]",
+          collapsed ? "md:ml-16" : "md:ml-[264px]",
         )}
       >
         <AdminTopbar />
@@ -65,6 +65,7 @@ function AdminLayout() {
         </main>
       </div>
       <MobileBottomNav />
+      <MobileNavSheet />
       <MobileFab />
       <CommandPalette />
     </div>

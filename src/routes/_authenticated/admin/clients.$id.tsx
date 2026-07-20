@@ -32,6 +32,8 @@ import {
   X,
   ArrowRight,
   Circle,
+  MapPin,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import type { Tables, TablesUpdate, Enums } from "@/integrations/supabase/types";
@@ -420,10 +422,14 @@ function MeetingsPanel({ clientId }: { clientId: string }) {
                   {m.duration_min} min
                 </div>
                 {m.location && (
-                  <div className="text-xs text-muted-foreground mt-1">📍 {m.location}</div>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                    <MapPin className="h-3 w-3 shrink-0" /> {m.location}
+                  </div>
                 )}
                 {m.attendees && (
-                  <div className="text-xs text-muted-foreground mt-1">👥 {m.attendees}</div>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                    <Users className="h-3 w-3 shrink-0" /> {m.attendees}
+                  </div>
                 )}
               </div>
               <button

@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { inviteUser, setUserRole, setClientMembership, deleteUser } from "@/lib/admin.functions";
 import { toast } from "sonner";
+import { Check } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -246,9 +247,9 @@ function UsersAdmin() {
                       <button
                         key={c.id}
                         onClick={() => handleMembership(u.id, c.id, !linked)}
-                        className={`text-xs rounded-full px-3 py-1 hairline transition ${linked ? "bg-gold/20 text-gold" : "bg-input/30 text-muted-foreground hover:text-foreground"}`}
+                        className={`text-xs rounded-full px-3 py-1 hairline transition inline-flex items-center gap-1 ${linked ? "bg-gold/20 text-gold" : "bg-input/30 text-muted-foreground hover:text-foreground"}`}
                       >
-                        {linked ? "✓ " : ""}
+                        {linked && <Check className="h-3 w-3" />}
                         {c.name}
                       </button>
                     );
