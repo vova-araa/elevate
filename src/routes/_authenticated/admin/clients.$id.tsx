@@ -34,6 +34,7 @@ import {
   Circle,
   MapPin,
   Users,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 import type { Tables, TablesUpdate, Enums } from "@/integrations/supabase/types";
@@ -147,6 +148,13 @@ function ClientDetail() {
           className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm text-gold hover:bg-gold/10"
         >
           <Sparkles className="h-4 w-4" /> Intake
+        </Link>
+        <Link
+          to="/admin/clients/$id/intake"
+          params={{ id }}
+          className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm text-gold hover:bg-gold/10"
+        >
+          <Target className="h-4 w-4" /> Strategie-intake
         </Link>
         <Link
           to="/admin/clients/$id/edit"

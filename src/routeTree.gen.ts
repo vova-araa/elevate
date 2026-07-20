@@ -31,6 +31,7 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminTrashRouteImport } from './routes/_authenticated/admin/trash'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminTasksRouteImport } from './routes/_authenticated/admin/tasks'
+import { Route as AuthenticatedAdminStrategyRouteImport } from './routes/_authenticated/admin/strategy'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminSearchRouteImport } from './routes/_authenticated/admin/search'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
@@ -61,6 +62,7 @@ import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/
 import { Route as AuthenticatedAdminClientsNewRouteImport } from './routes/_authenticated/admin/clients.new'
 import { Route as AuthenticatedAdminClientsIntakeRouteImport } from './routes/_authenticated/admin/clients.intake'
 import { Route as AuthenticatedAdminClientsIdRouteImport } from './routes/_authenticated/admin/clients.$id'
+import { Route as AuthenticatedAdminClientsIdIntakeRouteImport } from './routes/_authenticated/admin/clients.$id.intake'
 import { Route as AuthenticatedAdminClientsIdEditRouteImport } from './routes/_authenticated/admin/clients.$id.edit'
 
 const TermsRoute = TermsRouteImport.update({
@@ -181,6 +183,12 @@ const AuthenticatedAdminTasksRoute = AuthenticatedAdminTasksRouteImport.update({
   path: '/tasks',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminStrategyRoute =
+  AuthenticatedAdminStrategyRouteImport.update({
+    id: '/strategy',
+    path: '/strategy',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminSettingsRoute =
   AuthenticatedAdminSettingsRouteImport.update({
     id: '/settings',
@@ -353,6 +361,12 @@ const AuthenticatedAdminClientsIdRoute =
     path: '/clients/$id',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminClientsIdIntakeRoute =
+  AuthenticatedAdminClientsIdIntakeRouteImport.update({
+    id: '/intake',
+    path: '/intake',
+    getParentRoute: () => AuthenticatedAdminClientsIdRoute,
+  } as any)
 const AuthenticatedAdminClientsIdEditRoute =
   AuthenticatedAdminClientsIdEditRouteImport.update({
     id: '/edit',
@@ -391,6 +405,7 @@ export interface FileRoutesByFullPath {
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/search': typeof AuthenticatedAdminSearchRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/strategy': typeof AuthenticatedAdminStrategyRoute
   '/admin/tasks': typeof AuthenticatedAdminTasksRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/trash': typeof AuthenticatedAdminTrashRoute
@@ -413,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
   '/admin/clients/$id/edit': typeof AuthenticatedAdminClientsIdEditRoute
+  '/admin/clients/$id/intake': typeof AuthenticatedAdminClientsIdIntakeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -445,6 +461,7 @@ export interface FileRoutesByTo {
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/search': typeof AuthenticatedAdminSearchRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/strategy': typeof AuthenticatedAdminStrategyRoute
   '/admin/tasks': typeof AuthenticatedAdminTasksRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/trash': typeof AuthenticatedAdminTrashRoute
@@ -467,6 +484,7 @@ export interface FileRoutesByTo {
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/admin/clients': typeof AuthenticatedAdminClientsIndexRoute
   '/admin/clients/$id/edit': typeof AuthenticatedAdminClientsIdEditRoute
+  '/admin/clients/$id/intake': typeof AuthenticatedAdminClientsIdIntakeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -501,6 +519,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/_authenticated/admin/search': typeof AuthenticatedAdminSearchRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/admin/strategy': typeof AuthenticatedAdminStrategyRoute
   '/_authenticated/admin/tasks': typeof AuthenticatedAdminTasksRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/trash': typeof AuthenticatedAdminTrashRoute
@@ -523,6 +542,7 @@ export interface FileRoutesById {
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/_authenticated/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
   '/_authenticated/admin/clients/$id/edit': typeof AuthenticatedAdminClientsIdEditRoute
+  '/_authenticated/admin/clients/$id/intake': typeof AuthenticatedAdminClientsIdIntakeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -557,6 +577,7 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/search'
     | '/admin/settings'
+    | '/admin/strategy'
     | '/admin/tasks'
     | '/admin/team'
     | '/admin/trash'
@@ -579,6 +600,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/posts'
     | '/admin/clients/'
     | '/admin/clients/$id/edit'
+    | '/admin/clients/$id/intake'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -611,6 +633,7 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/search'
     | '/admin/settings'
+    | '/admin/strategy'
     | '/admin/tasks'
     | '/admin/team'
     | '/admin/trash'
@@ -633,6 +656,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/posts'
     | '/admin/clients'
     | '/admin/clients/$id/edit'
+    | '/admin/clients/$id/intake'
   id:
     | '__root__'
     | '/'
@@ -666,6 +690,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/reports'
     | '/_authenticated/admin/search'
     | '/_authenticated/admin/settings'
+    | '/_authenticated/admin/strategy'
     | '/_authenticated/admin/tasks'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/trash'
@@ -688,6 +713,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/posts'
     | '/_authenticated/admin/clients/'
     | '/_authenticated/admin/clients/$id/edit'
+    | '/_authenticated/admin/clients/$id/intake'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -857,6 +883,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/admin/tasks'
       preLoaderRoute: typeof AuthenticatedAdminTasksRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/strategy': {
+      id: '/_authenticated/admin/strategy'
+      path: '/strategy'
+      fullPath: '/admin/strategy'
+      preLoaderRoute: typeof AuthenticatedAdminStrategyRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/settings': {
@@ -1069,6 +1102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminClientsIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/clients/$id/intake': {
+      id: '/_authenticated/admin/clients/$id/intake'
+      path: '/intake'
+      fullPath: '/admin/clients/$id/intake'
+      preLoaderRoute: typeof AuthenticatedAdminClientsIdIntakeRouteImport
+      parentRoute: typeof AuthenticatedAdminClientsIdRoute
+    }
     '/_authenticated/admin/clients/$id/edit': {
       id: '/_authenticated/admin/clients/$id/edit'
       path: '/edit'
@@ -1081,11 +1121,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminClientsIdRouteChildren {
   AuthenticatedAdminClientsIdEditRoute: typeof AuthenticatedAdminClientsIdEditRoute
+  AuthenticatedAdminClientsIdIntakeRoute: typeof AuthenticatedAdminClientsIdIntakeRoute
 }
 
 const AuthenticatedAdminClientsIdRouteChildren: AuthenticatedAdminClientsIdRouteChildren =
   {
     AuthenticatedAdminClientsIdEditRoute: AuthenticatedAdminClientsIdEditRoute,
+    AuthenticatedAdminClientsIdIntakeRoute:
+      AuthenticatedAdminClientsIdIntakeRoute,
   }
 
 const AuthenticatedAdminClientsIdRouteWithChildren =
@@ -1117,6 +1160,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
   AuthenticatedAdminSearchRoute: typeof AuthenticatedAdminSearchRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminStrategyRoute: typeof AuthenticatedAdminStrategyRoute
   AuthenticatedAdminTasksRoute: typeof AuthenticatedAdminTasksRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminTrashRoute: typeof AuthenticatedAdminTrashRoute
@@ -1153,6 +1197,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
     AuthenticatedAdminSearchRoute: AuthenticatedAdminSearchRoute,
     AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+    AuthenticatedAdminStrategyRoute: AuthenticatedAdminStrategyRoute,
     AuthenticatedAdminTasksRoute: AuthenticatedAdminTasksRoute,
     AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
     AuthenticatedAdminTrashRoute: AuthenticatedAdminTrashRoute,

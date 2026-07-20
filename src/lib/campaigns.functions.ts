@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -20,7 +20,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
 
 // ── Platforms ────────────────────────────────────────────────────────────────
 
-const campaignPlatform = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
+export const campaignPlatform = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
 export type CampaignPlatform = z.infer<typeof campaignPlatform>;
 
 const PLATFORM_HINTS: Record<CampaignPlatform, string> = {
@@ -45,9 +45,16 @@ export function defaultHourFor(platform: CampaignPlatform): number {
   return DEFAULT_HOUR[platform];
 }
 
-// ── Klantcontext (naam/industrie + tone-of-voice) ────────────────────────────
+// ── Klantcontext (naam/industrie + tone-of-voice + strategie) ───────────────
 
-async function fetchClientContext(clientId: string): Promise<string> {
+/**
+ * Bouwt de klantcontext die als extra system-context aan de AI wordt
+ * meegegeven: klantgegevens, losse tone-of-voice-notities (strategy_notes) én
+ * — indien aanwezig — de vaste client_strategy (positionering, content-
+ * pijlers, cadans, dos/don'ts). Zo denkt de AI standaard vanuit de strategie
+ * mee bij het genereren van contentplannen en weekplanningen.
+ */
+export const fetchClientContext = createServerOnlyFn(async (clientId: string): Promise<string> => {
   const parts: string[] = [];
   const { data: c } = await supabaseAdmin
     .from("clients")
@@ -70,8 +77,40 @@ async function fetchClientContext(clientId: string): Promise<string> {
   if (tone?.body) {
     parts.push(`Tone-of-voice — houd je hier strikt aan:\n${tone.body.slice(0, 1600)}`);
   }
+
+  const { data: strategy } = await supabaseAdmin
+    .from("client_strategy")
+    .select("positioning, audience, tone, pillars, cadence, goals, dos, donts")
+    .eq("client_id", clientId)
+    .maybeSingle();
+  if (strategy) {
+    const stratLines: string[] = [];
+    if (strategy.positioning) stratLines.push(`Positionering: ${strategy.positioning}`);
+    if (strategy.audience) stratLines.push(`Doelgroep: ${strategy.audience}`);
+    if (strategy.tone) stratLines.push(`Tone-of-voice: ${strategy.tone}`);
+    if (strategy.goals) stratLines.push(`Doelen: ${strategy.goals}`);
+    const pillars = Array.isArray(strategy.pillars) ? (strategy.pillars as unknown[]) : [];
+    if (pillars.length) stratLines.push(`Content-pijlers: ${pillars.join(", ")}`);
+    const cadence = strategy.cadence as Record<string, number> | null;
+    if (cadence && Object.keys(cadence).length) {
+      const cadenceStr = Object.entries(cadence)
+        .map(([platform, count]) => `${platform}: ${count}x/week`)
+        .join(", ");
+      stratLines.push(`Cadans: ${cadenceStr}`);
+    }
+    const dos = Array.isArray(strategy.dos) ? (strategy.dos as unknown[]) : [];
+    if (dos.length) stratLines.push(`Wel doen: ${dos.join("; ")}`);
+    const donts = Array.isArray(strategy.donts) ? (strategy.donts as unknown[]) : [];
+    if (donts.length) stratLines.push(`Niet doen: ${donts.join("; ")}`);
+    if (stratLines.length) {
+      parts.push(
+        `Vastgestelde contentstrategie — houd hier standaard rekening mee:\n${stratLines.join("\n")}`,
+      );
+    }
+  }
+
   return parts.length ? `\n\n${parts.join("\n")}` : "";
-}
+});
 
 // ── Contentplan genereren ────────────────────────────────────────────────────
 

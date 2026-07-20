@@ -514,6 +514,41 @@ export type Database = {
           },
         ];
       };
+      client_intake: {
+        Row: {
+          answers: Json;
+          client_id: string;
+          created_at: string | null;
+          id: string;
+          status: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          answers?: Json;
+          client_id: string;
+          created_at?: string | null;
+          id?: string;
+          status?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          answers?: Json;
+          client_id?: string;
+          created_at?: string | null;
+          id?: string;
+          status?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "client_intake_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: true;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       client_members: {
         Row: {
           client_id: string;
@@ -565,6 +600,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "client_secrets_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: true;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      client_strategy: {
+        Row: {
+          audience: string | null;
+          cadence: Json | null;
+          client_id: string;
+          created_at: string | null;
+          donts: Json | null;
+          dos: Json | null;
+          goals: string | null;
+          id: string;
+          pillars: Json | null;
+          positioning: string | null;
+          source: string;
+          tone: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          audience?: string | null;
+          cadence?: Json | null;
+          client_id: string;
+          created_at?: string | null;
+          donts?: Json | null;
+          dos?: Json | null;
+          goals?: string | null;
+          id?: string;
+          pillars?: Json | null;
+          positioning?: string | null;
+          source?: string;
+          tone?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          audience?: string | null;
+          cadence?: Json | null;
+          client_id?: string;
+          created_at?: string | null;
+          donts?: Json | null;
+          dos?: Json | null;
+          goals?: string | null;
+          id?: string;
+          pillars?: Json | null;
+          positioning?: string | null;
+          source?: string;
+          tone?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "client_strategy_client_id_fkey";
             columns: ["client_id"];
             isOneToOne: true;
             referencedRelation: "clients";

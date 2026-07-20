@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Upload,
   Sparkles,
+  Target,
   Wand2,
   Bot,
   Clock,
@@ -60,6 +61,7 @@ export const ADMIN_NAV: AdminNavSection[] = [
     label: "AI tools",
     items: [
       { to: "/admin/ai", label: "AI Studio", icon: Sparkles },
+      { to: "/admin/strategy", label: "Strategie", icon: Target },
       { to: "/admin/campaigns", label: "Campagnes", icon: Wand2 },
       { to: "/admin/assistant", label: "AI Assistent", icon: Bot },
       { to: "/admin/besttime", label: "Beste tijd", icon: Clock },

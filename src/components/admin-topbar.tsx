@@ -15,6 +15,7 @@ const TITLES: Record<string, string> = {
   "/admin/media": "Media",
   "/admin/bulk": "Bulk import",
   "/admin/ai": "AI Studio",
+  "/admin/strategy": "Strategie",
   "/admin/campaigns": "Campagnes",
   "/admin/assistant": "AI Assistent",
   "/admin/besttime": "Best time",

@@ -9,6 +9,7 @@ import {
   Sparkles,
   Clock,
   TrendingUp,
+  Target,
   Heart,
   FileBarChart,
   CheckSquare,
@@ -63,6 +64,12 @@ const NAV_ITEMS = [
     label: "AI Studio",
     icon: Sparkles,
     keywords: "assistent captions hashtags hooks hergebruik",
+  },
+  {
+    to: "/admin/strategy",
+    label: "Strategie",
+    icon: Target,
+    keywords: "ai intake strategie pijlers cadans weekplanning",
   },
   {
     to: "/admin/campaigns",
