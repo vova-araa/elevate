@@ -15,9 +15,9 @@ import {
 } from "date-fns";
 import { nl } from "date-fns/locale";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -42,6 +42,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ChevronDown,
+  CalendarCheck,
   FileText,
   Instagram,
   Linkedin,
@@ -418,6 +419,15 @@ function DashboardContent({
         tickerLoading={tickerLoading}
       />
 
+      <StatBand
+        scheduledThisWeek={ticker?.scheduledThisWeek ?? null}
+        waitingApproval={ticker?.waitingApproval ?? null}
+        followersTotal={reachAnalytics?.followersTotal ?? null}
+        followerGrowth={reachAnalytics?.followerGrowth ?? null}
+        series={reachSeries}
+        loading={tickerLoading || reachLoading}
+      />
+
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr]">
         {/* Vandaag & morgen */}
         <Card
@@ -471,6 +481,25 @@ function DashboardContent({
                     className="flex items-center gap-3 rounded-lg p-2 -mx-2 transition hover:bg-accent/40"
                   >
                     <HealthRing score={score} />
+                    {client.logo_url ? (
+                      <img
+                        src={client.logo_url}
+                        alt=""
+                        className="h-8 w-8 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <span
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-semibold text-white"
+                        style={{ background: client.brand_color || "var(--gold)" }}
+                      >
+                        {client.name
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((w) => w[0])
+                          .join("")
+                          .toUpperCase()}
+                      </span>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{client.name}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{status}</div>
@@ -501,6 +530,145 @@ function DashboardContent({
 }
 
 /* ------------------------------------------------------------------ */
+/* Grafische stat-tegelband                                            */
+/* ------------------------------------------------------------------ */
+
+function Sparkline({ series, tint }: { series: { date: string; count: number }[]; tint: string }) {
+  if (series.length < 2) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 opacity-70">
+      <ResponsiveContainer>
+        <AreaChart data={series} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`spark-${tint}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={tint} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={tint} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="count"
+            stroke={tint}
+            strokeWidth={1.5}
+            fill={`url(#spark-${tint})`}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function StatTile({
+  icon: Icon,
+  value,
+  label,
+  to,
+  tone,
+  children,
+}: {
+  icon: LucideIcon;
+  value: ReactNode;
+  label: string;
+  to: string;
+  tone: string;
+  children?: ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group relative overflow-hidden rounded-xl border border-gold/10 bg-card p-4 transition hover:border-gold/30 hover:shadow-md"
+    >
+      <div className="flex items-center justify-between">
+        <span className={cn("grid h-9 w-9 place-items-center rounded-lg", tone)}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <ArrowRight className="h-4 w-4 text-muted-foreground/40 transition group-hover:translate-x-0.5 group-hover:text-gold" />
+      </div>
+      <div className="mt-3 font-display text-3xl leading-none tabular-nums">{value}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+      {children}
+    </Link>
+  );
+}
+
+function StatBand({
+  scheduledThisWeek,
+  waitingApproval,
+  followersTotal,
+  followerGrowth,
+  series,
+  loading,
+}: {
+  scheduledThisWeek: number | null;
+  waitingApproval: number | null;
+  followersTotal: number | null;
+  followerGrowth: number | null;
+  series: { date: string; count: number }[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-28 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+  const published = series.reduce((sum, p) => sum + p.count, 0);
+  const growthLabel =
+    followerGrowth == null
+      ? "—"
+      : `${followerGrowth > 0 ? "+" : ""}${followerGrowth.toLocaleString("nl-NL")}`;
+  const growthTone =
+    followerGrowth == null || followerGrowth === 0
+      ? "bg-muted/40 text-muted-foreground"
+      : followerGrowth > 0
+        ? "bg-emerald-500/12 text-emerald-500"
+        : "bg-red-500/12 text-red-400";
+
+  return (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatTile
+        icon={CalendarCheck}
+        value={scheduledThisWeek ?? 0}
+        label="Gepland deze week"
+        to="/admin/planner"
+        tone="bg-gold/12 text-gold"
+      />
+      <StatTile
+        icon={FileText}
+        value={waitingApproval ?? 0}
+        label="Wachten op akkoord"
+        to="/admin/approvals"
+        tone="bg-amber-500/12 text-amber-500"
+      />
+      <StatTile
+        icon={Users}
+        value={followersTotal != null ? followersTotal.toLocaleString("nl-NL") : "—"}
+        label="Volgers totaal"
+        to="/admin/reach"
+        tone="bg-gold/12 text-gold"
+      />
+      <StatTile
+        icon={TrendingUp}
+        value={published}
+        label="Gepubliceerd (30d)"
+        to="/admin/reach"
+        tone={growthTone}
+      >
+        <span className="mt-1 inline-block text-[11px] text-muted-foreground">
+          volgersgroei {growthLabel}
+        </span>
+        <Sparkline series={series} tint="var(--gold)" />
+      </StatTile>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Masthead                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -527,8 +695,16 @@ function Masthead({
   const edition = getISOWeek(now);
 
   return (
-    <div className="border-b border-gold/20 pb-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="relative overflow-hidden border-b border-gold/20 pb-6">
+      {/* Zacht gouden verloop-accent voor een levendiger kop */}
+      <div
+        className="pointer-events-none absolute -left-16 -top-24 h-56 w-[36rem] rounded-full opacity-60 blur-3xl"
+        style={{
+          background:
+            "radial-gradient(closest-side, color-mix(in oklab, var(--gold) 22%, transparent), transparent)",
+        }}
+      />
+      <div className="relative flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs tracking-[0.08em] text-gold/70">
             {dateLabel} · Editie #{edition}
@@ -774,9 +950,15 @@ function ReachChart({
       {total === 0 ? (
         <Empty body="Nog geen gepubliceerde posts in de afgelopen 30 dagen." />
       ) : (
-        <div className="h-[200px]">
+        <div className="h-[220px]">
           <ResponsiveContainer>
-            <LineChart data={series} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+            <AreaChart data={series} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+              <defs>
+                <linearGradient id="reach-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.32} />
+                  <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="oklch(0.85 0.015 75 / 30%)"
@@ -806,14 +988,16 @@ function ReachChart({
                   fontSize: 12,
                 }}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="count"
                 stroke="var(--gold)"
-                strokeWidth={2}
+                strokeWidth={2.5}
+                fill="url(#reach-fill)"
                 dot={false}
+                activeDot={{ r: 4, fill: "var(--gold)", stroke: "var(--card)", strokeWidth: 2 }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       )}
