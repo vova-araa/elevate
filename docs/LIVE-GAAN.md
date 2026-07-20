@@ -21,13 +21,15 @@ rechtstreeks vanaf deze branch — kan ook).
 
 ### 2. Database bijwerken (eenmalig, 2 min)
 
-Er zijn vier nieuwe database-migraties. Open je Supabase-project →
+Er zijn zes nieuwe database-migraties. Open je Supabase-project →
 **SQL Editor** → plak en draai de inhoud van deze bestanden (in deze volgorde):
 
 1. `supabase/migrations/20260714120000_post_comments.sql`
 2. `supabase/migrations/20260715120000_team_roles.sql`
 3. `supabase/migrations/20260716130000_secure_social_tokens.sql`
 4. `supabase/migrations/20260718120000_approval_links.sql` — voor "goedkeuren zonder inloggen" via deelbare link
+5. `supabase/migrations/20260719120000_metrics_snapshots.sql` — volgers-historie voor echte groeicijfers
+6. `supabase/migrations/20260720120000_intake_strategy.sql` — klant-intake en AI-strategie
 
 ### 3a. Optie A — Vercel-project aanmaken
 
