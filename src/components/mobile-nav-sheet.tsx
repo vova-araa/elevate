@@ -49,8 +49,14 @@ export function MobileNavSheet() {
           .eq("status", "scheduled")
           .gte("scheduled_at", now)
           .lte("scheduled_at", in7),
-        supabase.from("scheduled_posts").select("id", { count: "exact", head: true }).eq("status", "draft"),
-        supabase.from("notifications").select("id", { count: "exact", head: true }).eq("read", false),
+        supabase
+          .from("scheduled_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "draft"),
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("read", false),
         supabase
           .from("notifications")
           .select("id", { count: "exact", head: true })

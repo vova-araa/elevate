@@ -14,7 +14,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { MessageCircle, Video } from "lucide-react";
+import { Sparkles, Video } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/engagement")({
   component: EngagementPage,
@@ -172,26 +172,32 @@ function EngagementPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm tabular-nums text-muted-foreground shrink-0">
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  <span>—</span>
+                <div
+                  className="flex items-center gap-1.5 shrink-0 rounded-full border border-gold/20 bg-gold/5 px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground"
+                  title="Reactietellingen vereisen een insights-koppeling per platform die er nu nog niet is."
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Na koppeling insights
                 </div>
               </li>
             ))}
           </ul>
         )}
         <p className="text-[11px] text-muted-foreground mt-3">
-          Reactietellingen worden gesynchroniseerd zodra de analytics-koppeling per platform actief
-          is.
+          Reactietellingen zijn nog niet beschikbaar — dat vereist een insights-koppeling per
+          platform. Zodra die actief is, verschijnen hier echte cijfers in plaats van deze staat.
         </p>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Engagement-rates (likes/comments/shares) per post vereisen een analytics-koppeling per{" "}
+        De cijfers hierboven (posts per platform, content-type-verdeling) komen rechtstreeks uit de
+        geplande en gepubliceerde posts — dat is echte data. Engagement-rates (likes/comments/
+        shares) per post zijn nog niet beschikbaar en vereisen een insights-koppeling per{" "}
         <Link to="/admin/channels" className="text-gold underline">
           gekoppeld account
         </Link>
-        .
+        . Die tonen we hier eerlijk als "beschikbaar na koppeling insights" in plaats van een kaal
+        streepje.
       </p>
     </div>
   );

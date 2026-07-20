@@ -45,7 +45,13 @@ export const ADMIN_NAV: AdminNavSection[] = [
     items: [
       { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/admin/planner", label: "Planner", icon: CalendarDays, badgeKey: "scheduled" },
-      { to: "/admin/queue", label: "Concepten", icon: FileText, badgeKey: "drafts", badgeTone: "amber" },
+      {
+        to: "/admin/queue",
+        label: "Concepten",
+        icon: FileText,
+        badgeKey: "drafts",
+        badgeTone: "amber",
+      },
       { to: "/admin/media", label: "Media", icon: ImageIcon },
       { to: "/admin/bulk", label: "Bulk import", icon: Upload },
     ],
@@ -70,12 +76,30 @@ export const ADMIN_NAV: AdminNavSection[] = [
   {
     label: "Beheer",
     items: [
-      { to: "/admin/approvals", label: "Goedkeuring", icon: CheckSquare, badgeKey: "pending", badgeTone: "red" },
-      { to: "/admin/messages", label: "Berichten", icon: MessageSquare, badgeKey: "unread", badgeTone: "red" },
+      {
+        to: "/admin/approvals",
+        label: "Goedkeuring",
+        icon: CheckSquare,
+        badgeKey: "pending",
+        badgeTone: "red",
+      },
+      {
+        to: "/admin/messages",
+        label: "Berichten",
+        icon: MessageSquare,
+        badgeKey: "unread",
+        badgeTone: "red",
+      },
       { to: "/admin/clients", label: "Klanten", icon: Building2 },
       { to: "/admin/channels", label: "Kanalen", icon: Plug },
       { to: "/admin/team", label: "Team", icon: Users },
-      { to: "/admin/settings", label: "Instellingen", icon: SettingsIcon, badgeKey: "alerts", badgeTone: "red" },
+      {
+        to: "/admin/settings",
+        label: "Instellingen",
+        icon: SettingsIcon,
+        badgeKey: "alerts",
+        badgeTone: "red",
+      },
     ],
   },
 ];

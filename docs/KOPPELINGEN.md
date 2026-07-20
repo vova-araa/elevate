@@ -17,8 +17,8 @@ in de app met één klik accounts koppelen en publiceren.
    https://JOUW-DOMEIN/api/public/oauth/callback
    ```
 
-3. Omgevingsvariabelen zet je bij je hosting (Vercel: *Project → Settings →
-   Environment Variables*, daarna redeployen).
+3. Omgevingsvariabelen zet je bij je hosting (Vercel: _Project → Settings →
+   Environment Variables_, daarna redeployen).
 
 De Kanalen-pagina in de app (Beheer → Kanalen) ziet zelf welke platforms nog
 niet zijn ingesteld en toont daar dezelfde stappen als hieronder.
@@ -28,13 +28,13 @@ niet zijn ingesteld en toont daar dezelfde stappen als hieronder.
 1. Ga naar <https://developers.facebook.com/apps/> en log in met je Facebook-account.
 2. **Create app** → type **Business** → geef hem een naam (bv. "Elevate Social").
 3. Voeg het product **Facebook Login for Business** toe.
-4. Bij *Settings* van dat product: plak je redirect-URI bij **Valid OAuth Redirect URIs**.
-5. Ga naar *App settings → Basic*: kopieer **App ID** en **App Secret**.
+4. Bij _Settings_ van dat product: plak je redirect-URI bij **Valid OAuth Redirect URIs**.
+5. Ga naar _App settings → Basic_: kopieer **App ID** en **App Secret**.
 6. Zet in je hosting: `META_APP_ID` en `META_APP_SECRET`.
 7. Belangrijk voor Instagram: het Instagram-account van de klant moet een
    **Business-account** zijn dat gekoppeld is aan een **Facebook-pagina**
-   (instellen in de Instagram-app: *Instellingen → Account → Overschakelen naar
-   professioneel account*, daarna koppelen in Meta Business Suite).
+   (instellen in de Instagram-app: _Instellingen → Account → Overschakelen naar
+   professioneel account_, daarna koppelen in Meta Business Suite).
 
 ## TikTok
 
@@ -47,16 +47,16 @@ niet zijn ingesteld en toont daar dezelfde stappen als hieronder.
 
 1. Ga naar <https://www.linkedin.com/developers/apps> → **Create app**
    (je hebt een LinkedIn-bedrijfspagina nodig om aan te koppelen).
-2. Tab *Products*: vraag **Sign In with LinkedIn using OpenID Connect** en
+2. Tab _Products_: vraag **Sign In with LinkedIn using OpenID Connect** en
    **Share on LinkedIn** aan.
-3. Tab *Auth*: plak je redirect-URI bij **Authorized redirect URLs**.
+3. Tab _Auth_: plak je redirect-URI bij **Authorized redirect URLs**.
 4. Kopieer **Client ID** en **Client Secret** → zet `LINKEDIN_CLIENT_ID` en `LINKEDIN_CLIENT_SECRET`.
 
 ## YouTube (Google)
 
 1. Ga naar <https://console.cloud.google.com/> → maak een project.
-2. *APIs & Services → Library*: zet **YouTube Data API v3** aan.
-3. *APIs & Services → Credentials* → **Create credentials → OAuth client ID**
+2. _APIs & Services → Library_: zet **YouTube Data API v3** aan.
+3. _APIs & Services → Credentials_ → **Create credentials → OAuth client ID**
    → type **Web application**.
 4. Plak je redirect-URI bij **Authorized redirect URIs**.
 5. Kopieer **Client ID** en **Client secret** → zet `GOOGLE_CLIENT_ID` en `GOOGLE_CLIENT_SECRET`.
@@ -75,7 +75,7 @@ niet zijn ingesteld en toont daar dezelfde stappen als hieronder.
 ## Goed om te weten
 
 - **Testen kan meteen** met je eigen accounts (als tester/beheerder van de app).
-  Voor het koppelen van accounts van *klanten* vragen Meta en TikTok een korte
+  Voor het koppelen van accounts van _klanten_ vragen Meta en TikTok een korte
   **app-review** (eenmalig formulier waarin je uitlegt wat de app doet).
 - `APP_URL` instellen is optioneel — de app gebruikt anders automatisch het
   domein waarop hij draait.

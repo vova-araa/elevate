@@ -62,6 +62,16 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
           );
           if (error) throw new Error(error.message);
 
+          // Historie opbouwen: eerste (of hernieuwde) meting van het
+          // volgersaantal wordt vastgelegd zodra die bekend is.
+          if (profile.followers !== null) {
+            await supabaseAdmin.from("social_metrics_snapshots").insert({
+              client_id: state.clientId,
+              platform: state.platform,
+              followers: profile.followers,
+            });
+          }
+
           return redirectTo(base, returnTo, { connected: state.platform, handle: profile.handle });
         } catch (e) {
           const message = e instanceof Error ? e.message : "Koppelen mislukt";

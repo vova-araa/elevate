@@ -23,18 +23,18 @@ bun run dev            # http://localhost:5173
 
 Zie `.env.example`. Publieke Supabase-waarden staan in `.env`; server-secrets (nooit committen):
 
-| Variabele                                       | Waarvoor                                      |
-| ------------------------------------------------ | --------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY`                       | Admin-operaties op de server                  |
-| `ANTHROPIC_API_KEY`                                | Alle AI-features (Claude)                     |
-| `CLAUDE_MODEL`                                     | Optioneel, default `claude-opus-4-8`          |
-| `APP_URL`                                          | Publieke basis-URL; OAuth redirect-URI is `${APP_URL}/api/public/oauth/callback` |
-| `OAUTH_STATE_SECRET`                               | Optioneel, geheim voor het ondertekenen van de OAuth state |
-| `META_APP_ID` / `META_APP_SECRET`                  | Instagram + Facebook OAuth-app                |
-| `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET`       | TikTok OAuth-app                              |
-| `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET`    | LinkedIn OAuth-app                            |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`        | YouTube (Google) OAuth-app                    |
-| `CRON_SECRET`                                      | Beveiliging van `/api/public/automation-tick` |
+| Variabele                                       | Waarvoor                                                                         |
+| ----------------------------------------------- | -------------------------------------------------------------------------------- |
+| `SUPABASE_SERVICE_ROLE_KEY`                     | Admin-operaties op de server                                                     |
+| `ANTHROPIC_API_KEY`                             | Alle AI-features (Claude)                                                        |
+| `CLAUDE_MODEL`                                  | Optioneel, default `claude-opus-4-8`                                             |
+| `APP_URL`                                       | Publieke basis-URL; OAuth redirect-URI is `${APP_URL}/api/public/oauth/callback` |
+| `OAUTH_STATE_SECRET`                            | Optioneel, geheim voor het ondertekenen van de OAuth state                       |
+| `META_APP_ID` / `META_APP_SECRET`               | Instagram + Facebook OAuth-app                                                   |
+| `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET`    | TikTok OAuth-app                                                                 |
+| `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth-app                                                               |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`     | YouTube (Google) OAuth-app                                                       |
+| `CRON_SECRET`                                   | Beveiliging van `/api/public/automation-tick`                                    |
 
 ## Social-koppelingen (direct)
 

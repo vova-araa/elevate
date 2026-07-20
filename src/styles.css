@@ -151,8 +151,7 @@
   );
   --gradient-luxe: linear-gradient(180deg, oklch(0.18 0.012 60), oklch(0.22 0.013 60));
   --gradient-glow: radial-gradient(60% 60% at 50% 0%, oklch(0.78 0.13 78 / 12%), transparent 70%);
-  --shadow-gold:
-    0 8px 24px -12px oklch(0.78 0.13 78 / 28%), 0 20px 60px -20px oklch(0 0 0 / 45%);
+  --shadow-gold: 0 8px 24px -12px oklch(0.78 0.13 78 / 28%), 0 20px 60px -20px oklch(0 0 0 / 45%);
   --shadow-elegant: 0 20px 50px -25px oklch(0 0 0 / 55%);
 }
 

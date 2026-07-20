@@ -214,6 +214,17 @@ export const refreshChannel = createServerFn({ method: "POST" })
         .eq("client_id", clientId)
         .eq("platform", data.platform);
       if (error) throw new Error(error.message);
+
+      // Bouw historie op: elke ververs-actie met een bekend volgersaantal
+      // wordt vastgelegd, zodat volgersgroei later uit echte metingen komt.
+      if (profile.followers !== null) {
+        await supabaseAdmin.from("social_metrics_snapshots").insert({
+          client_id: clientId,
+          platform: data.platform,
+          followers: profile.followers,
+        });
+      }
+
       return { ok: true, connected: true, handle: profile.handle };
     } catch (e) {
       // Token waarschijnlijk verlopen/ingetrokken → markeer als verlopen.

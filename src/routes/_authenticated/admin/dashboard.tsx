@@ -23,8 +23,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import {
+  getClientAnalytics,
+  getAgencyAnalytics,
+  type ClientAnalytics,
+  type AgencyAnalytics,
+} from "@/lib/analytics.functions";
 import { useAuth } from "@/lib/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HealthRing } from "@/components/admin/health-ring";
@@ -39,9 +46,11 @@ import {
   Instagram,
   Linkedin,
   Loader2,
+  Minus,
   Music2,
   Plug,
   Sparkles,
+  TrendingDown,
   TrendingUp,
   Users,
   Youtube,
@@ -359,35 +368,25 @@ function DashboardContent({
     },
   });
 
-  // Bereik: gepubliceerde posts per dag, laatste 30 dagen (proxy tot live analytics gekoppeld is)
-  const { data: reachSeries, isLoading: reachLoading } = useQuery({
-    queryKey: ["dashboard-reach-mini", clientId ?? "all"],
-    queryFn: async () => {
-      const days = 30;
-      const from = startOfDay(subDays(new Date(), days - 1));
-      let q = supabase
-        .from("scheduled_posts")
-        .select("scheduled_at")
-        .eq("status", "published")
-        .is("deleted_at", null)
-        .gte("scheduled_at", from.toISOString());
-      if (clientId) q = q.eq("client_id", clientId);
-      const { data } = await q;
-
-      const buckets: Record<string, number> = {};
-      for (let i = days - 1; i >= 0; i--) {
-        buckets[format(subDays(new Date(), i), "yyyy-MM-dd")] = 0;
-      }
-      for (const p of data ?? []) {
-        const key = p.scheduled_at.slice(0, 10);
-        if (buckets[key] !== undefined) buckets[key] += 1;
-      }
-      return Object.entries(buckets).map(([date, count]) => ({
-        date: format(new Date(date), "d MMM", { locale: nl }),
-        count,
-      }));
-    },
+  // Bereik: echte cijfers uit de gedeelde analytics-laag — gepubliceerde
+  // posts per dag (echt, uit scheduled_posts) plus volgers/volgersgroei
+  // (echt, uit social_connections + social_metrics_snapshots). Geen
+  // geschatte/verzonnen bereikcijfers meer.
+  const getClientAnalyticsFn = useServerFn(getClientAnalytics);
+  const getAgencyAnalyticsFn = useServerFn(getAgencyAnalytics);
+  const { data: reachAnalytics, isLoading: reachLoading } = useQuery<
+    ClientAnalytics | AgencyAnalytics
+  >({
+    queryKey: ["dashboard-reach-analytics", clientId ?? "all"],
+    queryFn: () =>
+      clientId
+        ? getClientAnalyticsFn({ data: { clientId, days: 30 } })
+        : getAgencyAnalyticsFn({ data: { days: 30 } }),
   });
+  const reachSeries = (reachAnalytics?.timeSeries ?? []).map((d) => ({
+    date: format(new Date(d.date), "d MMM", { locale: nl }),
+    count: d.published,
+  }));
 
   const todayItems = (agenda ?? []).filter((p) => isToday(new Date(p.scheduled_at)));
   const tomorrowItems = (agenda ?? []).filter((p) => !isToday(new Date(p.scheduled_at)));
@@ -490,7 +489,12 @@ function DashboardContent({
         icon={TrendingUp}
         link={{ to: "/admin/reach", label: "Volledige analyse" }}
       >
-        <ReachChart series={reachSeries ?? []} loading={reachLoading} />
+        <ReachChart
+          series={reachSeries}
+          loading={reachLoading}
+          followersTotal={reachAnalytics?.followersTotal ?? null}
+          followerGrowth={reachAnalytics?.followerGrowth ?? null}
+        />
       </Card>
     </>
   );
@@ -714,18 +718,35 @@ function FocusRow({ item }: { item: FocusItem }) {
 function ReachChart({
   series,
   loading,
+  followersTotal,
+  followerGrowth,
 }: {
   series: { date: string; count: number }[];
   loading: boolean;
+  followersTotal: number | null;
+  followerGrowth: number | null;
 }) {
   if (loading) return <Skeleton className="h-48 w-full rounded-lg" />;
   const total = series.reduce((sum, p) => sum + p.count, 0);
-  if (total === 0) {
-    return <Empty body="Nog geen gepubliceerde posts in de afgelopen 30 dagen." />;
-  }
+
+  const GrowthIcon =
+    followerGrowth == null || followerGrowth === 0
+      ? Minus
+      : followerGrowth > 0
+        ? TrendingUp
+        : TrendingDown;
+  const growthTint =
+    followerGrowth == null
+      ? "text-foreground"
+      : followerGrowth > 0
+        ? "text-emerald-400"
+        : followerGrowth < 0
+          ? "text-red-400"
+          : "text-foreground";
+
   return (
     <div>
-      <div className="mb-3 flex items-center gap-5 text-xs text-muted-foreground">
+      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
         <span>
           <span className="font-display text-lg text-foreground">{total}</span> gepubliceerd (30d)
         </span>
@@ -733,49 +754,69 @@ function ReachChart({
           <span className="font-display text-lg text-foreground">{(total / 30).toFixed(1)}</span>{" "}
           gem./dag
         </span>
+        <span className="flex items-center gap-1">
+          <Users className="h-3.5 w-3.5" />
+          <span className="font-display text-lg text-foreground">
+            {followersTotal != null ? followersTotal.toLocaleString("nl-NL") : "—"}
+          </span>{" "}
+          volgers
+        </span>
+        <span className="flex items-center gap-1">
+          <GrowthIcon className={cn("h-3.5 w-3.5", growthTint)} />
+          <span className={cn("font-display text-lg", growthTint)}>
+            {followerGrowth != null
+              ? `${followerGrowth > 0 ? "+" : ""}${followerGrowth.toLocaleString("nl-NL")}`
+              : "—"}
+          </span>{" "}
+          volgersgroei
+        </span>
       </div>
-      <div className="h-[200px]">
-        <ResponsiveContainer>
-          <LineChart data={series} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="oklch(0.85 0.015 75 / 30%)"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="date"
-              stroke="oklch(0.48 0.018 65)"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              interval={Math.max(0, Math.ceil(series.length / 8) - 1)}
-            />
-            <YAxis
-              stroke="oklch(0.48 0.018 65)"
-              fontSize={10}
-              allowDecimals={false}
-              tickLine={false}
-              axisLine={false}
-              width={28}
-            />
-            <Tooltip
-              contentStyle={{
-                background: "var(--card)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="count"
-              stroke="var(--gold)"
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {total === 0 ? (
+        <Empty body="Nog geen gepubliceerde posts in de afgelopen 30 dagen." />
+      ) : (
+        <div className="h-[200px]">
+          <ResponsiveContainer>
+            <LineChart data={series} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="oklch(0.85 0.015 75 / 30%)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="date"
+                stroke="oklch(0.48 0.018 65)"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                interval={Math.max(0, Math.ceil(series.length / 8) - 1)}
+              />
+              <YAxis
+                stroke="oklch(0.48 0.018 65)"
+                fontSize={10}
+                allowDecimals={false}
+                tickLine={false}
+                axisLine={false}
+                width={28}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="var(--gold)"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

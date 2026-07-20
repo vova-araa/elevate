@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getClientAnalytics } from "@/lib/analytics.functions";
 import { z } from "zod";
-import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -21,9 +22,12 @@ import {
 import {
   Loader2,
   TrendingUp,
+  TrendingDown,
+  Minus,
   CheckCircle2,
   AlertCircle,
   Clock,
+  Users,
   Instagram,
   Music2,
   Linkedin,
@@ -82,22 +86,25 @@ function AnalyticsPage() {
     navigate({ to: "/admin/analytics", search: { clientId, range }, replace: true });
   }
 
-  const since = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    return d.toISOString();
-  }, [days]);
-
-  const { data: posts, isLoading } = useQuery({
+  const getAnalytics = useServerFn(getClientAnalytics);
+  const { data: analytics, isLoading } = useQuery({
     enabled: !!clientId,
-    queryKey: ["analytics-posts", clientId, days],
+    queryKey: ["client-analytics", clientId, days],
+    queryFn: () => getAnalytics({ data: { clientId: clientId!, days } }),
+  });
+
+  // Alleen voor de "Recent gepubliceerd"-lijst — echte, recente posts met caption.
+  const { data: recentPublished } = useQuery({
+    enabled: !!clientId,
+    queryKey: ["analytics-recent-published", clientId],
     queryFn: async () => {
       const { data } = await supabase
         .from("scheduled_posts")
-        .select("*")
+        .select("id, caption, platform, published_at, scheduled_at")
         .eq("client_id", clientId!)
-        .gte("scheduled_at", since)
-        .order("scheduled_at", { ascending: true });
+        .eq("status", "published")
+        .order("published_at", { ascending: false })
+        .limit(8);
       return data ?? [];
     },
   });
@@ -111,58 +118,23 @@ function AnalyticsPage() {
     );
   }
 
-  // Aggregate stats
-  const total = posts?.length ?? 0;
-  const published = posts?.filter((p) => p.status === "published").length ?? 0;
-  const scheduled = posts?.filter((p) => p.status === "scheduled").length ?? 0;
-  const failed = posts?.filter((p) => p.status === "failed").length ?? 0;
-  const draft = posts?.filter((p) => p.status === "draft").length ?? 0;
+  const posts = analytics?.posts;
+  const total = posts?.total ?? 0;
+  const published = posts?.published ?? 0;
+  const scheduled = posts?.scheduled ?? 0;
+  const failed = posts?.failed ?? 0;
+  const draft = posts?.draft ?? 0;
+  const successRate = total > 0 ? Math.round((published / total) * 100) : 0;
 
-  // Per-platform breakdown
-  const byPlatform = (posts ?? []).reduce<
-    Record<string, { name: string; total: number; published: number }>
-  >((acc, p) => {
-    const k = p.platform;
-    acc[k] = acc[k] || { name: k, total: 0, published: 0 };
-    acc[k].total++;
-    if (p.status === "published") acc[k].published++;
-    return acc;
-  }, {});
-  const platformData = Object.values(byPlatform);
+  const platformData = analytics?.postsByPlatform ?? [];
+  const timeSeries = analytics?.timeSeries ?? [];
 
-  // Time series — posts per day
-  const byDay = new Map<
-    string,
-    { date: string; published: number; scheduled: number; failed: number }
-  >();
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    byDay.set(key, { date: key, published: 0, scheduled: 0, failed: 0 });
-  }
-  (posts ?? []).forEach((p) => {
-    const key = (p.scheduled_at ?? p.published_at ?? "").slice(0, 10);
-    const row = byDay.get(key);
-    if (!row) return;
-    if (p.status === "published") row.published++;
-    else if (p.status === "failed") row.failed++;
-    else row.scheduled++;
-  });
-  const timeSeries = Array.from(byDay.values());
-
-  // Status pie
   const statusData = [
     { name: "Gepubliceerd", value: published, color: "#10B981" },
     { name: "Gepland", value: scheduled, color: "#D4B97A" },
     { name: "Concept", value: draft, color: "#6B7280" },
     { name: "Mislukt", value: failed, color: "#EF4444" },
   ].filter((d) => d.value > 0);
-
-  // Simulated engagement estimate (real APIs not connected yet)
-  const estReach = published * 1200;
-  const estEngagement = published * 86;
-  const successRate = total > 0 ? Math.round((published / total) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -228,24 +200,64 @@ function AnalyticsPage() {
             />
           </div>
 
-          {/* Estimated reach */}
+          {/* Echte volgerscijfers + posts per week */}
           <div className="grid md:grid-cols-3 gap-3">
-            <EstimateCard
-              label="Geschatte bereik"
-              value={estReach.toLocaleString("nl-NL")}
-              hint="Op basis van gepubliceerde posts. Koppel social accounts voor echte cijfers."
+            <StatCard
+              icon={Users}
+              label="Volgers totaal"
+              value={
+                analytics?.followersTotal != null
+                  ? analytics.followersTotal.toLocaleString("nl-NL")
+                  : "—"
+              }
+              hint={
+                analytics?.followersTotal != null
+                  ? "Som van bekende volgersaantallen over gekoppelde kanalen."
+                  : "Nog geen kanaal gekoppeld met een leverbaar volgersaantal."
+              }
             />
-            <EstimateCard
-              label="Geschatte engagement"
-              value={estEngagement.toLocaleString("nl-NL")}
-              hint="Reacties + likes (schatting)."
-            />
-            <EstimateCard
+            <FollowerGrowthCard growth={analytics?.followerGrowth ?? null} days={days} />
+            <StatCard
+              icon={BarChart3}
               label="Posts per week"
               value={(total / (days / 7)).toFixed(1)}
               hint={`Gemiddeld over de laatste ${days} dagen.`}
             />
           </div>
+
+          {analytics && analytics.followersByPlatform.length > 0 && (
+            <div className="glass-strong rounded-xl p-5">
+              <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
+                Volgers per platform
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {analytics.followersByPlatform.map((f) => {
+                  const Icon = PLATFORM_ICONS[f.platform];
+                  return (
+                    <div key={f.platform} className="rounded-lg border border-gold/15 p-3">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground capitalize">
+                        {Icon && (
+                          <Icon
+                            className="h-3.5 w-3.5"
+                            style={{ color: PLATFORM_COLORS[f.platform] }}
+                          />
+                        )}
+                        {f.platform}
+                      </div>
+                      <div className="mt-1 text-xl font-display">
+                        {f.followers != null ? f.followers.toLocaleString("nl-NL") : "—"}
+                      </div>
+                      {f.followers == null && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          Platform levert geen volgersaantal via de API.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Time series */}
           <div className="glass-strong rounded-xl p-5">
@@ -316,7 +328,7 @@ function AnalyticsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={platformData}>
                         <CartesianGrid stroke="rgba(212,185,122,0.08)" />
-                        <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
+                        <XAxis dataKey="platform" stroke="#9ca3af" fontSize={11} />
                         <YAxis stroke="#9ca3af" fontSize={11} allowDecimals={false} />
                         <Tooltip
                           contentStyle={{
@@ -327,7 +339,10 @@ function AnalyticsPage() {
                         />
                         <Bar dataKey="total" name="Totaal" radius={[6, 6, 0, 0]}>
                           {platformData.map((p) => (
-                            <Cell key={p.name} fill={PLATFORM_COLORS[p.name] ?? "#D4B97A"} />
+                            <Cell
+                              key={p.platform}
+                              fill={PLATFORM_COLORS[p.platform] ?? "#D4B97A"}
+                            />
                           ))}
                         </Bar>
                       </BarChart>
@@ -335,17 +350,17 @@ function AnalyticsPage() {
                   </div>
                   <div className="mt-4 space-y-2">
                     {platformData.map((p) => {
-                      const Icon = PLATFORM_ICONS[p.name];
+                      const Icon = PLATFORM_ICONS[p.platform];
                       return (
-                        <div key={p.name} className="flex items-center justify-between text-sm">
+                        <div key={p.platform} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
                             {Icon && (
                               <Icon
                                 className="h-4 w-4"
-                                style={{ color: PLATFORM_COLORS[p.name] }}
+                                style={{ color: PLATFORM_COLORS[p.platform] }}
                               />
                             )}
-                            <span className="capitalize">{p.name}</span>
+                            <span className="capitalize">{p.platform}</span>
                           </div>
                           <div className="text-muted-foreground">
                             {p.published}/{p.total} gepubliceerd
@@ -402,30 +417,26 @@ function AnalyticsPage() {
               Recent gepubliceerd
             </div>
             <div className="divide-y divide-gold/10">
-              {(posts ?? [])
-                .filter((p) => p.status === "published")
-                .slice(-8)
-                .reverse()
-                .map((p) => {
-                  const Icon = PLATFORM_ICONS[p.platform];
-                  return (
-                    <div key={p.id} className="flex items-start gap-3 py-3">
-                      {Icon && (
-                        <Icon
-                          className="h-4 w-4 mt-1"
-                          style={{ color: PLATFORM_COLORS[p.platform] }}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm line-clamp-1">{p.caption || "Geen caption"}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(p.published_at ?? p.scheduled_at).toLocaleString("nl-NL")}
-                        </div>
+              {(recentPublished ?? []).map((p) => {
+                const Icon = PLATFORM_ICONS[p.platform];
+                return (
+                  <div key={p.id} className="flex items-start gap-3 py-3">
+                    {Icon && (
+                      <Icon
+                        className="h-4 w-4 mt-1"
+                        style={{ color: PLATFORM_COLORS[p.platform] }}
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm line-clamp-1">{p.caption || "Geen caption"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(p.published_at ?? p.scheduled_at).toLocaleString("nl-NL")}
                       </div>
                     </div>
-                  );
-                })}
-              {(posts ?? []).filter((p) => p.status === "published").length === 0 && (
+                  </div>
+                );
+              })}
+              {(recentPublished ?? []).length === 0 && (
                 <p className="text-sm text-muted-foreground py-2">
                   Nog niets gepubliceerd in deze periode.
                 </p>
@@ -481,11 +492,49 @@ function Kpi({
   );
 }
 
-function EstimateCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  hint: string;
+}) {
   return (
     <div className="glass-strong rounded-xl p-5">
-      <div className="text-[10px] uppercase tracking-[0.2em] text-gold/70">{label}</div>
+      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
+        <Icon className="h-3.5 w-3.5" /> {label}
+      </div>
       <div className="mt-2 text-3xl font-display text-gold">{value}</div>
+      <div className="text-xs text-muted-foreground mt-2">{hint}</div>
+    </div>
+  );
+}
+
+function FollowerGrowthCard({ growth, days }: { growth: number | null; days: number }) {
+  const Icon = growth == null || growth === 0 ? Minus : growth > 0 ? TrendingUp : TrendingDown;
+  const tint =
+    growth == null
+      ? "text-gold"
+      : growth > 0
+        ? "text-emerald-400"
+        : growth < 0
+          ? "text-red-400"
+          : "text-gold";
+  const value = growth == null ? "—" : `${growth > 0 ? "+" : ""}${growth.toLocaleString("nl-NL")}`;
+  const hint =
+    growth == null
+      ? `Beschikbaar zodra er minstens 2 metingen zijn (na koppelen/verversen van een kanaal). Nog geen historie over de laatste ${days} dagen.`
+      : `Verschil tussen de oudste en nieuwste meting in de laatste ${days} dagen.`;
+  return (
+    <div className="glass-strong rounded-xl p-5">
+      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
+        <Icon className={cn("h-3.5 w-3.5", tint)} /> Volgersgroei
+      </div>
+      <div className={cn("mt-2 text-3xl font-display", tint)}>{value}</div>
       <div className="text-xs text-muted-foreground mt-2">{hint}</div>
     </div>
   );

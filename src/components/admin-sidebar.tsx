@@ -26,8 +26,14 @@ export function AdminSidebar() {
           .eq("status", "scheduled")
           .gte("scheduled_at", now)
           .lte("scheduled_at", in7),
-        supabase.from("scheduled_posts").select("id", { count: "exact", head: true }).eq("status", "draft"),
-        supabase.from("notifications").select("id", { count: "exact", head: true }).eq("read", false),
+        supabase
+          .from("scheduled_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "draft"),
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("read", false),
         supabase
           .from("notifications")
           .select("id", { count: "exact", head: true })
@@ -59,7 +65,12 @@ export function AdminSidebar() {
   const { activeClientId, setActiveClient } = useClientStore();
   const activeClient = clients?.find((c) => c.id === activeClientId) ?? null;
 
-  const selectClient = (c: { id: string; name: string; brand_color: string | null; logo_url: string | null }) => {
+  const selectClient = (c: {
+    id: string;
+    name: string;
+    brand_color: string | null;
+    logo_url: string | null;
+  }) => {
     setActiveClient({
       id: c.id,
       name: c.name,
@@ -110,7 +121,11 @@ export function AdminSidebar() {
           )}
           title={collapsed ? "Uitklappen" : "Inklappen"}
         >
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          {collapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5" />
+          )}
         </button>
       </div>
 

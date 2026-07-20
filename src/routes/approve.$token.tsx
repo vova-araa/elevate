@@ -142,7 +142,9 @@ function ApprovePage() {
       {posts.length === 0 ? (
         <div className="glass-strong rounded-2xl p-10 text-center">
           <PartyPopper className="mx-auto mb-3 h-9 w-9 text-gold" />
-          <p className="text-sm text-muted-foreground">Er staat op dit moment niets klaar om te keuren.</p>
+          <p className="text-sm text-muted-foreground">
+            Er staat op dit moment niets klaar om te keuren.
+          </p>
         </div>
       ) : (
         <div className="space-y-4 pb-8">

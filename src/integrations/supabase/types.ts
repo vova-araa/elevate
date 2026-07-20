@@ -1456,6 +1456,41 @@ export type Database = {
           },
         ];
       };
+      social_metrics_snapshots: {
+        Row: {
+          captured_at: string;
+          client_id: string;
+          created_at: string | null;
+          followers: number | null;
+          id: string;
+          platform: Database["public"]["Enums"]["social_platform"];
+        };
+        Insert: {
+          captured_at?: string;
+          client_id: string;
+          created_at?: string | null;
+          followers?: number | null;
+          id?: string;
+          platform: Database["public"]["Enums"]["social_platform"];
+        };
+        Update: {
+          captured_at?: string;
+          client_id?: string;
+          created_at?: string | null;
+          followers?: number | null;
+          id?: string;
+          platform?: Database["public"]["Enums"]["social_platform"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "social_metrics_snapshots_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       strategy_notes: {
         Row: {
           body: string | null;
