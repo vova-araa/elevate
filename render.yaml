@@ -1,0 +1,52 @@
+# Render Blueprint voor Elevate Social.
+#
+# Twee manieren om dit te gebruiken:
+#   A) Render → New → Blueprint → kies deze repo → Render leest dit bestand
+#      en zet build-/startcommando en alle publieke env-variabelen automatisch.
+#   B) Bestaande Web Service: neem in Settings → Build & Deploy exact het
+#      buildCommand en startCommand hieronder over.
+#
+# De 4 geheime waarden (sync: false) vul je altijd zelf in het Render-dashboard
+# in — die staan bewust niet in git.
+
+services:
+  - type: web
+    name: elevate
+    runtime: node
+    plan: free # zet op 'starter' zodra klanten meedraaien (valt dan niet in slaap)
+    branch: main
+    region: frankfurt
+    buildCommand: npm install -g bun && bun install && bun run build
+    startCommand: node .output/server/index.mjs
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # Node-versie waarop de app getest is
+      - key: NODE_VERSION
+        value: "22.11.0"
+      # NITRO_PRESET bewust NIET gezet → standaard node-server (past bij startCommand)
+
+      # ── Publieke Supabase-waarden (veilig; anon-key) ──
+      - key: SUPABASE_URL
+        value: https://jnckdzqiwffzejfjqmrx.supabase.co
+      - key: VITE_SUPABASE_URL
+        value: https://jnckdzqiwffzejfjqmrx.supabase.co
+      - key: SUPABASE_PROJECT_ID
+        value: jnckdzqiwffzejfjqmrx
+      - key: VITE_SUPABASE_PROJECT_ID
+        value: jnckdzqiwffzejfjqmrx
+      - key: SUPABASE_PUBLISHABLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpuY2tkenFpd2ZmemVqZmpxbXJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMTA0MjEsImV4cCI6MjA5NTU4NjQyMX0.K5mClZuHR8eLxA2b3Po_yfYDUyjtoyAkOcIM9ROAFjo
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpuY2tkenFpd2ZmemVqZmpxbXJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMTA0MjEsImV4cCI6MjA5NTU4NjQyMX0.K5mClZuHR8eLxA2b3Po_yfYDUyjtoyAkOcIM9ROAFjo
+
+      # ── Geheim: zelf invullen in het Render-dashboard ──
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      # Vaste publieke URL van deze app; maakt de OAuth-redirect stabiel voor koppelingen
+      - key: APP_URL
+        sync: false
