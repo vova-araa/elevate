@@ -16,7 +16,7 @@ services:
     plan: free # zet op 'starter' zodra klanten meedraaien (valt dan niet in slaap)
     branch: main
     region: frankfurt
-    buildCommand: npm install -g bun && bun install && bun run build
+    buildCommand: bun install && bun run build
     startCommand: node .output/server/index.mjs
     healthCheckPath: /
     autoDeploy: true
