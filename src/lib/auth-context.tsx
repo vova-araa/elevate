@@ -58,7 +58,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    if (!error) return { error: null };
+    // Vertaal de meestvoorkomende Supabase-fouten naar duidelijke NL-meldingen,
+    // zodat de gebruiker weet wat er te doen staat.
+    const raw = error.message.toLowerCase();
+    let message = error.message;
+    if (raw.includes("invalid login credentials")) {
+      message = "E-mail of wachtwoord klopt niet. Controleer beide, of reset je wachtwoord in Supabase.";
+    } else if (raw.includes("email not confirmed")) {
+      message =
+        "Je account is nog niet bevestigd. Zet in Supabase → Authentication → Users bij je gebruiker 'Auto Confirm' aan (of bevestig via de mail).";
+    } else if (raw.includes("failed to fetch") || raw.includes("networkerror") || raw.includes("load failed")) {
+      message =
+        "Kan de server niet bereiken. Controleer of de app-instellingen (Supabase-URL en -sleutel) goed staan.";
+    } else if (raw.includes("rate limit") || raw.includes("too many")) {
+      message = "Te veel pogingen. Wacht even en probeer opnieuw.";
+    }
+    return { error: message };
   }
 
   async function signOut() {
