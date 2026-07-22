@@ -124,19 +124,36 @@ export const importMediaFromUrl = createServerFn({ method: "POST" })
     const directUrl = toDirectDownloadUrl(data.url);
     assertSafeImportUrl(directUrl);
 
+    const FETCH_FAILED = new Error(
+      'Kon het bestand niet ophalen — is de Drive-link openbaar gedeeld ("iedereen met de link")?',
+    );
+
+    // SSRF-bescherming geldt niet alleen voor de opgegeven URL, maar voor elke
+    // hop: redirects (bv. Google Drive → googleusercontent.com) volgen we zelf
+    // op ("redirect: manual") en elke Location wordt opnieuw gevalideerd —
+    // anders zou een kwaadwillende URL via een redirect alsnog naar een
+    // interne/privé host kunnen wijzen die assertSafeImportUrl niet ziet.
+    const MAX_REDIRECTS = 5;
+    let currentUrl = directUrl;
     let response: Response;
-    try {
-      response = await fetch(directUrl, { redirect: "follow" });
-    } catch {
-      throw new Error(
-        'Kon het bestand niet ophalen — is de Drive-link openbaar gedeeld ("iedereen met de link")?',
-      );
+    for (let hop = 0; ; hop++) {
+      try {
+        response = await fetch(currentUrl, { redirect: "manual" });
+      } catch {
+        throw FETCH_FAILED;
+      }
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location || hop >= MAX_REDIRECTS) throw FETCH_FAILED;
+        const nextUrl = new URL(location, currentUrl).toString();
+        currentUrl = assertSafeImportUrl(nextUrl).toString();
+        continue;
+      }
+      break;
     }
 
     if (!response.ok || !response.body) {
-      throw new Error(
-        'Kon het bestand niet ophalen — is de Drive-link openbaar gedeeld ("iedereen met de link")?',
-      );
+      throw FETCH_FAILED;
     }
 
     const contentType = response.headers.get("content-type") ?? "application/octet-stream";

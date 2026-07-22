@@ -30,7 +30,13 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
         try {
           const state = verifyState(stateRaw);
           returnTo = state.returnTo;
-          base = state.origin ?? base;
+          // Open-redirect-fix: state.origin komt van de client die de flow
+          // startte (zie startSocialConnect) en is dus niet vertrouwd. Via
+          // appUrl() wint APP_URL altijd wanneer die gezet is (productie);
+          // alleen als APP_URL ontbreekt (lokale dev) valt dit terug op de
+          // opgegeven origin — nooit een ruwe, ongevalideerde waarde als
+          // uiteindelijke redirect-basis.
+          base = appUrl(state.origin ?? url.origin);
 
           if (oauthError || !code) {
             return redirectTo(base, returnTo, {
