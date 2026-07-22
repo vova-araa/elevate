@@ -64,11 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const raw = error.message.toLowerCase();
     let message = error.message;
     if (raw.includes("invalid login credentials")) {
-      message = "E-mail of wachtwoord klopt niet. Controleer beide, of reset je wachtwoord in Supabase.";
+      message =
+        "E-mail of wachtwoord klopt niet. Controleer beide, of reset je wachtwoord in Supabase.";
     } else if (raw.includes("email not confirmed")) {
       message =
         "Je account is nog niet bevestigd. Zet in Supabase → Authentication → Users bij je gebruiker 'Auto Confirm' aan (of bevestig via de mail).";
-    } else if (raw.includes("failed to fetch") || raw.includes("networkerror") || raw.includes("load failed")) {
+    } else if (
+      raw.includes("failed to fetch") ||
+      raw.includes("networkerror") ||
+      raw.includes("load failed")
+    ) {
       message =
         "Kan de server niet bereiken. Controleer of de app-instellingen (Supabase-URL en -sleutel) goed staan.";
     } else if (raw.includes("rate limit") || raw.includes("too many")) {
