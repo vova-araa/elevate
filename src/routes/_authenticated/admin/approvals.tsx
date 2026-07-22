@@ -67,6 +67,8 @@ function ApprovalsPage() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   async function shareApprovalLink() {
     if (!activeClient) return;
@@ -108,6 +110,29 @@ function ApprovalsPage() {
   );
 
   const clientName = (id: string) => clients?.find((c) => c.id === id)?.name ?? "—";
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filtered.forEach((p) => next.delete(p.id));
+      } else {
+        filtered.forEach((p) => next.add(p.id));
+      }
+      return next;
+    });
+  }
 
   async function approve(postId: string, clientId: string) {
     const { error } = await supabase
@@ -170,6 +195,66 @@ function ApprovalsPage() {
     if (rows.length) await supabase.from("notifications").insert(rows);
   }
 
+  async function bulkApprove() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const targets = (posts ?? []).filter((p) => selected.has(p.id));
+    setBulkBusy(true);
+    try {
+      const { error } = await supabase
+        .from("scheduled_posts")
+        .update({ status: "scheduled" })
+        .in("id", ids);
+      if (error) return toast.error(error.message);
+      const clientIds = new Set(targets.map((p) => p.client_id));
+      await Promise.all(
+        Array.from(clientIds).map((clientId) =>
+          notifyTeam(
+            clientId,
+            "Posts goedgekeurd",
+            `${targets.filter((p) => p.client_id === clientId).length} post(s) staan klaar om te publiceren.`,
+            `/admin/planner?clientId=${clientId}`,
+          ),
+        ),
+      );
+      toast.success(`${ids.length} goedgekeurd`);
+      setSelected(new Set());
+      qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+      qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkReject() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length} post(s) afwijzen en verwijderen?`)) return;
+    const targets = (posts ?? []).filter((p) => selected.has(p.id));
+    setBulkBusy(true);
+    try {
+      const { error } = await supabase.from("scheduled_posts").delete().in("id", ids);
+      if (error) return toast.error(error.message);
+      const clientIds = new Set(targets.map((p) => p.client_id));
+      await Promise.all(
+        Array.from(clientIds).map((clientId) =>
+          notifyTeam(
+            clientId,
+            "Posts afgewezen",
+            `${targets.filter((p) => p.client_id === clientId).length} concept(en) zijn verwijderd.`,
+            `/admin/planner?clientId=${clientId}`,
+          ),
+        ),
+      );
+      toast.success(`${ids.length} afgewezen`);
+      setSelected(new Set());
+      qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+      qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -217,6 +302,45 @@ function ApprovalsPage() {
           </Link>
         </div>
       </div>
+
+      {selected.size > 0 && (
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-gold/20 bg-background/95 backdrop-blur px-4 py-3 shadow-sm">
+          <span className="text-sm font-medium text-gold">{selected.size} geselecteerd</span>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <button
+              onClick={toggleSelectAll}
+              disabled={bulkBusy}
+              className="min-h-11 inline-flex items-center justify-center rounded-lg border border-gold/20 px-3 py-2 text-xs hover:bg-accent/40 disabled:opacity-60"
+            >
+              {allFilteredSelected ? "Deselecteer alles" : "Selecteer alles"}
+            </button>
+            <button
+              onClick={bulkApprove}
+              disabled={bulkBusy}
+              className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 px-3 py-2 text-xs hover:bg-emerald-500/30 disabled:opacity-60"
+            >
+              {bulkBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              )}
+              Goedkeuren ({selected.size})
+            </button>
+            <button
+              onClick={bulkReject}
+              disabled={bulkBusy}
+              className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/15 text-red-300 px-3 py-2 text-xs hover:bg-red-500/25 disabled:opacity-60"
+            >
+              {bulkBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <XCircle className="h-3.5 w-3.5" />
+              )}
+              Afwijzen ({selected.size})
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Counter */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -274,6 +398,13 @@ function ApprovalsPage() {
                 <div className="p-4 flex-1 flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(p.id)}
+                        onChange={() => toggleSelect(p.id)}
+                        aria-label="Selecteer concept"
+                        className="h-4 w-4 shrink-0 rounded border-gold/40 accent-gold"
+                      />
                       {Icon && (
                         <Icon
                           className="h-3.5 w-3.5"

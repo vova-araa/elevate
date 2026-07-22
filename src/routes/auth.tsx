@@ -131,6 +131,15 @@ function AuthPage() {
         <p className="text-center text-[11px] text-muted-foreground/70">
           Elevate Design — jouw merk, één portaal.
         </p>
+        <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60">
+          <a href="/terms" className="transition-colors hover:text-gold">
+            Voorwaarden
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/privacy" className="transition-colors hover:text-gold">
+            Privacy
+          </a>
+        </div>
       </form>
     </main>
   );

@@ -90,7 +90,15 @@ function Landing() {
       </main>
 
       <footer className="relative z-10 border-t border-gold/10 py-6 text-center text-[11px] text-muted-foreground">
-        © {new Date().getFullYear()} Elevate Design. All rights reserved.
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+          <span>© {new Date().getFullYear()} Elevate Design. Alle rechten voorbehouden.</span>
+          <Link to="/terms" className="transition-colors hover:text-gold">
+            Voorwaarden
+          </Link>
+          <Link to="/privacy" className="transition-colors hover:text-gold">
+            Privacy
+          </Link>
+        </div>
       </footer>
     </div>
   );
