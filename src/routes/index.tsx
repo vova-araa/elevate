@@ -33,6 +33,20 @@ export const Route = createFileRoute("/")({
 
 const SOCIALS = [Instagram, Music2, Linkedin, Youtube, Facebook];
 
+// Officiële Elevate Design-accounts — gekoppeld in de footer ("Volg ons").
+const SOCIAL_LINKS = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/elevatedesign.official/",
+    icon: Instagram,
+  },
+  {
+    label: "TikTok",
+    href: "https://www.tiktok.com/@elevate.design.official",
+    icon: Music2,
+  },
+];
+
 const SERVICES = [
   {
     icon: Compass,
@@ -334,6 +348,24 @@ function Landing() {
             <Link to="/dashboard" className="transition-colors hover:text-gold">
               Portaal
             </Link>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
+              Volg ons
+            </span>
+            {SOCIAL_LINKS.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={s.label}
+                title={s.label}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-gold/10 bg-card/60 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
+              >
+                <s.icon className="h-4 w-4" />
+              </a>
+            ))}
           </div>
         </div>
       </footer>
