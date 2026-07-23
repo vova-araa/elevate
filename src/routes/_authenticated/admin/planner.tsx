@@ -51,6 +51,7 @@ import {
 import { PostChip } from "@/components/planner/post-chip";
 import { WeekView } from "@/components/planner/week-view";
 import { ClientLegend } from "@/components/planner/client-legend";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const searchSchema = z.object({
   clientId: z.string().uuid().optional(),
@@ -291,7 +292,7 @@ function PlannerPage() {
     setComposeOpen(true);
   }
 
-  if (!clients) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
+  if (!clients) return <PlannerSkeleton />;
 
   if (clients.length === 0) {
     return (
@@ -519,6 +520,33 @@ function periodLabel(d: Date, view: string) {
   return `${start.getDate()} ${start.toLocaleDateString("nl-NL", { month: "short" })} – ${end.getDate()} ${end.toLocaleDateString("nl-NL", { month: "short" })}`;
 }
 
+/* ------------------------------ LOAD SKELETON ------------------------------ */
+function PlannerSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-24 rounded" />
+          <Skeleton className="h-10 w-72 rounded-lg" />
+          <Skeleton className="h-4 w-80 rounded" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-10 w-40 rounded-full" />
+          <Skeleton className="h-10 w-32 rounded-full" />
+        </div>
+      </div>
+      {/* Toggle + nav */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Skeleton className="h-9 w-64 rounded-full" />
+        <Skeleton className="h-9 w-56 rounded-full" />
+      </div>
+      {/* Kalender */}
+      <Skeleton className="h-[520px] w-full rounded-2xl" />
+    </div>
+  );
+}
+
 /* ------------------------------ MONTH VIEW ------------------------------ */
 function MonthView({
   cursor,
@@ -573,87 +601,92 @@ function MonthView({
 
   return (
     <div className="glass-strong rounded-2xl p-4">
-      <div className="grid grid-cols-7 gap-1 text-[10px] uppercase tracking-[0.18em] text-gold/70 pb-2">
-        {["ma", "di", "wo", "do", "vr", "za", "zo"].map((d) => (
-          <div key={d} className="text-center">
-            {d}
+      {/* Op smalle schermen horizontaal scrollen i.p.v. samengeperste cellen. */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[720px]">
+          <div className="grid grid-cols-7 gap-1 text-[10px] uppercase tracking-[0.18em] text-gold/70 pb-2">
+            {["ma", "di", "wo", "do", "vr", "za", "zo"].map((d) => (
+              <div key={d} className="text-center">
+                {d}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((d, i) => {
-          const k = toKey(d);
-          const items = byDay[k] || [];
-          const inMonth = d.getMonth() === cursor.getMonth();
-          const isToday = sameDay(d, today);
-          const isSelected = sameDay(d, selected);
-          const holidayName = holidayMap.get(k);
-          return (
-            <div
-              key={i}
-              onClick={() => onSelectDay(d)}
-              onDoubleClick={() => onDoubleClickDay(d)}
-              onDragOver={(e) => {
-                e.preventDefault();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (dragId) {
-                  onDropPost(d, dragId);
-                  setDragId(null);
-                }
-              }}
-              className={cn(
-                "min-h-28 text-left rounded-lg p-2 transition border cursor-pointer",
-                inMonth ? "bg-surface/50" : "bg-surface/20 opacity-50",
-                isSelected
-                  ? "border-gold ring-1 ring-gold/40"
-                  : "border-transparent hover:border-gold/30",
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span
+          <div className="grid grid-cols-7 gap-1">
+            {days.map((d, i) => {
+              const k = toKey(d);
+              const items = byDay[k] || [];
+              const inMonth = d.getMonth() === cursor.getMonth();
+              const isToday = sameDay(d, today);
+              const isSelected = sameDay(d, selected);
+              const holidayName = holidayMap.get(k);
+              return (
+                <div
+                  key={i}
+                  onClick={() => onSelectDay(d)}
+                  onDoubleClick={() => onDoubleClickDay(d)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragId) {
+                      onDropPost(d, dragId);
+                      setDragId(null);
+                    }
+                  }}
                   className={cn(
-                    "text-xs flex items-center justify-center h-6 w-6 rounded-full",
-                    isToday
-                      ? "bg-gold text-primary-foreground font-semibold"
-                      : "text-muted-foreground",
+                    "min-h-28 text-left rounded-lg p-2 transition border cursor-pointer",
+                    inMonth ? "bg-surface/50" : "bg-surface/20 opacity-50",
+                    isSelected
+                      ? "border-gold ring-1 ring-gold/40"
+                      : "border-transparent hover:border-gold/30",
                   )}
                 >
-                  {d.getDate()}
-                </span>
-                {holidayName && (
-                  <span
-                    className="mx-1 flex-1 truncate text-center text-[9px] text-muted-foreground/60"
-                    title={holidayName}
-                  >
-                    {holidayName}
-                  </span>
-                )}
-                {items.length > 0 && (
-                  <span className="text-[10px] text-gold/80">{items.length}</span>
-                )}
-              </div>
-              <div className="mt-1.5 space-y-1">
-                {items.slice(0, 3).map((p) => (
-                  <PostChip
-                    key={p.id}
-                    post={p}
-                    brandColor={brandColor}
-                    onDragStart={() => setDragId(p.id)}
-                    onDragEnd={() => setDragId(null)}
-                    onOpen={() => onOpenPost(p.id)}
-                  />
-                ))}
-                {items.length > 3 && (
-                  <div className="text-[10px] text-muted-foreground pl-1">
-                    +{items.length - 3} meer
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={cn(
+                        "text-xs flex items-center justify-center h-6 w-6 rounded-full",
+                        isToday
+                          ? "bg-gold text-primary-foreground font-semibold"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {d.getDate()}
+                    </span>
+                    {holidayName && (
+                      <span
+                        className="mx-1 flex-1 truncate text-center text-[9px] text-muted-foreground/60"
+                        title={holidayName}
+                      >
+                        {holidayName}
+                      </span>
+                    )}
+                    {items.length > 0 && (
+                      <span className="text-[10px] text-gold/80">{items.length}</span>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+                  <div className="mt-1.5 space-y-1">
+                    {items.slice(0, 3).map((p) => (
+                      <PostChip
+                        key={p.id}
+                        post={p}
+                        brandColor={brandColor}
+                        onDragStart={() => setDragId(p.id)}
+                        onDragEnd={() => setDragId(null)}
+                        onOpen={() => onOpenPost(p.id)}
+                      />
+                    ))}
+                    {items.length > 3 && (
+                      <div className="text-[10px] text-muted-foreground pl-1">
+                        +{items.length - 3} meer
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -806,7 +839,7 @@ function PostRow({
     : null;
   return (
     <div
-      className="glass rounded-xl p-4 flex gap-4 items-start"
+      className="glass rounded-xl p-4 flex flex-col sm:flex-row gap-4 sm:items-start"
       style={{ borderLeft: `3px solid ${brandColor || GOLD_FALLBACK}` }}
     >
       <div className="shrink-0">
@@ -859,17 +892,17 @@ function PostRow({
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-1.5 shrink-0">
+      <div className="flex flex-row flex-wrap sm:flex-col gap-1.5 shrink-0">
         <button
           onClick={() => onOpen(post.id)}
-          className="text-[11px] rounded-full border border-border/40 px-2.5 py-1 hover:bg-accent/30 inline-flex items-center gap-1"
+          className="text-[11px] rounded-full border border-border/40 min-h-11 px-3 hover:bg-accent/30 inline-flex items-center gap-1"
         >
           <Eye className="h-3 w-3" /> Bekijk
         </button>
         {post.status === "draft" && (
           <button
             onClick={() => onApprove(post.id)}
-            className="text-[11px] rounded-full border border-sky-400/40 text-sky-300 hover:bg-sky-500/10 px-2.5 py-1 inline-flex items-center gap-1"
+            className="text-[11px] rounded-full border border-sky-400/40 text-sky-300 hover:bg-sky-500/10 min-h-11 px-3 inline-flex items-center gap-1"
           >
             <CheckCircle2 className="h-3 w-3" /> Keur goed
           </button>
@@ -877,14 +910,14 @@ function PostRow({
         {(post.status === "scheduled" || post.status === "draft") && (
           <button
             onClick={() => onPublish(post.id)}
-            className="text-[11px] rounded-full border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/10 px-2.5 py-1 inline-flex items-center gap-1"
+            className="text-[11px] rounded-full border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/10 min-h-11 px-3 inline-flex items-center gap-1"
           >
             <Send className="h-3 w-3" /> Markeer gepubliceerd
           </button>
         )}
         <button
           onClick={() => onDelete(post.id)}
-          className="text-[11px] rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 px-2.5 py-1 inline-flex items-center gap-1"
+          className="text-[11px] rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 min-h-11 px-3 inline-flex items-center gap-1"
         >
           <Trash2 className="h-3 w-3" /> Verwijder
         </button>

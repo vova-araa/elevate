@@ -22,6 +22,7 @@ import {
   listClientChannels,
   startSocialConnect,
   disconnectChannel,
+  getSocialSetupStatus,
 } from "@/lib/channels.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -38,36 +39,50 @@ export const Route = createFileRoute("/_authenticated/client/channels")({
 
 type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 
-const PLATFORMS: { id: Platform; label: string; Icon: LucideIcon; tint: string }[] = [
+// tint = alleen de kaart-gradient (from-…/to-…). De platformkleur zit
+// uitsluitend op de icoon-box (iconTint); labels erven text-foreground,
+// zodat ze in light mode leesbaar blijven (zie ook connect.$token.tsx).
+const PLATFORMS: {
+  id: Platform;
+  label: string;
+  Icon: LucideIcon;
+  tint: string;
+  iconTint: string;
+}[] = [
   {
     id: "instagram",
     label: "Instagram",
     Icon: Instagram,
-    tint: "from-fuchsia-500/15 to-rose-500/10 text-rose-300",
+    tint: "from-fuchsia-500/15 to-rose-500/10",
+    iconTint: "text-fuchsia-500 dark:text-rose-300",
   },
   {
     id: "tiktok",
     label: "TikTok",
     Icon: Music2,
-    tint: "from-cyan-500/15 to-pink-500/10 text-cyan-300",
+    tint: "from-cyan-500/15 to-pink-500/10",
+    iconTint: "text-cyan-600 dark:text-cyan-300",
   },
   {
     id: "linkedin",
     label: "LinkedIn",
     Icon: Linkedin,
-    tint: "from-sky-500/15 to-blue-500/10 text-sky-300",
+    tint: "from-sky-500/15 to-blue-500/10",
+    iconTint: "text-sky-600 dark:text-sky-300",
   },
   {
     id: "youtube",
     label: "YouTube",
     Icon: Youtube,
-    tint: "from-red-500/15 to-orange-500/10 text-red-300",
+    tint: "from-red-500/15 to-orange-500/10",
+    iconTint: "text-red-500 dark:text-red-300",
   },
   {
     id: "facebook",
     label: "Facebook",
     Icon: Facebook,
-    tint: "from-indigo-500/15 to-blue-500/10 text-indigo-300",
+    tint: "from-indigo-500/15 to-blue-500/10",
+    iconTint: "text-indigo-500 dark:text-indigo-300",
   },
 ];
 
@@ -82,6 +97,16 @@ function ChannelsPage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["client-channels"],
     queryFn: () => list({ data: {} }),
+  });
+
+  // Setup-status: welke platforms zijn in de omgeving geconfigureerd. Zo tonen
+  // we niet-beschikbare platforms als "Nog niet beschikbaar" i.p.v. een
+  // Koppelen-knop die op een env-fout uitloopt.
+  const setupFn = useServerFn(getSocialSetupStatus);
+  const { data: setup } = useQuery({
+    queryKey: ["social-setup-status"],
+    queryFn: () => setupFn(),
+    staleTime: 60_000,
   });
 
   // Toon eenmalig een toast voor de OAuth-callback-redirect, wis daarna de querystring.
@@ -142,8 +167,9 @@ function ChannelsPage() {
   return (
     <div className="space-y-5 max-w-5xl">
       <header>
-        <h1 className="font-display text-2xl">Kanalen</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Koppelingen</p>
+        <h1 className="font-display text-4xl sm:text-5xl mt-2">Kanalen</h1>
+        <p className="text-sm text-muted-foreground mt-2">
           Koppel je social-accounts. Dit duurt ongeveer 30 seconden per platform.
         </p>
       </header>
@@ -157,10 +183,13 @@ function ChannelsPage() {
       {isLoading && <div className="text-sm text-muted-foreground">Laden…</div>}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {PLATFORMS.map(({ id, label, Icon, tint }) => {
+        {PLATFORMS.map(({ id, label, Icon, tint, iconTint }) => {
           const ch = channelsByPlatform.get(id);
           const connectedActive = !!ch && ch.status === "active";
           const expired = !!ch && ch.status === "expired";
+          // Alleen tonen als "Koppelen" wanneer het platform in de omgeving is
+          // ingesteld. Zonder setup-status (nog aan het laden) niet blokkeren.
+          const available = !setup || !!setup.platforms[id]?.configured;
           return (
             <div
               key={id}
@@ -182,7 +211,7 @@ function ChannelsPage() {
               )}
               <div className="flex items-center gap-3">
                 <div className="h-11 w-11 rounded-xl bg-background/40 grid place-items-center">
-                  <Icon className="h-5 w-5" />
+                  <Icon className={cn("h-5 w-5", iconTint)} />
                 </div>
                 <div className="min-w-0">
                   <div className="font-medium">{label}</div>
@@ -208,7 +237,7 @@ function ChannelsPage() {
                       }
                     }}
                     disabled={disconnectMut.isPending}
-                    className="text-xs h-8 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
+                    className="text-xs min-h-11 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
                   >
                     {disconnectMut.isPending ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -216,14 +245,18 @@ function ChannelsPage() {
                       "Ontkoppelen"
                     )}
                   </button>
-                ) : (
+                ) : available ? (
                   <button
                     onClick={() => setConfirm(id)}
                     disabled={connectMut.isPending}
-                    className="text-xs h-8 px-3 rounded-lg bg-gold/20 text-gold font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+                    className="text-xs min-h-11 px-3 rounded-lg bg-gold/20 text-gold font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <Link2 className="h-3.5 w-3.5" /> Koppelen
                   </button>
+                ) : (
+                  <span className="text-xs min-h-11 px-3 rounded-lg border border-border/60 bg-background/20 text-muted-foreground inline-flex items-center gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" /> Nog niet beschikbaar
+                  </span>
                 )}
               </div>
             </div>

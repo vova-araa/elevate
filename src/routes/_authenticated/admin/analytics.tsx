@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getClientAnalytics } from "@/lib/analytics.functions";
 import { z } from "zod";
 import {
@@ -20,7 +22,6 @@ import {
   Legend,
 } from "recharts";
 import {
-  Loader2,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -57,7 +58,9 @@ const PLATFORM_ICONS: Record<string, LucideIcon> = {
 };
 const PLATFORM_COLORS: Record<string, string> = {
   instagram: "#E4405F",
-  tiktok: "#000000",
+  // Dark-veilig grijs i.p.v. puur zwart, anders is het icoon onzichtbaar op
+  // een donkere kaart.
+  tiktok: "#4b5563",
   linkedin: "#0A66C2",
   youtube: "#FF0000",
   facebook: "#1877F2",
@@ -82,9 +85,13 @@ function AnalyticsPage() {
   const selected = clients?.find((c) => c.id === search.clientId) ?? clients?.[0];
   const clientId = selected?.id;
 
-  if (!search.clientId && clientId) {
-    navigate({ to: "/admin/analytics", search: { clientId, range }, replace: true });
-  }
+  // Zet een default clientId in de URL — in een effect, niet tijdens render
+  // (geen state-update tijdens render).
+  useEffect(() => {
+    if (!search.clientId && clientId) {
+      navigate({ to: "/admin/analytics", search: { clientId, range }, replace: true });
+    }
+  }, [search.clientId, clientId, range, navigate]);
 
   const getAnalytics = useServerFn(getClientAnalytics);
   const { data: analytics, isLoading } = useQuery({
@@ -109,7 +116,7 @@ function AnalyticsPage() {
     },
   });
 
-  if (!clients) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
+  if (!clients) return <AnalyticsSkeleton />;
   if (clients.length === 0) {
     return (
       <div className="glass-strong rounded-xl p-8 text-center text-muted-foreground">
@@ -140,7 +147,7 @@ function AnalyticsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Module 4</div>
+          <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Per klant</div>
           <h1 className="font-display text-3xl sm:text-4xl text-gold mt-1">Analytics</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Inzicht in posting performance, platforms en trends per klant.
@@ -178,7 +185,7 @@ function AnalyticsPage() {
       </div>
 
       {isLoading ? (
-        <Loader2 className="h-6 w-6 animate-spin text-gold" />
+        <AnalyticsSkeleton />
       ) : (
         <>
           {/* KPIs */}
@@ -279,9 +286,10 @@ function AnalyticsPage() {
                   <YAxis stroke="#9ca3af" fontSize={11} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
-                      background: "rgba(20,20,20,0.95)",
-                      border: "1px solid rgba(212,185,122,0.2)",
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
+                      color: "var(--foreground)",
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -332,9 +340,10 @@ function AnalyticsPage() {
                         <YAxis stroke="#9ca3af" fontSize={11} allowDecimals={false} />
                         <Tooltip
                           contentStyle={{
-                            background: "rgba(20,20,20,0.95)",
-                            border: "1px solid rgba(212,185,122,0.2)",
+                            background: "var(--card)",
+                            border: "1px solid var(--border)",
                             borderRadius: 8,
+                            color: "var(--foreground)",
                           }}
                         />
                         <Bar dataKey="total" name="Totaal" radius={[6, 6, 0, 0]}>
@@ -398,9 +407,10 @@ function AnalyticsPage() {
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          background: "rgba(20,20,20,0.95)",
-                          border: "1px solid rgba(212,185,122,0.2)",
+                          background: "var(--card)",
+                          border: "1px solid var(--border)",
                           borderRadius: 8,
+                          color: "var(--foreground)",
                         }}
                       />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -467,6 +477,31 @@ function AnalyticsPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+      {/* Stat cards */}
+      <div className="grid md:grid-cols-3 gap-3">
+        {Array.from({ length: 3 }, (_, i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+        ))}
+      </div>
+      {/* Grafiek */}
+      <Skeleton className="h-80 w-full rounded-xl" />
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Skeleton className="h-72 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
     </div>
   );
 }

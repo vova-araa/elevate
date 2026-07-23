@@ -357,9 +357,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
                 const inner = (
                   <>
                     <div className="text-sm font-medium">{n.title}</div>
-                    {n.body && (
-                      <div className="text-xs text-muted-foreground mt-0.5">{n.body}</div>
-                    )}
+                    {n.body && <div className="text-xs text-muted-foreground mt-0.5">{n.body}</div>}
                     <div className="text-[10px] text-muted-foreground mt-1">
                       {new Date(n.created_at).toLocaleString("nl-NL")}
                     </div>

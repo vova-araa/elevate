@@ -28,6 +28,7 @@ const METRIC_LABELS: Record<string, string> = {
   views: "Weergaven",
   engagement: "Interacties",
   engagement_rate: "Engagementratio",
+  success_rate: "Slagingspercentage",
   likes: "Likes",
   comments: "Reacties",
   shares: "Gedeeld",
@@ -47,9 +48,15 @@ function metricLabel(key: string) {
   );
 }
 
-function formatMetricValue(v: unknown): string {
+/** Metric-keys waarvan de waarde een percentage is → met %-suffix tonen. */
+const PERCENT_KEYS = new Set(["success_rate", "engagement_rate"]);
+
+function formatMetricValue(key: string, v: unknown): string {
   if (v == null) return "—";
-  if (typeof v === "number") return v.toLocaleString("nl-NL");
+  if (typeof v === "number") {
+    const num = v.toLocaleString("nl-NL");
+    return PERCENT_KEYS.has(key.toLowerCase()) ? `${num}%` : num;
+  }
   if (typeof v === "boolean") return v ? "Ja" : "Nee";
   return String(v);
 }
@@ -150,7 +157,7 @@ export function ReportCard({ report }: { report: Tables<"reports"> }) {
                 {metricLabel(key)}
               </div>
               <div className="font-display text-lg sm:text-xl mt-0.5 break-words">
-                {formatMetricValue(value)}
+                {formatMetricValue(key, value)}
               </div>
             </div>
           ))}
