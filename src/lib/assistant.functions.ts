@@ -227,7 +227,7 @@ export const runAssistant = createServerFn({ method: "POST" })
       return { ok: false, error: "Onbekende tool" };
     }
 
-    const system = `Je bent de AI-assistent van Elevate Social, een social-media-agency. Admins gebruiken je om via natuurlijke taal dingen te regelen: posts inplannen (als concept), taken aanmaken en vragen stellen over klanten. Werk in het Nederlands, wees beknopt en concreet.
+    const system = `Je bent de AI-assistent van Elevate Design, een social-media-agency. Admins gebruiken je om via natuurlijke taal dingen te regelen: posts inplannen (als concept), taken aanmaken en vragen stellen over klanten. Werk in het Nederlands, wees beknopt en concreet.
 
 Vandaag is ${new Date().toISOString().split("T")[0]}.
 

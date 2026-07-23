@@ -185,7 +185,7 @@ function addLogoIfPresent(doc: jsPDF, dataUrl: string | undefined, pageW: number
   }
 }
 
-/** Huisstijl-header: "Elevate Social", klantnaam/titel, periode en een dunne gouden scheidingslijn. */
+/** Huisstijl-header: "Elevate Design", klantnaam/titel, periode en een dunne gouden scheidingslijn. */
 function header(
   doc: jsPDF,
   clientName: string,
@@ -230,7 +230,7 @@ function drawFooters(doc: jsPDF, marginX: number, contentW: number) {
     doc.setDrawColor(225).setLineWidth(0.2);
     doc.line(marginX, pageH - 12, marginX + contentW, pageH - 12);
     doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(140);
-    doc.text("Elevate Social", marginX, pageH - 7);
+    doc.text("Elevate Design", marginX, pageH - 7);
     doc.text(`Pagina ${i} / ${pageCount}`, marginX + contentW, pageH - 7, { align: "right" });
     doc.setTextColor(0);
   }

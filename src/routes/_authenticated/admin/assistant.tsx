@@ -30,7 +30,7 @@ interface ChatMessage {
 const WELCOME: ChatMessage = {
   role: "assistant",
   content:
-    "Hoi! Ik ben de AI-assistent van Elevate Social. Ik kan posts als concept inplannen, taken aanmaken en vragen over klanten beantwoorden — vertel me gewoon wat je nodig hebt.",
+    "Hoi! Ik ben de AI-assistent van Elevate Design. Ik kan posts als concept inplannen, taken aanmaken en vragen over klanten beantwoorden — vertel me gewoon wat je nodig hebt.",
 };
 
 function suggestionChips(clientName?: string | null): string[] {

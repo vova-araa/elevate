@@ -44,7 +44,7 @@ function showBrowserNotification(notification: Notification) {
   if (typeof document === "undefined" || document.visibilityState === "visible") return;
   if (window.Notification.permission !== "granted") return;
   try {
-    new window.Notification("Elevate Social", {
+    new window.Notification("Elevate Design", {
       body: notification.body ?? notification.title,
     });
   } catch {

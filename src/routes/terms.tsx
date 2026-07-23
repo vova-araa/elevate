@@ -4,10 +4,10 @@ import { LegalPage, LegalSection } from "@/components/legal-page";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Gebruiksvoorwaarden — Elevate Social" },
+      { title: "Gebruiksvoorwaarden — Elevate Design" },
       {
         name: "description",
-        content: "De gebruiksvoorwaarden van het Elevate Social platform.",
+        content: "De gebruiksvoorwaarden van het Elevate Design platform.",
       },
     ],
   }),
@@ -16,12 +16,13 @@ export const Route = createFileRoute("/terms")({
 
 function TermsPage() {
   return (
-    <LegalPage eyebrow="Juridisch" title="Gebruiksvoorwaarden" updated="19 juli 2026">
-      <LegalSection title="1. Wat Elevate Social is">
+    <LegalPage eyebrow="Juridisch" title="Gebruiksvoorwaarden" updated="23 juli 2026">
+      <LegalSection title="1. Wat Elevate Design is">
         <p>
-          Elevate Social is het klant- en contentplatform van onze studio. Wij plannen, maken en
-          publiceren socialemediacontent voor onze klanten. Via het platform bekijk je planningen,
-          keur je content goed, deel je bestanden en volg je de resultaten van je merk.
+          Elevate Design is het klant- en contentplatform van onze studio (elevatedesign.nl). Wij
+          plannen, maken en publiceren socialemediacontent voor onze klanten. Via het platform
+          bekijk je planningen, keur je content goed, deel je bestanden en volg je de resultaten van
+          je merk.
         </p>
       </LegalSection>
       <LegalSection title="2. Accounts en toegang">
@@ -32,8 +33,8 @@ function TermsPage() {
           platform en onze klanten te beschermen.
         </p>
         <p>
-          Sommige goedkeuringen verlopen via een beveiligde deel-link zonder login. Zo'n link is
-          persoonlijk, beperkt geldig en alleen bedoeld voor de ontvanger.
+          Sommige goedkeuringen en koppelingen verlopen via een beveiligde deel-link zonder login.
+          Zo'n link is persoonlijk, beperkt geldig en alleen bedoeld voor de ontvanger.
         </p>
       </LegalSection>
       <LegalSection title="3. Jouw content blijft van jou">
@@ -48,9 +49,11 @@ function TermsPage() {
         <p>
           Je kunt je eigen accounts (zoals Instagram, Facebook, TikTok, LinkedIn en YouTube)
           koppelen via de officiële koppelingen van die platforms. Je geeft daarbij zelf toestemming
-          op het platform in kwestie en kunt die toestemming altijd intrekken — in Elevate Social
-          via "Ontkoppelen" of rechtstreeks in de instellingen van het platform. Voor het gebruik
-          van die platforms gelden ook hun eigen voorwaarden.
+          op het platform in kwestie en kunt die toestemming altijd intrekken — in Elevate Design
+          via "Ontkoppelen" of rechtstreeks in de instellingen van het platform. We gebruiken de
+          toegang uitsluitend om namens jou te publiceren en de statistieken van je eigen berichten
+          op te halen. Voor het gebruik van die platforms gelden ook hun eigen voorwaarden, zoals de
+          TikTok Developer Terms en het Meta Platform Terms-beleid.
         </p>
       </LegalSection>
       <LegalSection title="5. Redelijk gebruik">
@@ -71,7 +74,11 @@ function TermsPage() {
       <LegalSection title="7. Wijzigingen en contact">
         <p>
           We kunnen deze voorwaarden bijwerken; de actuele versie staat altijd op deze pagina.
-          Vragen? Neem contact op met je vaste contactpersoon bij Elevate Social.
+          Vragen? Mail ons op{" "}
+          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
+            elevate.plannen@gmail.com
+          </a>
+          .
         </p>
       </LegalSection>
     </LegalPage>
