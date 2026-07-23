@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
+import elevateLogoUrl from "@/assets/elevate-logo.png";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -204,8 +205,8 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
   return (
     <>
       <Link to="/" className="flex items-center gap-2 px-2 py-2">
-        <div className="h-7 w-7 rounded-full bg-gradient-gold" />
-        <span className="font-display text-lg">Elevate</span>
+        <img src={elevateLogoUrl} alt="Elevate Design" className="h-7 w-7 object-contain" />
+        <span className="font-display text-lg">Elevate Design</span>
       </Link>
       <div className="mt-2 mb-4 px-2 text-[10px] uppercase tracking-[0.25em] text-gold/70">
         {role === "admin" ? "Admin" : "Klantportaal"}

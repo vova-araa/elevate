@@ -1,5 +1,5 @@
 {
-  "name": "Elevate Social",
+  "name": "Elevate Design",
   "short_name": "Elevate",
   "lang": "nl",
   "display": "standalone",
@@ -8,10 +8,22 @@
   "theme_color": "#c6a05b",
   "icons": [
     {
-      "src": "/icon-512.png",
-      "sizes": "1024x1024",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
