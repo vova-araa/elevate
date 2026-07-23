@@ -4,7 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { EmptyState } from "@/components/empty-state";
-import { Image as ImageIcon, Video, Download, Loader2, Sparkles, FileText } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
+import {
+  Image as ImageIcon,
+  Video,
+  Download,
+  Loader2,
+  Sparkles,
+  FileText,
+  Clock,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/client/media")({
@@ -59,6 +68,7 @@ function ClientMedia() {
           .from("uploads")
           .select("id, file_path, file_name, file_type, created_at")
           .eq("client_id", clientId!)
+          .eq("status", "approved")
           .order("created_at", { ascending: false }),
         supabase
           .from("scheduled_posts")
@@ -97,6 +107,20 @@ function ClientMedia() {
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
     },
+  });
+
+  const { data: pendingUploads } = useQuery({
+    queryKey: ["client-media-pending", clientId],
+    enabled: !!clientId,
+    queryFn: async () =>
+      (
+        await supabase
+          .from("uploads")
+          .select("id, file_path, file_name, file_type, created_at")
+          .eq("client_id", clientId!)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+      ).data ?? [],
   });
 
   const [filter, setFilter] = useState<"all" | "image" | "video">("all");
@@ -152,6 +176,23 @@ function ClientMedia() {
           </button>
         ))}
       </div>
+
+      {pendingUploads && pendingUploads.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs uppercase tracking-[0.22em] text-amber-300 inline-flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" /> In behandeling ({pendingUploads.length})
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Deze uploads zijn ontvangen en wachten op goedkeuring door je Elevate-team voordat ze in
+            de bibliotheek verschijnen.
+          </p>
+          <div className="media-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {pendingUploads.map((u) => (
+              <PendingTile key={u.id} upload={u} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -238,6 +279,55 @@ function Tile({ item }: { item: MediaItem }) {
             <Download className="h-4 w-4" />
           </a>
         )}
+      </div>
+    </div>
+  );
+}
+
+type PendingUpload = Pick<
+  Tables<"uploads">,
+  "id" | "file_path" | "file_name" | "file_type" | "created_at"
+>;
+
+function PendingTile({ upload }: { upload: PendingUpload }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    supabase.storage
+      .from("client-uploads")
+      .createSignedUrl(upload.file_path, 3600)
+      .then(({ data }) => {
+        if (!cancelled) setUrl(data?.signedUrl || "");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [upload.file_path]);
+  const kind = guessKind(upload.file_path, upload.file_type);
+
+  return (
+    <div className="group relative aspect-square overflow-hidden rounded-xl border border-amber-400/30 bg-card opacity-80">
+      {url && kind === "image" && (
+        <img src={url} alt={upload.file_name} className="h-full w-full object-cover" />
+      )}
+      {url && kind === "video" && <video src={url} className="h-full w-full object-cover" />}
+      {url && kind === "other" && (
+        <div className="flex h-full w-full items-center justify-center bg-surface-elevated/40">
+          <FileText className="h-10 w-10 text-muted-foreground" />
+        </div>
+      )}
+      {!url && (
+        <div className="flex h-full w-full items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-gold/60" />
+        </div>
+      )}
+      <div className="absolute inset-x-0 top-0 flex items-center p-2 bg-gradient-to-b from-black/70 to-transparent">
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 text-[10px]">
+          <Clock className="h-3 w-3" /> In behandeling
+        </span>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+        <div className="min-w-0 text-[11px] text-white/90 truncate">{upload.file_name}</div>
       </div>
     </div>
   );

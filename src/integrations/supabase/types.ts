@@ -1680,6 +1680,8 @@ export type Database = {
       };
       uploads: {
         Row: {
+          approved_at: string | null;
+          approved_by: string | null;
           calendar_item_id: string | null;
           caption: string | null;
           client_id: string;
@@ -1690,9 +1692,12 @@ export type Database = {
           file_type: string | null;
           folder_id: string | null;
           id: string;
+          status: string;
           uploader_id: string | null;
         };
         Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
           calendar_item_id?: string | null;
           caption?: string | null;
           client_id: string;
@@ -1703,9 +1708,12 @@ export type Database = {
           file_type?: string | null;
           folder_id?: string | null;
           id?: string;
+          status?: string;
           uploader_id?: string | null;
         };
         Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
           calendar_item_id?: string | null;
           caption?: string | null;
           client_id?: string;
@@ -1716,6 +1724,7 @@ export type Database = {
           file_type?: string | null;
           folder_id?: string | null;
           id?: string;
+          status?: string;
           uploader_id?: string | null;
         };
         Relationships: [

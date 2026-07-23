@@ -20,6 +20,11 @@ import {
   FolderInput,
   Upload,
   Link2,
+  Check,
+  X as XIcon,
+  Clock,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   Dialog,
@@ -56,6 +61,7 @@ function MediaLibrary() {
   const [importOpen, setImportOpen] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState(true);
 
   useEffect(() => {
     setFolderId(null);
@@ -81,6 +87,7 @@ function MediaLibrary() {
       let query = supabase
         .from("uploads")
         .select("*, clients(name)")
+        .eq("status", "approved")
         .order("created_at", { ascending: false })
         .limit(500);
       if (clientId) query = query.eq("client_id", clientId);
@@ -91,6 +98,21 @@ function MediaLibrary() {
       return data ?? [];
     },
   });
+
+  // Klant-uploads die nog wachten op goedkeuring — over alle klanten heen zichtbaar,
+  // ongeacht het actieve klant-/mapfilter, zodat de admin niets mist.
+  const { data: pendingUploads } = useQuery({
+    queryKey: ["admin-media-pending"],
+    queryFn: async () =>
+      (
+        await supabase
+          .from("uploads")
+          .select("*, clients(name)")
+          .eq("status", "pending")
+          .order("created_at", { ascending: true })
+      ).data ?? [],
+  });
+  const pendingCount = pendingUploads?.length ?? 0;
 
   const currentFolder = folders?.find((f: MediaFolder) => f.id === folderId);
 
@@ -169,6 +191,34 @@ function MediaLibrary() {
     qc.invalidateQueries({ queryKey: ["admin-media"] });
   }
 
+  async function approveUpload(u: UploadWithClient) {
+    const { data: authData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("uploads")
+      .update({
+        status: "approved",
+        approved_at: new Date().toISOString(),
+        approved_by: authData.user?.id ?? null,
+      })
+      .eq("id", u.id);
+    if (error) return toast.error(error.message);
+    toast.success("Goedgekeurd");
+    qc.invalidateQueries({ queryKey: ["admin-media-pending"] });
+    qc.invalidateQueries({ queryKey: ["admin-media"] });
+  }
+
+  async function rejectUpload(u: UploadWithClient) {
+    if (!confirm(`"${u.file_name}" afwijzen en verwijderen?`)) return;
+    const { error: storageError } = await supabase.storage
+      .from("client-uploads")
+      .remove([u.file_path]);
+    if (storageError) return toast.error(storageError.message);
+    const { error } = await supabase.from("uploads").delete().eq("id", u.id);
+    if (error) return toast.error(error.message);
+    toast.success("Afgewezen");
+    qc.invalidateQueries({ queryKey: ["admin-media-pending"] });
+  }
+
   async function uploadFiles(files: File[]) {
     if (!clientId) return toast.error("Kies eerst een klant");
     if (files.length === 0) return;
@@ -193,6 +243,7 @@ function MediaLibrary() {
           file_size: file.size,
           folder_id: folderId,
           uploader_id: u.user?.id ?? null,
+          status: "approved",
         });
         if (insertError) {
           toast.error(`${file.name}: ${insertError.message}`);
@@ -253,6 +304,40 @@ function MediaLibrary() {
           overzichtelijk mappen aan.
         </p>
       </div>
+
+      {pendingCount > 0 && (
+        <div className="rounded-2xl border border-amber-400/30 bg-amber-500/5">
+          <button
+            onClick={() => setPendingOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-3 p-4"
+          >
+            <div className="flex items-center gap-2 text-amber-300">
+              <Clock className="h-4 w-4" />
+              <span className="font-medium text-sm">Wacht op goedkeuring</span>
+              <span className="rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-200 text-[11px] px-2 py-0.5 font-semibold">
+                {pendingCount}
+              </span>
+            </div>
+            {pendingOpen ? (
+              <ChevronUp className="h-4 w-4 text-amber-300" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-amber-300" />
+            )}
+          </button>
+          {pendingOpen && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 px-4 pb-4">
+              {pendingUploads?.map((u) => (
+                <PendingTile
+                  key={u.id}
+                  u={u}
+                  onApprove={() => approveUpload(u)}
+                  onReject={() => rejectUpload(u)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
@@ -543,6 +628,74 @@ function Tile({
         <div className="text-[11px] text-white/90 truncate">{u.file_name}</div>
         <div className="text-[10px] text-white/60">
           {new Date(u.created_at).toLocaleDateString("nl-NL")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PendingTile({
+  u,
+  onApprove,
+  onReject,
+}: {
+  u: UploadWithClient;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    supabase.storage
+      .from("client-uploads")
+      .createSignedUrl(u.file_path, 3600)
+      .then(({ data }) => setUrl(data?.signedUrl || ""));
+  }, [u.file_path]);
+  const isImage = u.file_type?.startsWith("image/");
+  const isVideo = u.file_type?.startsWith("video/");
+  return (
+    <div className="group relative aspect-square overflow-hidden rounded-xl glass ring-1 ring-amber-400/30">
+      {url && isImage && (
+        <img
+          src={url}
+          alt={u.file_name}
+          className="h-full w-full object-cover transition group-hover:scale-105"
+        />
+      )}
+      {url && isVideo && <video src={url} className="h-full w-full object-cover" />}
+      {!isImage && !isVideo && (
+        <div className="flex h-full w-full items-center justify-center">
+          <FileText className="h-10 w-10 text-muted-foreground" />
+        </div>
+      )}
+      <div className="absolute inset-x-0 top-0 flex items-center justify-between p-2 bg-gradient-to-b from-black/70 to-transparent">
+        <span className="text-[10px] uppercase tracking-wider text-white/80 flex items-center gap-1">
+          {isImage ? (
+            <ImageIcon className="h-3 w-3" />
+          ) : isVideo ? (
+            <Video className="h-3 w-3" />
+          ) : (
+            <FileText className="h-3 w-3" />
+          )}
+          {u.clients?.name ?? "—"}
+        </span>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-2 space-y-1.5">
+        <div className="text-[11px] text-white/90 truncate">{u.file_name}</div>
+        <div className="flex gap-1.5">
+          <button
+            onClick={onApprove}
+            className="flex-1 inline-flex items-center justify-center gap-1 rounded-full bg-emerald-500/90 text-white text-[11px] px-2 py-1 hover:bg-emerald-500"
+            title="Goedkeuren"
+          >
+            <Check className="h-3 w-3" /> Goedkeuren
+          </button>
+          <button
+            onClick={onReject}
+            className="inline-flex items-center justify-center rounded-full bg-destructive/80 text-white p-1 hover:bg-destructive"
+            title="Afwijzen"
+          >
+            <XIcon className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </div>

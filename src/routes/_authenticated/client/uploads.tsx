@@ -51,16 +51,21 @@ function ClientUploads() {
         toast.error(error.message);
         continue;
       }
-      await supabase.from("uploads").insert({
+      const { error: insertError } = await supabase.from("uploads").insert({
         client_id: clientId,
         file_path: path,
         file_name: file.name,
         file_type: file.type,
         file_size: file.size,
         uploader_id: u.user?.id ?? null,
+        status: "pending",
       });
+      if (insertError) {
+        toast.error(insertError.message);
+        await supabase.storage.from("client-uploads").remove([path]);
+      }
     }
-    toast.success("Geüpload — admin krijgt notificatie");
+    toast.success("Geüpload — wacht op goedkeuring door je Elevate-team");
     qc.invalidateQueries({ queryKey: ["uploads-client", clientId] });
   }
 
@@ -91,7 +96,8 @@ function ClientUploads() {
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Beeld & video</p>
           <h1 className="font-display text-4xl sm:text-5xl mt-2">Uploads</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Deel je materiaal met je Elevate-team — direct zichtbaar zodra het geüpload is.
+            Deel je materiaal met je Elevate-team — je upload wacht op goedkeuring voordat hij in de
+            mediabibliotheek verschijnt.
           </p>
         </div>
         {members.length > 1 && (
@@ -163,6 +169,13 @@ function Tile({ u }: { u: Tables<"uploads"> }) {
             className="h-full w-full object-cover transition group-hover:scale-105"
           />
         ))}
+      {u.status === "pending" && (
+        <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent p-2">
+          <span className="rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 text-[10px]">
+            Wacht op goedkeuring
+          </span>
+        </div>
+      )}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
         <div className="text-xs text-white/90 truncate">{u.file_name}</div>
       </div>
