@@ -208,7 +208,7 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
         <span className="font-display text-lg">Elevate</span>
       </Link>
       <div className="mt-2 mb-4 px-2 text-[10px] uppercase tracking-[0.25em] text-gold/70">
-        {role === "admin" ? "Admin" : "Client portal"}
+        {role === "admin" ? "Admin" : "Klantportaal"}
       </div>
       <nav className="flex-1 space-y-5 overflow-y-auto scrollbar-thin pr-1">
         {groups.map((g) => (

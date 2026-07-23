@@ -57,13 +57,25 @@ const SERVICES = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Intake", body: "We leren je merk kennen met een doelgerichte vragenlijst." },
-  { n: "02", title: "Strategie", body: "De AI en ons team bouwen een plan met pijlers en cadans." },
-  { n: "03", title: "Content", body: "We maken en plannen content die bij de strategie past." },
+  {
+    n: "01",
+    title: "Kennismaken",
+    body: "We duiken in je merk, je doelen en je publiek — de basis van de samenwerking.",
+  },
+  {
+    n: "02",
+    title: "Voorstel",
+    body: "Je krijgt een concreet plan en contentvoorstel om op te reageren.",
+  },
+  {
+    n: "03",
+    title: "Jij beslist",
+    body: "Niets gaat live voordat jij het hebt goedgekeurd. Altijd de regie.",
+  },
   {
     n: "04",
-    title: "Publiceren & meten",
-    body: "Jij keurt goed, wij publiceren en rapporteren de groei.",
+    title: "Groeien",
+    body: "Wij publiceren, meten en sturen bij. Jij ziet de resultaten binnenkomen.",
   },
 ];
 
@@ -72,7 +84,7 @@ const PORTAL_POINTS = [
   "Kalender met drag & drop",
   "Goedkeuren op je telefoon — of via een deelbare link",
   "Mediabibliotheek met bulk-upload en Drive-import",
-  "Rapporten met echte cijfers per merk",
+  "Overzichtelijke maandrapportage per merk en kanaal",
 ];
 
 function Landing() {
@@ -111,7 +123,7 @@ function Landing() {
           to="/dashboard"
           className="group inline-flex items-center gap-1.5 rounded-full border border-gold/30 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-gold transition-colors duration-200 hover:border-gold/50 hover:bg-gold/5"
         >
-          Portal{" "}
+          Portaal{" "}
           <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
       </header>
@@ -258,12 +270,11 @@ function Landing() {
                 <Layers className="h-3 w-3" /> Het portaal
               </div>
               <h2 className="mt-5 font-display text-4xl leading-tight md:text-5xl">
-                Eén plek waar alles samenkomt
+                Één plek waar alles samenkomt
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                 Geen losse mailtjes en verspreide bestanden meer. In het Elevate-portaal zie je de
-                planning, keur je content goed en volg je de resultaten — jij en je klanten, elk hun
-                eigen veilige weergave.
+                planning, keur je content goed en volg je de resultaten.
               </p>
               <ul className="mt-7 space-y-3">
                 {PORTAL_POINTS.map((p) => (
@@ -275,24 +286,8 @@ function Landing() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-9 flex items-center gap-2 text-xs text-muted-foreground">
-                <ShieldCheck className="h-4 w-4 text-gold" />
-                Klanten zien uitsluitend hun eigen merk en media.
-              </div>
             </div>
             <PortalPreview large />
-          </div>
-        </section>
-
-        {/* ── Quote ── */}
-        <section className="mx-auto max-w-6xl px-6 pt-28">
-          <div className="glass-strong shadow-elegant rounded-2xl p-10 text-center md:p-16">
-            <p className="font-display text-3xl italic text-gradient-gold md:text-5xl">
-              "Craft over noise."
-            </p>
-            <p className="mt-5 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-              — Elevate Design
-            </p>
           </div>
         </section>
 
@@ -304,10 +299,10 @@ function Landing() {
               style={{ background: "var(--gradient-glow)" }}
             />
             <h2 className="relative font-display text-4xl leading-tight md:text-6xl">
-              Klaar om je merk te <span className="text-gradient-gold italic">elevaten</span>?
+              Klaar voor de <span className="text-gradient-gold italic">volgende stap</span>?
             </h2>
             <p className="relative mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-              Open het portaal en ontdek hoe strak samenwerken aan je merk kan zijn.
+              Open het portaal en ervaar hoe overzichtelijk samenwerken aan je merk kan zijn.
             </p>
             <div className="relative mt-9 flex flex-wrap items-center justify-center gap-3">
               <Link

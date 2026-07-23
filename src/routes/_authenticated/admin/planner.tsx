@@ -550,8 +550,13 @@ function MonthView({
     days.push(new Date(start.getFullYear(), start.getMonth(), -offset + i + 1));
   for (let d = 1; d <= end.getDate(); d++)
     days.push(new Date(start.getFullYear(), start.getMonth(), d));
-  while (days.length % 7)
-    days.push(new Date(end.getFullYear(), end.getMonth(), end.getDate() + (days.length % 7)));
+  // Vul het raster aan met de eerste dagen van de volgende maand — opeenvolgend
+  // (bug-fix: telde eerder verkeerd op vanaf de laatste dag en sloeg 1–4 aug over).
+  let trailing = 1;
+  while (days.length % 7) {
+    days.push(new Date(end.getFullYear(), end.getMonth(), end.getDate() + trailing));
+    trailing++;
+  }
   const today = new Date();
 
   return (
