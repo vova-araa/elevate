@@ -234,8 +234,11 @@ export async function runTick() {
     try {
       // Echt publiceren via de eigen social-koppelingen (OAuth), niet alleen
       // de status omzetten.
+      // Bucket is privé: kortlevende ondertekende URL (1 uur) zodat het platform
+      // de media kan ophalen tijdens het publiceren.
       const mediaUrl = p.media_path
-        ? (sb.storage.from("client-uploads").getPublicUrl(p.media_path).data.publicUrl ?? null)
+        ? ((await sb.storage.from("client-uploads").createSignedUrl(p.media_path, 3600)).data
+            ?.signedUrl ?? null)
         : null;
       const result = await publishToPlatform(p.client_id, p.platform as SocialPlatform, {
         caption: p.caption ?? "",

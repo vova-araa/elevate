@@ -24,10 +24,15 @@ async function assertClientAccess(
   if (error || !data) throw new Error("Geen toegang tot deze klant");
 }
 
-function mediaPublicUrl(mediaPath: string | null): string | null {
+async function mediaSignedUrl(mediaPath: string | null): Promise<string | null> {
   if (!mediaPath) return null;
-  const { data } = supabaseAdmin.storage.from("client-uploads").getPublicUrl(mediaPath);
-  return data.publicUrl ?? null;
+  // Bucket is privé: geef een kortlevende ondertekende URL (1 uur) zodat het
+  // platform de media binnen dat venster kan ophalen bij het publiceren.
+  const { data, error } = await supabaseAdmin.storage
+    .from("client-uploads")
+    .createSignedUrl(mediaPath, 3600);
+  if (error) return null;
+  return data.signedUrl ?? null;
 }
 
 export const publishScheduledPost = createServerFn({ method: "POST" })
@@ -53,7 +58,7 @@ export const publishScheduledPost = createServerFn({ method: "POST" })
     try {
       const result = await publishToPlatform(post.client_id, post.platform as SocialPlatform, {
         caption: post.caption ?? "",
-        mediaUrl: mediaPublicUrl(post.media_path),
+        mediaUrl: await mediaSignedUrl(post.media_path),
         mediaType: post.media_type,
       });
       await supabaseAdmin
