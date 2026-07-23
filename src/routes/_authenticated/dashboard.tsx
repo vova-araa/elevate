@@ -9,6 +9,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function DashboardRedirect() {
   const { role } = useAuth();
   if (!role) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
-  if (role === "client") return <Navigate to="/client/roadmap" replace />;
+  if (role === "client") return <Navigate to="/client/overview" replace />;
   return <Navigate to="/admin/dashboard" replace />;
 }

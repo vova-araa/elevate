@@ -184,7 +184,7 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
     {
       label: "Overzicht",
       items: [
-        { to: "/dashboard", label: "Overzicht", icon: LayoutDashboard },
+        { to: "/client/overview", label: "Overzicht", icon: LayoutDashboard },
         { to: "/client/calendar", label: "Kalender", icon: Calendar },
       ],
     },

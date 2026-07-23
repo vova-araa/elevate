@@ -23,6 +23,7 @@ import { Route as AuthenticatedClientUploadsRouteImport } from './routes/_authen
 import { Route as AuthenticatedClientTasksRouteImport } from './routes/_authenticated/client/tasks'
 import { Route as AuthenticatedClientRoadmapRouteImport } from './routes/_authenticated/client/roadmap'
 import { Route as AuthenticatedClientReportsRouteImport } from './routes/_authenticated/client/reports'
+import { Route as AuthenticatedClientOverviewRouteImport } from './routes/_authenticated/client/overview'
 import { Route as AuthenticatedClientMessagesRouteImport } from './routes/_authenticated/client/messages'
 import { Route as AuthenticatedClientMediaRouteImport } from './routes/_authenticated/client/media'
 import { Route as AuthenticatedClientChannelsRouteImport } from './routes/_authenticated/client/channels'
@@ -137,6 +138,12 @@ const AuthenticatedClientReportsRoute =
   AuthenticatedClientReportsRouteImport.update({
     id: '/client/reports',
     path: '/client/reports',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientOverviewRoute =
+  AuthenticatedClientOverviewRouteImport.update({
+    id: '/client/overview',
+    path: '/client/overview',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedClientMessagesRoute =
@@ -422,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/client/channels': typeof AuthenticatedClientChannelsRoute
   '/client/media': typeof AuthenticatedClientMediaRoute
   '/client/messages': typeof AuthenticatedClientMessagesRoute
+  '/client/overview': typeof AuthenticatedClientOverviewRoute
   '/client/reports': typeof AuthenticatedClientReportsRoute
   '/client/roadmap': typeof AuthenticatedClientRoadmapRoute
   '/client/tasks': typeof AuthenticatedClientTasksRoute
@@ -479,6 +487,7 @@ export interface FileRoutesByTo {
   '/client/channels': typeof AuthenticatedClientChannelsRoute
   '/client/media': typeof AuthenticatedClientMediaRoute
   '/client/messages': typeof AuthenticatedClientMessagesRoute
+  '/client/overview': typeof AuthenticatedClientOverviewRoute
   '/client/reports': typeof AuthenticatedClientReportsRoute
   '/client/roadmap': typeof AuthenticatedClientRoadmapRoute
   '/client/tasks': typeof AuthenticatedClientTasksRoute
@@ -538,6 +547,7 @@ export interface FileRoutesById {
   '/_authenticated/client/channels': typeof AuthenticatedClientChannelsRoute
   '/_authenticated/client/media': typeof AuthenticatedClientMediaRoute
   '/_authenticated/client/messages': typeof AuthenticatedClientMessagesRoute
+  '/_authenticated/client/overview': typeof AuthenticatedClientOverviewRoute
   '/_authenticated/client/reports': typeof AuthenticatedClientReportsRoute
   '/_authenticated/client/roadmap': typeof AuthenticatedClientRoadmapRoute
   '/_authenticated/client/tasks': typeof AuthenticatedClientTasksRoute
@@ -597,6 +607,7 @@ export interface FileRouteTypes {
     | '/client/channels'
     | '/client/media'
     | '/client/messages'
+    | '/client/overview'
     | '/client/reports'
     | '/client/roadmap'
     | '/client/tasks'
@@ -654,6 +665,7 @@ export interface FileRouteTypes {
     | '/client/channels'
     | '/client/media'
     | '/client/messages'
+    | '/client/overview'
     | '/client/reports'
     | '/client/roadmap'
     | '/client/tasks'
@@ -712,6 +724,7 @@ export interface FileRouteTypes {
     | '/_authenticated/client/channels'
     | '/_authenticated/client/media'
     | '/_authenticated/client/messages'
+    | '/_authenticated/client/overview'
     | '/_authenticated/client/reports'
     | '/_authenticated/client/roadmap'
     | '/_authenticated/client/tasks'
@@ -840,6 +853,13 @@ declare module '@tanstack/react-router' {
       path: '/client/reports'
       fullPath: '/client/reports'
       preLoaderRoute: typeof AuthenticatedClientReportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/client/overview': {
+      id: '/_authenticated/client/overview'
+      path: '/client/overview'
+      fullPath: '/client/overview'
+      preLoaderRoute: typeof AuthenticatedClientOverviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/client/messages': {
@@ -1242,6 +1262,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClientChannelsRoute: typeof AuthenticatedClientChannelsRoute
   AuthenticatedClientMediaRoute: typeof AuthenticatedClientMediaRoute
   AuthenticatedClientMessagesRoute: typeof AuthenticatedClientMessagesRoute
+  AuthenticatedClientOverviewRoute: typeof AuthenticatedClientOverviewRoute
   AuthenticatedClientReportsRoute: typeof AuthenticatedClientReportsRoute
   AuthenticatedClientRoadmapRoute: typeof AuthenticatedClientRoadmapRoute
   AuthenticatedClientTasksRoute: typeof AuthenticatedClientTasksRoute
@@ -1255,6 +1276,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClientChannelsRoute: AuthenticatedClientChannelsRoute,
   AuthenticatedClientMediaRoute: AuthenticatedClientMediaRoute,
   AuthenticatedClientMessagesRoute: AuthenticatedClientMessagesRoute,
+  AuthenticatedClientOverviewRoute: AuthenticatedClientOverviewRoute,
   AuthenticatedClientReportsRoute: AuthenticatedClientReportsRoute,
   AuthenticatedClientRoadmapRoute: AuthenticatedClientRoadmapRoute,
   AuthenticatedClientTasksRoute: AuthenticatedClientTasksRoute,
