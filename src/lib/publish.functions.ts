@@ -50,15 +50,34 @@ export const publishScheduledPost = createServerFn({ method: "POST" })
     await assertClientAccess(supabase, userId, post.client_id);
     if (post.status === "published") return { ok: true, alreadyPublished: true as const };
 
-    await supabaseAdmin
+    // Atomair claimen: alleen publiceren als deze aanroep de post daadwerkelijk
+    // van een publiceerbare status naar "publishing" heeft gezet. Zo kan een
+    // gelijktijdige engine-tick of een tweede klik dezelfde post niet dubbel
+    // versturen (de verliezer ziet 0 rijen en stopt).
+    const { data: claimed } = await supabaseAdmin
       .from("scheduled_posts")
       .update({ status: "publishing", error_message: null })
-      .eq("id", post.id);
+      .eq("id", post.id)
+      .in("status", ["scheduled", "draft", "failed"])
+      .select("id")
+      .maybeSingle();
+    if (!claimed) throw new Error("Deze post wordt al gepubliceerd of is al verwerkt.");
+
+    // Bucket is privé: bij media een kortlevende ondertekende URL. Faalt dat
+    // terwijl er wél media is, dan is dat een echte fout (geen stille tekst-only).
+    const mediaUrl = post.media_path ? await mediaSignedUrl(post.media_path) : null;
+    if (post.media_path && !mediaUrl) {
+      await supabaseAdmin
+        .from("scheduled_posts")
+        .update({ status: "failed", error_message: "Media kon niet worden voorbereid" })
+        .eq("id", post.id);
+      throw new Error("Media kon niet worden voorbereid voor publicatie.");
+    }
 
     try {
       const result = await publishToPlatform(post.client_id, post.platform as SocialPlatform, {
         caption: post.caption ?? "",
-        mediaUrl: await mediaSignedUrl(post.media_path),
+        mediaUrl,
         mediaType: post.media_type,
       });
       await supabaseAdmin

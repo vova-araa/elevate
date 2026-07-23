@@ -240,6 +240,8 @@ export async function runTick() {
         ? ((await sb.storage.from("client-uploads").createSignedUrl(p.media_path, 3600)).data
             ?.signedUrl ?? null)
         : null;
+      // Media aanwezig maar signeren mislukt → echte fout (niet stil tekst-only).
+      if (p.media_path && !mediaUrl) throw new Error("Media kon niet worden voorbereid");
       const result = await publishToPlatform(p.client_id, p.platform as SocialPlatform, {
         caption: p.caption ?? "",
         mediaUrl,

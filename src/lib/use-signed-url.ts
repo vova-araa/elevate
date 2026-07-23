@@ -13,8 +13,11 @@ export function useSignedUrl(
   const { data } = useQuery({
     queryKey: ["signed-url", bucket, path],
     enabled: !!path,
-    // Net onder de geldigheidsduur van 1 uur zodat de URL niet verloopt in beeld.
+    // Vernieuw de URL proactief net onder de geldigheidsduur van 1 uur, zodat
+    // een langdurig geopend scherm geen verlopen link toont.
     staleTime: 55 * 60 * 1000,
+    refetchInterval: 55 * 60 * 1000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path!, 3600);
       if (error) return null;
