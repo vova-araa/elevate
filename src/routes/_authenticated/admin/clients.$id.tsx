@@ -2,6 +2,7 @@ import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSignedUrl } from "@/lib/use-signed-url";
 import { toast } from "sonner";
 import {
   Plus,
@@ -1823,9 +1824,17 @@ function UploadsView({ clientId }: { clientId: string }) {
 }
 
 function UploadTile({ u }: { u: Tables<"uploads"> }) {
-  const { data } = supabase.storage.from("client-uploads").getPublicUrl(u.file_path);
-  const url = data.publicUrl;
+  const url = useSignedUrl(u.file_path);
   const isVideo = u.file_type?.startsWith("video/");
+  if (!url) {
+    return (
+      <div className="group block aspect-square overflow-hidden rounded-xl glass relative bg-surface-elevated/40">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+          <div className="text-xs text-white/90 truncate">{u.file_name}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <a
       href={url}

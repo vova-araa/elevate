@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { useSignedUrl } from "@/lib/use-signed-url";
 import { useAuth } from "@/lib/auth-context";
 import { useClientStore } from "@/lib/stores/client-store";
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -373,119 +374,22 @@ function ApprovalsPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((p) => {
-            const Icon = PLATFORM_ICONS[p.platform];
-            const mediaUrl = p.media_path
-              ? supabase.storage.from("client-uploads").getPublicUrl(p.media_path).data.publicUrl
-              : null;
-            return (
-              <div key={p.id} className="glass-strong rounded-xl overflow-hidden flex flex-col">
-                {mediaUrl ? (
-                  p.media_type?.startsWith("video") ? (
-                    <video
-                      src={mediaUrl}
-                      controls
-                      className="w-full aspect-square object-cover bg-black"
-                    />
-                  ) : (
-                    <img src={mediaUrl} alt="" className="w-full aspect-square object-cover" />
-                  )
-                ) : (
-                  <div className="w-full aspect-square bg-accent/20 flex items-center justify-center text-muted-foreground text-xs">
-                    Geen media
-                  </div>
-                )}
-                <div className="p-4 flex-1 flex flex-col gap-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(p.id)}
-                        onChange={() => toggleSelect(p.id)}
-                        aria-label="Selecteer concept"
-                        className="h-4 w-4 shrink-0 rounded border-gold/40 accent-gold"
-                      />
-                      {Icon && (
-                        <Icon
-                          className="h-3.5 w-3.5"
-                          style={{ color: PLATFORM_COLORS[p.platform] }}
-                        />
-                      )}
-                      <span className="capitalize text-muted-foreground">{p.platform}</span>
-                    </div>
-                    <span className="rounded-full bg-gold/15 text-gold px-2 py-0.5">
-                      {clientName(p.client_id)}
-                    </span>
-                  </div>
-
-                  <p className="text-sm whitespace-pre-wrap line-clamp-4">
-                    {p.caption || (
-                      <span className="text-muted-foreground italic">Geen caption</span>
-                    )}
-                  </p>
-
-                  <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Gepland:{" "}
-                    {new Date(p.scheduled_at).toLocaleString("nl-NL", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </div>
-
-                  {feedbackFor === p.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={feedbackText}
-                        onChange={(e) => setFeedbackText(e.target.value)}
-                        rows={3}
-                        placeholder="Wat moet er anders?"
-                        className="w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => submitFeedback(p.id, p.client_id)}
-                          className="flex-1 rounded-lg bg-gold/20 text-gold px-3 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/30"
-                        >
-                          <Send className="h-3.5 w-3.5" /> Verstuur
-                        </button>
-                        <button
-                          onClick={() => {
-                            setFeedbackFor(null);
-                            setFeedbackText("");
-                          }}
-                          className="rounded-lg border border-gold/20 px-3 py-2 text-xs hover:bg-accent/40"
-                        >
-                          Annuleer
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-auto grid grid-cols-3 gap-1.5">
-                      <button
-                        onClick={() => approve(p.id, p.client_id)}
-                        className="rounded-lg bg-emerald-500/20 text-emerald-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-emerald-500/30"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Keur
-                      </button>
-                      <button
-                        onClick={() => setFeedbackFor(p.id)}
-                        className="rounded-lg bg-gold/15 text-gold px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/25"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" /> Feedback
-                      </button>
-                      <button
-                        onClick={() => reject(p.id, p.client_id)}
-                        className="rounded-lg bg-red-500/15 text-red-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-red-500/25"
-                      >
-                        <XCircle className="h-3.5 w-3.5" /> Wijs af
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {filtered.map((p) => (
+            <ApprovalCard
+              key={p.id}
+              p={p}
+              selected={selected.has(p.id)}
+              onToggleSelect={toggleSelect}
+              clientLabel={clientName(p.client_id)}
+              feedbackOpen={feedbackFor === p.id}
+              feedbackText={feedbackText}
+              setFeedbackText={setFeedbackText}
+              setFeedbackFor={setFeedbackFor}
+              onSubmitFeedback={submitFeedback}
+              onApprove={approve}
+              onReject={reject}
+            />
+          ))}
         </div>
       )}
 
@@ -528,6 +432,131 @@ function ApprovalsPage() {
           </p>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function ApprovalCard({
+  p,
+  selected,
+  onToggleSelect,
+  clientLabel,
+  feedbackOpen,
+  feedbackText,
+  setFeedbackText,
+  setFeedbackFor,
+  onSubmitFeedback,
+  onApprove,
+  onReject,
+}: {
+  p: Tables<"scheduled_posts">;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
+  clientLabel: string;
+  feedbackOpen: boolean;
+  feedbackText: string;
+  setFeedbackText: Dispatch<SetStateAction<string>>;
+  setFeedbackFor: Dispatch<SetStateAction<string | null>>;
+  onSubmitFeedback: (postId: string, clientId: string) => void;
+  onApprove: (postId: string, clientId: string) => void;
+  onReject: (postId: string, clientId: string) => void;
+}) {
+  const Icon = PLATFORM_ICONS[p.platform];
+  const mediaUrl = useSignedUrl(p.media_path);
+  return (
+    <div className="glass-strong rounded-xl overflow-hidden flex flex-col">
+      {mediaUrl ? (
+        p.media_type?.startsWith("video") ? (
+          <video src={mediaUrl} controls className="w-full aspect-square object-cover bg-black" />
+        ) : (
+          <img src={mediaUrl} alt="" className="w-full aspect-square object-cover" />
+        )
+      ) : (
+        <div className="w-full aspect-square bg-accent/20 flex items-center justify-center text-muted-foreground text-xs">
+          Geen media
+        </div>
+      )}
+      <div className="p-4 flex-1 flex flex-col gap-3">
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(p.id)}
+              aria-label="Selecteer concept"
+              className="h-4 w-4 shrink-0 rounded border-gold/40 accent-gold"
+            />
+            {Icon && (
+              <Icon className="h-3.5 w-3.5" style={{ color: PLATFORM_COLORS[p.platform] }} />
+            )}
+            <span className="capitalize text-muted-foreground">{p.platform}</span>
+          </div>
+          <span className="rounded-full bg-gold/15 text-gold px-2 py-0.5">{clientLabel}</span>
+        </div>
+
+        <p className="text-sm whitespace-pre-wrap line-clamp-4">
+          {p.caption || <span className="text-muted-foreground italic">Geen caption</span>}
+        </p>
+
+        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Gepland:{" "}
+          {new Date(p.scheduled_at).toLocaleString("nl-NL", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          })}
+        </div>
+
+        {feedbackOpen ? (
+          <div className="space-y-2">
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              rows={3}
+              placeholder="Wat moet er anders?"
+              className="w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => onSubmitFeedback(p.id, p.client_id)}
+                className="flex-1 rounded-lg bg-gold/20 text-gold px-3 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/30"
+              >
+                <Send className="h-3.5 w-3.5" /> Verstuur
+              </button>
+              <button
+                onClick={() => {
+                  setFeedbackFor(null);
+                  setFeedbackText("");
+                }}
+                className="rounded-lg border border-gold/20 px-3 py-2 text-xs hover:bg-accent/40"
+              >
+                Annuleer
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-auto grid grid-cols-3 gap-1.5">
+            <button
+              onClick={() => onApprove(p.id, p.client_id)}
+              className="rounded-lg bg-emerald-500/20 text-emerald-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-emerald-500/30"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> Keur
+            </button>
+            <button
+              onClick={() => setFeedbackFor(p.id)}
+              className="rounded-lg bg-gold/15 text-gold px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-gold/25"
+            >
+              <MessageSquare className="h-3.5 w-3.5" /> Feedback
+            </button>
+            <button
+              onClick={() => onReject(p.id, p.client_id)}
+              className="rounded-lg bg-red-500/15 text-red-300 px-2 py-2 text-xs inline-flex items-center justify-center gap-1 hover:bg-red-500/25"
+            >
+              <XCircle className="h-3.5 w-3.5" /> Wijs af
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

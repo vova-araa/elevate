@@ -3,6 +3,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { useSignedUrl } from "@/lib/use-signed-url";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
@@ -834,9 +835,7 @@ function PostRow({
 }) {
   const meta = PLATFORMS.find((x) => x.id === post.platform)!;
   const sm = STATUS_META[post.status as PostStatus];
-  const mediaUrl = post.media_path
-    ? supabase.storage.from("client-uploads").getPublicUrl(post.media_path).data.publicUrl
-    : null;
+  const mediaUrl = useSignedUrl(post.media_path);
   return (
     <div
       className="glass rounded-xl p-4 flex flex-col sm:flex-row gap-4 sm:items-start"
@@ -985,9 +984,7 @@ function ComposeModal({
   const overSoft = limit && caption.length > limit.soft;
   const overHard = limit && caption.length > limit.hard;
 
-  const mediaUrl = mediaPath
-    ? supabase.storage.from("client-uploads").getPublicUrl(mediaPath).data.publicUrl
-    : null;
+  const mediaUrl = useSignedUrl(mediaPath);
 
   // Best-time suggestions for the primary platform
   const { data: bestTimes } = useQuery({
@@ -1682,9 +1679,7 @@ function FeedPreviewPanel({
 }
 
 function FeedTile({ post, ratio, onOpen }: { post: FeedPost; ratio: string; onOpen: () => void }) {
-  const mediaUrl = post.media_path
-    ? supabase.storage.from("client-uploads").getPublicUrl(post.media_path).data.publicUrl
-    : null;
+  const mediaUrl = useSignedUrl(post.media_path);
   const sm = STATUS_META[post.status as PostStatus];
   const isVideo = post.media_type?.startsWith("video");
   const ringCls =

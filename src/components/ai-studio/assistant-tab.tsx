@@ -81,8 +81,10 @@ export function AssistantTab() {
       const path = `${activeClient.id}/${Date.now()}-${file.name}`;
       const { error } = await supabase.storage.from("client-uploads").upload(path, file);
       if (error) throw error;
-      const { data } = supabase.storage.from("client-uploads").getPublicUrl(path);
-      return { url: data.publicUrl, path, type: file.type, name: file.name };
+      const { data: signed } = await supabase.storage
+        .from("client-uploads")
+        .createSignedUrl(path, 3600);
+      return { url: signed?.signedUrl ?? "", path, type: file.type, name: file.name };
     },
     onSuccess: (m) => {
       setMedia((prev) => [...prev, m]);

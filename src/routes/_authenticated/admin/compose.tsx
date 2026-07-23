@@ -15,6 +15,7 @@ import {
   Repeat2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSignedUrl } from "@/lib/use-signed-url";
 import { useClientStore } from "@/lib/stores/client-store";
 import { publishScheduledPost } from "@/lib/publish.functions";
 import type { Platform } from "@/components/planner/planner-shared";
@@ -138,9 +139,7 @@ function ComposePage() {
     ? selectedPlatforms.filter((p) => !clientConnected.has(p))
     : [];
 
-  const mediaUrl = mediaPath
-    ? supabase.storage.from("client-uploads").getPublicUrl(mediaPath).data.publicUrl
-    : null;
+  const mediaUrl = useSignedUrl(mediaPath);
 
   const uploadMut = useMutation({
     mutationFn: async (file: File) => {
