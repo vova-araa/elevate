@@ -4,10 +4,17 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useState } from "react";
-import { Download, FileBarChart, FileDown, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, FileBarChart, FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createReportFromAnalytics } from "@/lib/report-generate.functions";
-import { generateReportPdf, type ReportRow } from "@/lib/report-pdf";
+import {
+  generateReportPdf,
+  extractPlatformBreakdown,
+  extractPostDetails,
+  reportStatusLabel,
+  type ReportRow,
+} from "@/lib/report-pdf";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/reports")({ component: ReportsPage });
@@ -15,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/admin/reports")({ componen
 function ReportsPage() {
   const { activeClient } = useClientStore();
   const [period, setPeriod] = useState("30");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const qc = useQueryClient();
   const generateFn = useServerFn(createReportFromAnalytics);
 
@@ -116,34 +124,125 @@ function ReportsPage() {
           <p className="text-sm text-muted-foreground">Nog geen rapporten gegenereerd.</p>
         ) : (
           <div className="divide-y divide-border">
-            {history!.map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{r.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {r.period_start ? new Date(r.period_start).toLocaleDateString("nl-NL") : "—"} –{" "}
-                    {r.period_end ? new Date(r.period_end).toLocaleDateString("nl-NL") : "—"}
-                    <span className="uppercase ml-2">{r.report_type}</span>
+            {history!.map((r) => {
+              const platformRows = extractPlatformBreakdown(r.metrics);
+              const postRows = extractPostDetails(r.metrics);
+              const hasDetail = platformRows.length > 0 || postRows.length > 0;
+              const expanded = expandedId === r.id;
+              return (
+                <div key={r.id} className="py-3">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{r.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {r.period_start
+                          ? new Date(r.period_start).toLocaleDateString("nl-NL")
+                          : "—"}{" "}
+                        – {r.period_end ? new Date(r.period_end).toLocaleDateString("nl-NL") : "—"}
+                        <span className="uppercase ml-2">{r.report_type}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {hasDetail && (
+                        <button
+                          onClick={() => setExpandedId(expanded ? null : r.id)}
+                          className="text-xs h-8 px-3 rounded-lg border border-border inline-flex items-center gap-1.5 hover:bg-accent/40"
+                        >
+                          {expanded ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
+                          Detail
+                        </button>
+                      )}
+                      <button
+                        onClick={() => downloadPdf(r)}
+                        className="text-xs h-8 px-3 rounded-lg bg-gold/15 text-gold inline-flex items-center gap-1.5 hover:bg-gold/25"
+                      >
+                        <FileDown className="h-3.5 w-3.5" /> Download PDF
+                      </button>
+                      {r.file_path && (
+                        <a
+                          href={r.file_path}
+                          className="text-xs h-8 px-3 rounded-lg border border-border inline-flex items-center gap-1.5 hover:bg-accent/40"
+                        >
+                          <Download className="h-3.5 w-3.5" /> Bestand
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => downloadPdf(r)}
-                    className="text-xs h-8 px-3 rounded-lg bg-gold/15 text-gold inline-flex items-center gap-1.5 hover:bg-gold/25"
-                  >
-                    <FileDown className="h-3.5 w-3.5" /> Download PDF
-                  </button>
-                  {r.file_path && (
-                    <a
-                      href={r.file_path}
-                      className="text-xs h-8 px-3 rounded-lg border border-border inline-flex items-center gap-1.5 hover:bg-accent/40"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Bestand
-                    </a>
+
+                  {expanded && hasDetail && (
+                    <div className="mt-3 space-y-3">
+                      {platformRows.length > 0 && (
+                        <div className="overflow-x-auto rounded-lg border border-border/60">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="bg-accent/20 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <th className="px-3 py-1.5 text-left font-medium">Platform</th>
+                                <th className="px-3 py-1.5 text-right font-medium">Totaal</th>
+                                <th className="px-3 py-1.5 text-right font-medium">Gepubliceerd</th>
+                                <th className="px-3 py-1.5 text-right font-medium">Mislukt</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/60">
+                              {platformRows.map((p) => (
+                                <tr key={p.platform}>
+                                  <td className="px-3 py-1.5">{p.label ?? p.platform}</td>
+                                  <td className="px-3 py-1.5 text-right">{p.total}</td>
+                                  <td className="px-3 py-1.5 text-right text-emerald-500">
+                                    {p.published}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right text-destructive">
+                                    {p.failed}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      {postRows.length > 0 && (
+                        <div className="max-h-64 overflow-y-auto rounded-lg border border-border/60 divide-y divide-border/60">
+                          {postRows.map((p, i) => (
+                            <div
+                              key={`${p.platform}-${p.scheduled_at}-${i}`}
+                              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-xs"
+                            >
+                              <span className="shrink-0 text-muted-foreground">
+                                {p.scheduled_at
+                                  ? new Date(p.scheduled_at).toLocaleDateString("nl-NL")
+                                  : "—"}
+                              </span>
+                              <span className="shrink-0 rounded-full bg-gold/10 px-2 py-0.5 text-gold">
+                                {p.label ?? p.platform}
+                              </span>
+                              <span
+                                className={cn(
+                                  "shrink-0 rounded-full px-2 py-0.5",
+                                  p.status === "published" && "bg-emerald-500/10 text-emerald-500",
+                                  p.status === "failed" && "bg-destructive/10 text-destructive",
+                                  p.status === "scheduled" && "bg-gold/10 text-gold",
+                                  p.status === "draft" && "bg-muted/30 text-muted-foreground",
+                                )}
+                              >
+                                {reportStatusLabel(p.status)}
+                              </span>
+                              {p.caption_summary && (
+                                <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                                  {p.caption_summary}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

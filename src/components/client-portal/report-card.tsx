@@ -1,6 +1,22 @@
-import { FileBarChart, Download, FileDown, Sparkles, CalendarRange } from "lucide-react";
+import { useState } from "react";
+import {
+  FileBarChart,
+  Download,
+  FileDown,
+  Sparkles,
+  CalendarRange,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { generateReportPdf, type ReportRow } from "@/lib/report-pdf";
+import {
+  generateReportPdf,
+  extractPlatformBreakdown,
+  extractPostDetails,
+  reportStatusLabel,
+  type ReportRow,
+} from "@/lib/report-pdf";
+import { cn } from "@/lib/utils";
 
 /** Vertaal veelvoorkomende metric-keys naar Nederlandse labels. */
 const METRIC_LABELS: Record<string, string> = {
@@ -56,12 +72,15 @@ function downloadReportPdf(report: Tables<"reports">) {
 }
 
 export function ReportCard({ report }: { report: Tables<"reports"> }) {
+  const [postsOpen, setPostsOpen] = useState(false);
   const metrics =
     report.metrics && typeof report.metrics === "object" && !Array.isArray(report.metrics)
       ? Object.entries(report.metrics as Record<string, unknown>).filter(
           ([, v]) => v != null && typeof v !== "object",
         )
       : [];
+  const platformRows = extractPlatformBreakdown(report.metrics);
+  const postRows = extractPostDetails(report.metrics);
 
   const period =
     report.period_start && report.period_end
@@ -135,6 +154,86 @@ export function ReportCard({ report }: { report: Tables<"reports"> }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {platformRows.length > 0 && (
+        <div className="mt-4">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+            Per platform
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-border/40">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-surface/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left font-medium">Platform</th>
+                  <th className="px-3 py-2 text-right font-medium">Totaal</th>
+                  <th className="px-3 py-2 text-right font-medium">Gepubliceerd</th>
+                  <th className="px-3 py-2 text-right font-medium">Mislukt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {platformRows.map((p) => (
+                  <tr key={p.platform}>
+                    <td className="px-3 py-2">{p.label ?? p.platform}</td>
+                    <td className="px-3 py-2 text-right">{p.total}</td>
+                    <td className="px-3 py-2 text-right text-emerald-500">{p.published}</td>
+                    <td className="px-3 py-2 text-right text-destructive">{p.failed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {postRows.length > 0 && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setPostsOpen((v) => !v)}
+            className="flex w-full items-center justify-between text-[11px] uppercase tracking-wider text-muted-foreground mb-2"
+          >
+            <span>Per post ({postRows.length})</span>
+            {postsOpen ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+          </button>
+          {postsOpen && (
+            <div className="max-h-80 overflow-y-auto rounded-lg border border-border/40 divide-y divide-border/40">
+              {postRows.map((p, i) => (
+                <div
+                  key={`${p.platform}-${p.scheduled_at}-${i}`}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-xs"
+                >
+                  <span className="shrink-0 text-muted-foreground">
+                    {p.scheduled_at ? fmtDate(p.scheduled_at) : "—"}
+                  </span>
+                  <span className="shrink-0 rounded-full bg-gold/10 px-2 py-0.5 text-gold">
+                    {p.label ?? p.platform}
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5",
+                      p.status === "published" && "bg-emerald-500/10 text-emerald-500",
+                      p.status === "failed" && "bg-destructive/10 text-destructive",
+                      p.status === "scheduled" && "bg-gold/10 text-gold",
+                      p.status === "draft" && "bg-muted/30 text-muted-foreground",
+                    )}
+                  >
+                    {reportStatusLabel(p.status)}
+                  </span>
+                  {p.caption_summary && (
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                      {p.caption_summary}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

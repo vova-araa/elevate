@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { z } from "zod";
 import { CAPTION_LIMITS, DAY_LABELS_LONG } from "@/lib/social-constants";
+import { dutchHolidays } from "@/lib/holidays";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
 import {
   ChevronLeft,
@@ -559,6 +560,17 @@ function MonthView({
   }
   const today = new Date();
 
+  // Feestdagen: jaar ervoor/erna meenemen, zodat leading/trailing dagen die in
+  // een ander jaar vallen (grid rond de jaarwisseling) ook een label krijgen.
+  const cursorYear = cursor.getFullYear();
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const y of [cursorYear - 1, cursorYear, cursorYear + 1]) {
+      for (const h of dutchHolidays(y)) map.set(h.date, h.name);
+    }
+    return map;
+  }, [cursorYear]);
+
   return (
     <div className="glass-strong rounded-2xl p-4">
       <div className="grid grid-cols-7 gap-1 text-[10px] uppercase tracking-[0.18em] text-gold/70 pb-2">
@@ -575,6 +587,7 @@ function MonthView({
           const inMonth = d.getMonth() === cursor.getMonth();
           const isToday = sameDay(d, today);
           const isSelected = sameDay(d, selected);
+          const holidayName = holidayMap.get(k);
           return (
             <div
               key={i}
@@ -609,6 +622,14 @@ function MonthView({
                 >
                   {d.getDate()}
                 </span>
+                {holidayName && (
+                  <span
+                    className="mx-1 flex-1 truncate text-center text-[9px] text-muted-foreground/60"
+                    title={holidayName}
+                  >
+                    {holidayName}
+                  </span>
+                )}
                 {items.length > 0 && (
                   <span className="text-[10px] text-gold/80">{items.length}</span>
                 )}

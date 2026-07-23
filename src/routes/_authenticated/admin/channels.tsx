@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -17,6 +17,9 @@ import {
   X,
   Plug,
   AlertTriangle,
+  Share2,
+  Copy,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,6 +32,14 @@ import {
   refreshChannel,
   getSocialSetupStatus,
 } from "@/lib/channels.functions";
+import { createChannelInvite } from "@/lib/channel-invites.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 /** Klik-voor-klik instructies per platform voor de eenmalige app-registratie. */
 const SETUP_GUIDE: Record<string, { portal: string; portalLabel: string; steps: string[] }> = {
@@ -119,6 +130,29 @@ function AdminChannels() {
   const connect = useServerFn(startSocialConnect);
   const disc = useServerFn(disconnectChannel);
   const refresh = useServerFn(refreshChannel);
+  const createInvite = useServerFn(createChannelInvite);
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+
+  async function shareChannelInvite() {
+    if (!clientId) return;
+    setInviteBusy(true);
+    setInviteCopied(false);
+    try {
+      const res = await createInvite({
+        data: { clientId, origin: window.location.origin },
+      });
+      setInviteUrl(res.url);
+      setInviteOpen(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Link maken mislukt");
+    } finally {
+      setInviteBusy(false);
+    }
+  }
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-channels", clientId],
@@ -229,14 +263,29 @@ function AdminChannels() {
 
   return (
     <div className="space-y-5 max-w-5xl">
-      <header>
-        <h1 className="font-display text-2xl inline-flex items-center gap-2">
-          <Plug className="h-6 w-6 text-gold" /> Kanalen
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Social-accounts van <b className="text-foreground">{activeClient?.name}</b>. Publiceren
-          loopt via deze koppelingen.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl inline-flex items-center gap-2">
+            <Plug className="h-6 w-6 text-gold" /> Kanalen
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Social-accounts van <b className="text-foreground">{activeClient?.name}</b>. Publiceren
+            loopt via deze koppelingen.
+          </p>
+        </div>
+        <button
+          onClick={shareChannelInvite}
+          disabled={inviteBusy}
+          title={`Deel koppel-link voor ${activeClient?.name}`}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-gold px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60"
+        >
+          {inviteBusy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Share2 className="h-3.5 w-3.5" />
+          )}
+          Deel koppel-link
+        </button>
       </header>
 
       {isLoading && (
@@ -385,6 +434,48 @@ function AdminChannels() {
         Koppelen stuurt je naar het platform om te autoriseren; daarna kom je automatisch hier
         terug.
       </p>
+
+      <Dialog
+        open={inviteOpen}
+        onOpenChange={(open) => {
+          setInviteOpen(open);
+          if (!open) setInviteCopied(false);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display text-gold">Koppel-link</DialogTitle>
+            <DialogDescription>
+              Eigenaar hoeft niet in te loggen · 30 dagen geldig
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 min-w-0 truncate rounded-lg bg-background/60 border border-gold/20 px-3 py-2.5 text-sm">
+              {inviteUrl}
+            </code>
+            <button
+              onClick={() => {
+                if (!inviteUrl) return;
+                navigator.clipboard.writeText(inviteUrl);
+                setInviteCopied(true);
+                toast.success("Link gekopieerd");
+              }}
+              className="shrink-0 min-h-11 min-w-11 rounded-lg border border-gold/20 inline-flex items-center justify-center hover:bg-gold/10"
+              title="Kopieer link"
+            >
+              {inviteCopied ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <Copy className="h-4 w-4 text-gold" />
+              )}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Stuur dit naar de eigenaar. Die koppelt zijn accounts zonder in te loggen. 30 dagen
+            geldig.
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

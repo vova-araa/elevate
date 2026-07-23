@@ -190,8 +190,8 @@ export function NotificationCenter({
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between border-b border-gold/10 px-4 py-3">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-gold/10 px-4 py-3">
         <div className="font-display text-sm">
           Meldingen
           {unreadCount > 0 && (
@@ -213,14 +213,14 @@ export function NotificationCenter({
       {notificationPermission === "default" && (
         <button
           onClick={() => requestNotificationPermission()}
-          className="flex w-full items-center gap-2 border-b border-gold/10 px-4 py-2.5 text-left text-xs text-gold transition hover:bg-gold/10"
+          className="flex w-full shrink-0 items-center gap-2 border-b border-gold/10 px-4 py-2.5 text-left text-xs text-gold transition hover:bg-gold/10"
         >
           <Bell className="h-3.5 w-3.5 shrink-0" />
           Browser-meldingen aanzetten
         </button>
       )}
 
-      <div className="max-h-96 overflow-y-auto scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
         {isLoading ? (
           <div className="space-y-3 p-4">
             {[0, 1, 2].map((i) => (

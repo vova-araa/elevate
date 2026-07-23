@@ -14,6 +14,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConnectTokenRouteImport } from './routes/connect.$token'
 import { Route as ApproveTokenRouteImport } from './routes/approve.$token'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
@@ -87,6 +88,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectTokenRoute = ConnectTokenRouteImport.update({
+  id: '/connect/$token',
+  path: '/connect/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApproveTokenRoute = ApproveTokenRouteImport.update({
@@ -382,6 +388,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
+  '/connect/$token': typeof ConnectTokenRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/api-keys': typeof AuthenticatedAdminApiKeysRoute
@@ -438,6 +445,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
+  '/connect/$token': typeof ConnectTokenRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/api-keys': typeof AuthenticatedAdminApiKeysRoute
@@ -496,6 +504,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
+  '/connect/$token': typeof ConnectTokenRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/api-keys': typeof AuthenticatedAdminApiKeysRoute
@@ -554,6 +563,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/approve/$token'
+    | '/connect/$token'
     | '/admin/ai'
     | '/admin/analytics'
     | '/admin/api-keys'
@@ -610,6 +620,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/approve/$token'
+    | '/connect/$token'
     | '/admin/ai'
     | '/admin/analytics'
     | '/admin/api-keys'
@@ -667,6 +678,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/approve/$token'
+    | '/connect/$token'
     | '/_authenticated/admin/ai'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/api-keys'
@@ -723,6 +735,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   ApproveTokenRoute: typeof ApproveTokenRoute
+  ConnectTokenRoute: typeof ConnectTokenRoute
   ApiPublicAutomationTickRoute: typeof ApiPublicAutomationTickRoute
   ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
   ApiPublicV1ClientsRoute: typeof ApiPublicV1ClientsRoute
@@ -764,6 +777,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect/$token': {
+      id: '/connect/$token'
+      path: '/connect/$token'
+      fullPath: '/connect/$token'
+      preLoaderRoute: typeof ConnectTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/approve/$token': {
@@ -1252,6 +1272,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   ApproveTokenRoute: ApproveTokenRoute,
+  ConnectTokenRoute: ConnectTokenRoute,
   ApiPublicAutomationTickRoute: ApiPublicAutomationTickRoute,
   ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
   ApiPublicV1ClientsRoute: ApiPublicV1ClientsRoute,

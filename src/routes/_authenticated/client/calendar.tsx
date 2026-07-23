@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { ApprovalQueue } from "@/components/client-portal/approval-queue";
+import { dutchHolidays } from "@/lib/holidays";
 
 export const Route = createFileRoute("/_authenticated/client/calendar")({
   component: ClientCalendar,
@@ -161,6 +162,16 @@ function ClientCalendar() {
     days.push(new Date(start.getFullYear(), start.getMonth(), d));
   while (days.length % 7 !== 0)
     days.push(new Date(end.getFullYear(), end.getMonth(), end.getDate() + (days.length % 7)));
+
+  // Feestdagen: jaar ervoor/erna meenemen voor leading/trailing dagen rond de jaarwisseling.
+  const monthYear = month.getFullYear();
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const y of [monthYear - 1, monthYear, monthYear + 1]) {
+      for (const h of dutchHolidays(y)) map.set(h.date, h.name);
+    }
+    return map;
+  }, [monthYear]);
 
   const items = useMemo(
     () => (data ?? []).filter((x) => statusFilter === "all" || x.status === statusFilter),
@@ -379,6 +390,7 @@ function ClientCalendar() {
                   });
                   const overdue =
                     !isToday && d < new Date(today.toDateString()) && counts.pending > 0;
+                  const holidayName = holidayMap.get(k);
 
                   return (
                     <button
@@ -404,7 +416,15 @@ function ClientCalendar() {
                         >
                           {d.getDate()}
                         </span>
-                        {overdue && <AlertTriangle className="h-3 w-3 text-red-400" />}
+                        {holidayName && (
+                          <span
+                            className="mx-1 flex-1 truncate text-center text-[9px] text-muted-foreground/60"
+                            title={holidayName}
+                          >
+                            {holidayName}
+                          </span>
+                        )}
+                        {overdue && <AlertTriangle className="h-3 w-3 shrink-0 text-red-400" />}
                       </div>
                       {dayItems.length > 0 && (
                         <div className="mt-1.5 space-y-1">

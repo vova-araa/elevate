@@ -79,6 +79,77 @@ function extractMetricEntries(metrics: unknown): [string, unknown][] {
   return [];
 }
 
+// ── Per-platform en per-post uitsplitsing ───────────────────────────────────
+// `metrics` komt uit een jsonb-kolom en kan van oudere rapporten zijn (zonder
+// per_platform/posts_detail) — alles hieronder is dus defensief geschreven en
+// valt terug op een lege lijst i.p.v. te crashen.
+
+export interface ReportPlatformRow {
+  platform: string;
+  label?: string;
+  total: number;
+  published: number;
+  failed: number;
+  scheduled?: number;
+  draft?: number;
+}
+
+export interface ReportPostRow {
+  platform: string;
+  label?: string;
+  scheduled_at: string;
+  published_at?: string | null;
+  status: string;
+  caption_summary?: string | null;
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v != null && typeof v === "object" && !Array.isArray(v);
+}
+
+/** Haalt `metrics.per_platform` op en valideert elk item; onbruikbare/oude data → []. */
+export function extractPlatformBreakdown(metrics: unknown): ReportPlatformRow[] {
+  if (!isRecord(metrics) || !Array.isArray(metrics.per_platform)) return [];
+  return metrics.per_platform.filter(isRecord).map((r) => ({
+    platform: typeof r.platform === "string" ? r.platform : "onbekend",
+    label: typeof r.label === "string" ? r.label : undefined,
+    total: typeof r.total === "number" ? r.total : 0,
+    published: typeof r.published === "number" ? r.published : 0,
+    failed: typeof r.failed === "number" ? r.failed : 0,
+    scheduled: typeof r.scheduled === "number" ? r.scheduled : undefined,
+    draft: typeof r.draft === "number" ? r.draft : undefined,
+  }));
+}
+
+/** Haalt `metrics.posts_detail` op en valideert elk item; onbruikbare/oude data → []. */
+export function extractPostDetails(metrics: unknown): ReportPostRow[] {
+  if (!isRecord(metrics) || !Array.isArray(metrics.posts_detail)) return [];
+  return metrics.posts_detail
+    .filter(isRecord)
+    .map((r) => ({
+      platform: typeof r.platform === "string" ? r.platform : "onbekend",
+      label: typeof r.label === "string" ? r.label : undefined,
+      scheduled_at: typeof r.scheduled_at === "string" ? r.scheduled_at : "",
+      published_at: typeof r.published_at === "string" ? r.published_at : null,
+      status: typeof r.status === "string" ? r.status : "onbekend",
+      caption_summary: typeof r.caption_summary === "string" ? r.caption_summary : null,
+    }))
+    .filter((r) => r.scheduled_at !== "");
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  published: "Gepubliceerd",
+  failed: "Mislukt",
+  scheduled: "Gepland",
+  draft: "Concept",
+  publishing: "Wordt gepubliceerd",
+};
+
+/** Nederlands label voor een scheduled_posts-status (bv. "published" → "Gepubliceerd"). */
+export function reportStatusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}
+
 function hexToRgb(hex?: string): [number, number, number] {
   if (!hex) return DEFAULT_BRAND_RGB;
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -208,6 +279,95 @@ function drawMetricsTable(
   return y + 5;
 }
 
+/** Tabel met per-platform posttellingen (totaal / gepubliceerd / mislukt). */
+function drawPlatformTable(
+  doc: jsPDF,
+  rows: ReportPlatformRow[],
+  y: number,
+  marginX: number,
+  contentW: number,
+): number {
+  if (rows.length === 0) return y;
+  y = ensureSpace(doc, y, 16);
+
+  doc.setFont("helvetica", "bold").setFontSize(10);
+  doc.text("Per platform", marginX, y);
+  y += 6;
+
+  const colPlatform = marginX;
+  const colTotal = marginX + contentW * 0.4;
+  const colPublished = marginX + contentW * 0.6;
+  const colFailed = marginX + contentW * 0.8;
+
+  doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(120);
+  doc.text("Platform", colPlatform, y);
+  doc.text("Totaal", colTotal, y);
+  doc.text("Gepubliceerd", colPublished, y);
+  doc.text("Mislukt", colFailed, y);
+  y += 4;
+  doc.setDrawColor(225).setLineWidth(0.2);
+  doc.line(marginX, y - 2.5, marginX + contentW, y - 2.5);
+  doc.setTextColor(0);
+
+  for (const r of rows) {
+    y = ensureSpace(doc, y, 8);
+    doc.setFillColor(248, 244, 234);
+    doc.rect(marginX, y - 4, contentW, 6.5, "F");
+    doc.setFont("helvetica", "bold").setFontSize(8.5).setTextColor(25);
+    doc.text(r.label ?? r.platform, colPlatform + 1.5, y);
+    doc.setFont("helvetica", "normal").setFontSize(8.5);
+    doc.text(String(r.total), colTotal, y);
+    doc.text(String(r.published), colPublished, y);
+    doc.text(String(r.failed), colFailed, y);
+    doc.setTextColor(0);
+    y += 6.5;
+  }
+  return y + 5;
+}
+
+const MAX_PDF_POST_ROWS = 30;
+
+/** Compacte lijst met één regel per post: datum, platform, status, caption-samenvatting. */
+function drawPostsList(
+  doc: jsPDF,
+  rows: ReportPostRow[],
+  y: number,
+  marginX: number,
+  contentW: number,
+): number {
+  if (rows.length === 0) return y;
+  y = ensureSpace(doc, y, 16);
+
+  doc.setFont("helvetica", "bold").setFontSize(10);
+  doc.text(`Per post (${rows.length})`, marginX, y);
+  y += 5.5;
+
+  const shown = rows.slice(0, MAX_PDF_POST_ROWS);
+  for (const r of shown) {
+    y = ensureSpace(doc, y, 7);
+    const dateLabel = r.scheduled_at ? fmt(r.scheduled_at) : "—";
+    const line = `${dateLabel}  •  ${r.label ?? r.platform}  •  ${reportStatusLabel(r.status)}${
+      r.caption_summary ? `  —  ${r.caption_summary}` : ""
+    }`;
+    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(60);
+    y = addWrapped(doc, line, marginX, y, contentW, 4);
+    doc.setTextColor(0);
+    y += 0.5;
+  }
+  if (rows.length > MAX_PDF_POST_ROWS) {
+    y = ensureSpace(doc, y, 6);
+    doc.setFont("helvetica", "italic").setFontSize(7.5).setTextColor(140);
+    doc.text(
+      `… en nog ${rows.length - MAX_PDF_POST_ROWS} post(s), zie het klantportaal.`,
+      marginX,
+      y,
+    );
+    doc.setTextColor(0);
+    y += 5;
+  }
+  return y + 4;
+}
+
 const BAR_METRIC_KEYS = [
   "reach",
   "impressions",
@@ -316,6 +476,16 @@ function drawReport(
   const metricsEntries = extractMetricEntries(r.metrics);
   if (metricsEntries.length > 0) {
     y = drawMetricsTable(doc, metricsEntries, y, marginX, contentW);
+  }
+
+  const platformRows = extractPlatformBreakdown(r.metrics);
+  if (platformRows.length > 0) {
+    y = drawPlatformTable(doc, platformRows, y, marginX, contentW);
+  }
+
+  const postRows = extractPostDetails(r.metrics);
+  if (postRows.length > 0) {
+    y = drawPostsList(doc, postRows, y, marginX, contentW);
   }
 
   doc.setDrawColor(220);
