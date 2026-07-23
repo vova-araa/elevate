@@ -22,6 +22,7 @@ function ClientReports() {
         .from("client_members")
         .select("client_id, clients(name)")
         .eq("user_id", user!.id)
+        .order("client_id")
         .limit(1)
         .maybeSingle();
       return data;

@@ -109,6 +109,7 @@ function ClientCalendar() {
         .from("client_members")
         .select("client_id, clients(name)")
         .eq("user_id", user!.id)
+        .order("client_id")
         .limit(1)
         .maybeSingle();
       return data;
@@ -160,8 +161,13 @@ function ClientCalendar() {
     days.push(new Date(start.getFullYear(), start.getMonth(), -offset + i + 1));
   for (let d = 1; d <= end.getDate(); d++)
     days.push(new Date(start.getFullYear(), start.getMonth(), d));
-  while (days.length % 7 !== 0)
-    days.push(new Date(end.getFullYear(), end.getMonth(), end.getDate() + (days.length % 7)));
+  // Trailing-dagen met een oplopende teller: `days.length % 7` sloeg de eerste
+  // dagen van de volgende maand over (bv. 1–4 aug) en liet gaten vallen.
+  let trailing = 1;
+  while (days.length % 7 !== 0) {
+    days.push(new Date(end.getFullYear(), end.getMonth(), end.getDate() + trailing));
+    trailing++;
+  }
 
   // Feestdagen: jaar ervoor/erna meenemen voor leading/trailing dagen rond de jaarwisseling.
   const monthYear = month.getFullYear();

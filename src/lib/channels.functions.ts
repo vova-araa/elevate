@@ -115,7 +115,11 @@ export const listClientChannels = createServerFn({ method: "POST" })
       .eq("id", clientId)
       .maybeSingle();
 
-    const { data: channels } = await supabase
+    // Toegang is hierboven al geverifieerd via assertClientAccess. De
+    // select-policy op social_connections is bewust admin-only (tokens blijven
+    // verborgen), dus lezen we de niet-gevoelige kolommen via de service-role
+    // client — anders krijgt een klant altijd een lege lijst terug.
+    const { data: channels } = await supabaseAdmin
       .from("social_connections")
       .select("platform, account_username, follower_count, status, connected_at, token_expires_at")
       .eq("client_id", clientId);

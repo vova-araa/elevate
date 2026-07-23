@@ -37,6 +37,7 @@ import {
   Zap,
   Loader2,
   Image as ImageIcon,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
@@ -198,6 +199,10 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
         { to: "/client/messages", label: "Berichten", icon: MessageSquare },
       ],
     },
+    {
+      label: "Koppelingen",
+      items: [{ to: "/client/channels", label: "Kanalen", icon: Share2 }],
+    },
   ];
   const groups = role === "admin" ? adminGroups : clientGroups;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -297,7 +302,11 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   return (
     <header className="flex items-center justify-between border-b border-gold/10 bg-background/40 px-4 sm:px-6 py-3 sm:py-4 backdrop-blur gap-2">
       <div className="flex items-center gap-2 min-w-0">
-        <button onClick={onMenu} className="md:hidden rounded-full p-2 hover:bg-accent/40">
+        <button
+          onClick={onMenu}
+          aria-label="Menu openen"
+          className="md:hidden rounded-full p-2 hover:bg-accent/40"
+        >
           <Menu className="h-5 w-5" />
         </button>
         {!isHome && (
@@ -326,6 +335,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
               setOpen(!open);
               if (!open) markAllRead();
             }}
+            aria-label="Meldingen"
             className="relative rounded-full p-2 hover:bg-accent/40"
           >
             <Bell className="h-5 w-5 text-gold" />
@@ -343,19 +353,28 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
               {items.length === 0 && (
                 <div className="p-4 text-center text-sm text-muted-foreground">Niets nieuws</div>
               )}
-              {items.map((n) => (
-                <a
-                  key={n.id}
-                  href={n.link || "#"}
-                  className="block rounded-lg p-3 hover:bg-accent/40"
-                >
-                  <div className="text-sm font-medium">{n.title}</div>
-                  {n.body && <div className="text-xs text-muted-foreground mt-0.5">{n.body}</div>}
-                  <div className="text-[10px] text-muted-foreground mt-1">
-                    {new Date(n.created_at).toLocaleString("nl-NL")}
+              {items.map((n) => {
+                const inner = (
+                  <>
+                    <div className="text-sm font-medium">{n.title}</div>
+                    {n.body && (
+                      <div className="text-xs text-muted-foreground mt-0.5">{n.body}</div>
+                    )}
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      {new Date(n.created_at).toLocaleString("nl-NL")}
+                    </div>
+                  </>
+                );
+                return n.link ? (
+                  <a key={n.id} href={n.link} className="block rounded-lg p-3 hover:bg-accent/40">
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={n.id} className="block rounded-lg p-3">
+                    {inner}
                   </div>
-                </a>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -2,6 +2,8 @@
 // evaluates rules, fires outgoing webhooks.
 import { createClient } from "@supabase/supabase-js";
 import type { Enums, Tables } from "@/integrations/supabase/types";
+import { publishToPlatform } from "@/lib/social-publish.server";
+import type { SocialPlatform } from "@/lib/social-oauth.server";
 
 type WebhookEndpoint = Tables<"webhook_endpoints">;
 type AutomationRule = Tables<"automation_rules">;
@@ -217,15 +219,49 @@ export async function runTick() {
     .limit(50);
 
   for (const p of due ?? []) {
-    await sb
+    // Atomair claimen: alleen doorgaan als deze tick de post daadwerkelijk van
+    // "scheduled" naar "publishing" heeft gezet. Zo kan een tweede tick (of een
+    // gelijktijdige handmatige publicatie) dezelfde post niet dubbel versturen.
+    const { data: claimed } = await sb
       .from("scheduled_posts")
-      .update({
-        status: "published",
-        published_at: now.toISOString(),
-      })
-      .eq("id", p.id);
-    summary.published++;
-    await dispatchEvent("post.published", { post: p }, p.client_id);
+      .update({ status: "publishing", error_message: null })
+      .eq("id", p.id)
+      .eq("status", "scheduled")
+      .select("id")
+      .maybeSingle();
+    if (!claimed) continue;
+
+    try {
+      // Echt publiceren via de eigen social-koppelingen (OAuth), niet alleen
+      // de status omzetten.
+      const mediaUrl = p.media_path
+        ? (sb.storage.from("client-uploads").getPublicUrl(p.media_path).data.publicUrl ?? null)
+        : null;
+      const result = await publishToPlatform(p.client_id, p.platform as SocialPlatform, {
+        caption: p.caption ?? "",
+        mediaUrl,
+        mediaType: p.media_type,
+      });
+      await sb
+        .from("scheduled_posts")
+        .update({
+          status: "published",
+          published_at: new Date().toISOString(),
+          platform_post_id: result.externalId,
+          error_message: null,
+        })
+        .eq("id", p.id);
+      summary.published++;
+      await dispatchEvent("post.published", { post: p }, p.client_id);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Publiceren mislukt";
+      await sb
+        .from("scheduled_posts")
+        .update({ status: "failed", error_message: message })
+        .eq("id", p.id);
+      summary.errors++;
+      await dispatchEvent("post.failed", { post: p, error: message }, p.client_id);
+    }
   }
 
   // 2) Schedule-triggered rules
