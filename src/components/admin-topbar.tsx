@@ -13,6 +13,7 @@ const TITLES: Record<string, string> = {
   "/admin/compose": "Nieuwe post",
   "/admin/queue": "Concepten",
   "/admin/media": "Media",
+  "/admin/editor": "Beeld-editor",
   "/admin/bulk": "Bulk import",
   "/admin/ai": "AI Studio",
   "/admin/strategy": "Strategie",

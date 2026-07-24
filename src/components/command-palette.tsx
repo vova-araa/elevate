@@ -6,6 +6,7 @@ import {
   CalendarDays,
   FileText,
   Image as ImageIcon,
+  Crop,
   Sparkles,
   Clock,
   TrendingUp,
@@ -58,6 +59,12 @@ const NAV_ITEMS = [
   },
   { to: "/admin/queue", label: "Concepten", icon: FileText, keywords: "drafts wachtrij" },
   { to: "/admin/media", label: "Media", icon: ImageIcon, keywords: "bibliotheek fotos videos" },
+  {
+    to: "/admin/editor",
+    label: "Beeld-editor",
+    icon: Crop,
+    keywords: "editor bijsnijden crop afbeelding foto tekstlagen bewerken",
+  },
   { to: "/admin/bulk", label: "Bulk import", icon: Upload, keywords: "csv import massa inplannen" },
   {
     to: "/admin/ai",

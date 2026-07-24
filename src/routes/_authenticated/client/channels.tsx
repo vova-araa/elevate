@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { differenceInCalendarDays, formatDistanceToNow } from "date-fns";
+import { nl } from "date-fns/locale";
 import {
   Instagram,
   Linkedin,
@@ -38,6 +40,26 @@ export const Route = createFileRoute("/_authenticated/client/channels")({
 });
 
 type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
+
+/**
+ * Waarschuwing als een token (bijna) verlopen is. Alleen tonen wanneer er een
+ * token_expires_at bekend is die binnen 14 dagen valt of al verstreken is;
+ * platforms zonder verlooptijd leveren null op en tonen dus niets.
+ */
+function tokenExpiryWarning(
+  tokenExpiresAt: string | null | undefined,
+): { expired: boolean; message: string } | null {
+  if (!tokenExpiresAt) return null;
+  const expires = new Date(tokenExpiresAt);
+  if (Number.isNaN(expires.getTime())) return null;
+  const days = differenceInCalendarDays(expires, new Date());
+  if (days < 0) return { expired: true, message: "Koppeling verlopen — opnieuw koppelen" };
+  if (days <= 14) {
+    const rel = formatDistanceToNow(expires, { locale: nl, addSuffix: true });
+    return { expired: false, message: `Koppeling verloopt ${rel} — opnieuw koppelen` };
+  }
+  return null;
+}
 
 // tint = alleen de kaart-gradient (from-…/to-…). De platformkleur zit
 // uitsluitend op de icoon-box (iconTint); labels erven text-foreground,
@@ -187,6 +209,7 @@ function ChannelsPage() {
           const ch = channelsByPlatform.get(id);
           const connectedActive = !!ch && ch.status === "active";
           const expired = !!ch && ch.status === "expired";
+          const warn = tokenExpiryWarning(ch?.token_expires_at);
           // Alleen tonen als "Koppelen" wanneer het platform in de omgeving is
           // ingesteld. Zonder setup-status (nog aan het laden) niet blokkeren.
           const available = !setup || !!setup.platforms[id]?.configured;
@@ -227,6 +250,13 @@ function ChannelsPage() {
                   )}
                 </div>
               </div>
+
+              {warn && !expired && (
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  {warn.message}
+                </div>
+              )}
 
               <div className="mt-4 flex items-center gap-2">
                 {connectedActive ? (

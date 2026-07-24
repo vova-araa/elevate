@@ -126,16 +126,24 @@ async function publishInstagram(clientId: string, input: PublishInput): Promise<
 
   // Video's hebben verwerkingstijd nodig; kort pollen op status.
   if (isVideo(input)) {
+    let finished = false;
     for (let i = 0; i < 10; i++) {
       const status = (await (
         await fetch(
           `${GRAPH}/${creationId}?fields=status_code&access_token=${encodeURIComponent(pageToken)}`,
         )
       ).json()) as { status_code?: string };
-      if (status.status_code === "FINISHED") break;
+      if (status.status_code === "FINISHED") {
+        finished = true;
+        break;
+      }
       if (status.status_code === "ERROR") throw new Error("Instagram kon de video niet verwerken");
       await new Promise((r) => setTimeout(r, 3000));
     }
+    if (!finished)
+      throw new Error(
+        "Instagram-video wordt nog verwerkt (duurt te lang). Probeer over enkele minuten opnieuw te publiceren.",
+      );
   }
 
   const published = await graphPost(`${igId}/media_publish`, {

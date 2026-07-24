@@ -14,8 +14,6 @@ import {
   Bell,
   LogOut,
   LayoutDashboard,
-  Users,
-  Briefcase,
   Compass,
   Calendar,
   Upload,
@@ -24,17 +22,9 @@ import {
   Menu,
   X,
   Home,
-  CalendarDays,
-  Sparkles,
   BarChart3,
-  CheckSquare,
-  Settings as SettingsIcon,
   Sun,
   Moon,
-  Layers,
-  Trash2,
-  Search,
-  Zap,
   Loader2,
   Image as ImageIcon,
   Share2,
@@ -82,8 +72,6 @@ function AuthLayout() {
     );
   }
 
-  const effectiveRole: "admin" | "client" = role;
-
   const isAdminRoute = pathname.startsWith("/admin");
 
   if (isAdminRoute) {
@@ -93,7 +81,6 @@ function AuthLayout() {
   return (
     <div className="flex min-h-screen bg-luxe">
       <Sidebar
-        role={effectiveRole}
         onLogout={async () => {
           await signOut();
           navigate({ to: "/auth" });
@@ -115,7 +102,6 @@ function AuthLayout() {
               <X className="h-5 w-5" />
             </button>
             <SidebarContent
-              role={effectiveRole}
               onLogout={async () => {
                 await signOut();
                 navigate({ to: "/auth" });
@@ -135,52 +121,18 @@ function AuthLayout() {
   );
 }
 
-function Sidebar({ role, onLogout }: { role: "admin" | "client"; onLogout: () => void }) {
+function Sidebar({ onLogout }: { onLogout: () => void }) {
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-gold/10 bg-sidebar/60 backdrop-blur p-5">
-      <SidebarContent role={role} onLogout={onLogout} />
+      <SidebarContent onLogout={onLogout} />
     </aside>
   );
 }
 
-function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout: () => void }) {
-  const adminGroups = [
-    {
-      label: "Overzicht",
-      items: [
-        { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-      ],
-    },
-    {
-      label: "Content",
-      items: [
-        { to: "/admin/planner", label: "Planner", icon: CalendarDays },
-        { to: "/admin/queue", label: "Queue & bulk", icon: Layers },
-        { to: "/admin/create", label: "AI Create", icon: Sparkles },
-        { to: "/admin/media", label: "Media bibliotheek", icon: ImageIcon },
-        { to: "/admin/approvals", label: "Goedkeuringen", icon: CheckSquare },
-      ],
-    },
-    {
-      label: "Werk",
-      items: [
-        { to: "/admin/clients", label: "Klanten", icon: Briefcase },
-        { to: "/admin/tasks", label: "Taken", icon: ListChecks },
-        { to: "/admin/messages", label: "Berichten", icon: MessageSquare },
-      ],
-    },
-    {
-      label: "Systeem",
-      items: [
-        { to: "/admin/automations", label: "Automatisering", icon: Zap },
-        { to: "/admin/search", label: "Zoeken", icon: Search },
-        { to: "/admin/trash", label: "Prullenbak", icon: Trash2 },
-        { to: "/admin/settings", label: "Instellingen", icon: SettingsIcon },
-      ],
-    },
-  ];
-  const clientGroups = [
+// Deze layout wordt uitsluitend voor klanten gerenderd; admins draaien via
+// admin/route.tsx → AdminSidebar en short-circuiten hierboven naar <Outlet/>.
+function SidebarContent({ onLogout }: { onLogout: () => void }) {
+  const groups = [
     {
       label: "Overzicht",
       items: [
@@ -204,7 +156,6 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
       items: [{ to: "/client/channels", label: "Kanalen", icon: Share2 }],
     },
   ];
-  const groups = role === "admin" ? adminGroups : clientGroups;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -214,7 +165,7 @@ function SidebarContent({ role, onLogout }: { role: "admin" | "client"; onLogout
         <span className="font-display text-lg">Elevate Design</span>
       </Link>
       <div className="mt-2 mb-4 px-2 text-[10px] uppercase tracking-[0.25em] text-gold/70">
-        {role === "admin" ? "Admin" : "Klantportaal"}
+        Klantportaal
       </div>
       <nav className="flex-1 space-y-5 overflow-y-auto scrollbar-thin pr-1">
         {groups.map((g) => (

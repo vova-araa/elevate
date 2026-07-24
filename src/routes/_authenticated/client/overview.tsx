@@ -2,8 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import {
   Users,
   Share2,
@@ -20,6 +29,7 @@ import {
   Send,
   FileBarChart,
   Link2,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +85,25 @@ function ClientOverview() {
     queryKey: ["overview-channels", clientId],
     enabled: !!clientId,
     queryFn: () => listChannels({ data: {} }),
+  });
+
+  // Volgersgroei: echte metingen uit social_metrics_snapshots (klant mag zijn
+  // eigen client lezen via RLS — user_has_client_access). Laatste ~90 dagen,
+  // per dag de som van de laatste meting per platform.
+  const ninetyDaysAgoIso = useMemo(() => subDays(new Date(), 90).toISOString(), []);
+
+  const { data: followerGrowth, isLoading: loadingGrowth } = useQuery({
+    queryKey: ["overview-follower-growth", clientId],
+    enabled: !!clientId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("social_metrics_snapshots")
+        .select("platform, followers, captured_at")
+        .eq("client_id", clientId!)
+        .gte("captured_at", ninetyDaysAgoIso)
+        .order("captured_at", { ascending: true });
+      return aggregateFollowerGrowth(data ?? []);
+    },
   });
 
   // Eerstvolgende geplande posts (+ totaal-count)
@@ -258,6 +287,9 @@ function ClientOverview() {
         />
       </div>
 
+      {/* Volgersgroei — echte metingen uit snapshots */}
+      <FollowerGrowthCard series={followerGrowth ?? []} loading={loadingGrowth} />
+
       {/* Twee kolommen: eerstvolgende posts + stappenplan */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Eerstvolgende posts */}
@@ -434,6 +466,115 @@ function ClientOverview() {
           />
         )}
       </div>
+    </div>
+  );
+}
+
+type FollowerGrowthPoint = { date: string; total: number };
+
+/**
+ * Zet ruwe snapshots om naar een dagreeks: per dag de laatste meting per
+ * platform, gesommeerd over platforms. Rijen komen oplopend op captured_at
+ * binnen, dus de laatste set() per (dag, platform) is de meest recente meting.
+ */
+function aggregateFollowerGrowth(
+  rows: { platform: string; followers: number | null; captured_at: string }[],
+): FollowerGrowthPoint[] {
+  const perDay = new Map<string, Map<string, number>>();
+  for (const row of rows) {
+    if (typeof row.followers !== "number") continue;
+    const dayKey = format(new Date(row.captured_at), "yyyy-MM-dd");
+    let platforms = perDay.get(dayKey);
+    if (!platforms) {
+      platforms = new Map<string, number>();
+      perDay.set(dayKey, platforms);
+    }
+    platforms.set(row.platform, row.followers);
+  }
+  return Array.from(perDay.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, platforms]) => ({
+      date: format(new Date(day), "d MMM", { locale: nl }),
+      total: Array.from(platforms.values()).reduce((a, b) => a + b, 0),
+    }));
+}
+
+/** Volgersgroei-grafiek op basis van echte metingen (geen verzonnen cijfers). */
+function FollowerGrowthCard({
+  series,
+  loading,
+}: {
+  series: FollowerGrowthPoint[];
+  loading: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-gold/10 bg-card p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-gold" />
+        <h2 className="font-display text-xl">Volgersgroei</h2>
+      </div>
+
+      {loading ? (
+        <Skeleton className="mt-4 h-56 w-full rounded-lg" />
+      ) : series.length < 2 ? (
+        <EmptyState
+          icon={<TrendingUp className="h-5 w-5" />}
+          title="Nog niet genoeg data"
+          description="Volgersgroei verschijnt zodra we langer meten."
+          className="mt-4 py-8"
+        />
+      ) : (
+        <div className="mt-4 h-56">
+          <ResponsiveContainer>
+            <AreaChart data={series} margin={{ top: 6, right: 8, left: -8, bottom: 0 }}>
+              <defs>
+                <linearGradient id="follower-growth-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.32} />
+                  <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                interval={Math.max(0, Math.ceil(series.length / 8) - 1)}
+              />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                allowDecimals={false}
+                tickLine={false}
+                axisLine={false}
+                width={48}
+                tickFormatter={(value) => Number(value).toLocaleString("nl-NL")}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  color: "var(--foreground)",
+                }}
+                labelStyle={{ color: "var(--foreground)" }}
+                formatter={(value) => [Number(value).toLocaleString("nl-NL"), "Volgers"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="total"
+                stroke="var(--gold)"
+                strokeWidth={2.5}
+                fill="url(#follower-growth-fill)"
+                dot={false}
+                activeDot={{ r: 4, fill: "var(--gold)", stroke: "var(--card)", strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
