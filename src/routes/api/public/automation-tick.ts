@@ -1,5 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqual } from "node:crypto";
 import { runTick } from "@/lib/automation-engine.server";
+
+/** Constante-tijd vergelijking zodat de secret niet byte-voor-byte te raden is. */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 function authorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -8,7 +17,7 @@ function authorized(request: Request): boolean {
   const url = new URL(request.url);
   const query = url.searchParams.get("secret") ?? "";
   const bearer = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  return header === secret || query === secret || bearer === secret;
+  return safeEqual(header, secret) || safeEqual(query, secret) || safeEqual(bearer, secret);
 }
 
 export const Route = createFileRoute("/api/public/automation-tick")({
