@@ -56,7 +56,7 @@ export const publishScheduledPost = createServerFn({ method: "POST" })
     // versturen (de verliezer ziet 0 rijen en stopt).
     const { data: claimed } = await supabaseAdmin
       .from("scheduled_posts")
-      .update({ status: "publishing", error_message: null })
+      .update({ status: "publishing", error_message: null, updated_at: new Date().toISOString() })
       .eq("id", post.id)
       .in("status", ["scheduled", "draft", "failed"])
       .select("id")

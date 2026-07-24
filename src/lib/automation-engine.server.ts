@@ -209,6 +209,19 @@ export async function runTick() {
   const now = new Date();
   const summary = { published: 0, rules_run: 0, errors: 0 };
 
+  // 0) Verweesde posts herstellen: als een vorige tick crashte tussen "claimen"
+  // (→ publishing) en de eind-update, blijft een post op "publishing" hangen.
+  // Zet posts die langer dan 15 min op "publishing" staan terug op "scheduled",
+  // zodat de lus hieronder ze opnieuw oppakt. 15 min ligt ruim boven een normale
+  // publicatie (seconden), dus een lopende publicatie wordt nooit geraakt.
+  const staleCutoff = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+  await sb
+    .from("scheduled_posts")
+    .update({ status: "scheduled" })
+    .eq("status", "publishing")
+    .is("deleted_at", null)
+    .lt("updated_at", staleCutoff);
+
   // 1) Publish scheduled posts whose time has come
   const { data: due } = await sb
     .from("scheduled_posts")
@@ -224,7 +237,7 @@ export async function runTick() {
     // gelijktijdige handmatige publicatie) dezelfde post niet dubbel versturen.
     const { data: claimed } = await sb
       .from("scheduled_posts")
-      .update({ status: "publishing", error_message: null })
+      .update({ status: "publishing", error_message: null, updated_at: now.toISOString() })
       .eq("id", p.id)
       .eq("status", "scheduled")
       .select("id")
