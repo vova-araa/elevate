@@ -83,7 +83,7 @@ const NAV_ITEMS = [
     icon: Bot,
     keywords: "ai chat assistent posts inplannen taken vragen",
   },
-  { to: "/admin/besttime", label: "Best time", icon: Clock, keywords: "beste tijd posten" },
+  { to: "/admin/besttime", label: "Beste tijd", icon: Clock, keywords: "beste tijd posten" },
   {
     to: "/admin/reach",
     label: "Bereik & groei",

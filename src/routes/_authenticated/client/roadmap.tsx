@@ -97,13 +97,11 @@ export function ClientRoadmap() {
 
   if (!membership) {
     return (
-      <div className="glass rounded-2xl p-10 text-center">
-        <Compass className="h-8 w-8 text-gold mx-auto mb-3" />
-        <h2 className="font-display text-2xl">Geen actieve klantkoppeling</h2>
-        <p className="text-sm text-muted-foreground mt-2">
-          Zodra je gekoppeld bent aan een bedrijf verschijnt hier je stappenplan.
-        </p>
-      </div>
+      <EmptyState
+        icon={<Compass className="h-5 w-5" />}
+        title="Geen actieve klantkoppeling"
+        description="Zodra je gekoppeld bent aan een bedrijf verschijnt hier je stappenplan."
+      />
     );
   }
 
@@ -111,7 +109,7 @@ export function ClientRoadmap() {
     <div className="space-y-10">
       <div>
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Jouw traject</p>
-        <h1 className="font-display text-5xl mt-2">Stappenplan</h1>
+        <h1 className="font-display text-4xl sm:text-5xl mt-2">Stappenplan</h1>
       </div>
 
       {data?.length === 0 && (

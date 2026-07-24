@@ -140,13 +140,11 @@ function ClientMedia() {
 
   if (!membership) {
     return (
-      <div className="glass rounded-2xl p-10 text-center">
-        <ImageIcon className="h-8 w-8 text-gold mx-auto mb-3" />
-        <h2 className="font-display text-2xl">Geen actieve klantkoppeling</h2>
-        <p className="text-sm text-muted-foreground mt-2">
-          Zodra je gekoppeld bent aan een bedrijf verschijnt hier je mediabibliotheek.
-        </p>
-      </div>
+      <EmptyState
+        icon={<ImageIcon className="h-5 w-5" />}
+        title="Geen actieve klantkoppeling"
+        description="Zodra je gekoppeld bent aan een bedrijf verschijnt hier je mediabibliotheek."
+      />
     );
   }
 

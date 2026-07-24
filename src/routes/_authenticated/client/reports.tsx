@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { ReportCard } from "@/components/client-portal/report-card";
+import { EmptyState } from "@/components/empty-state";
 import { FileBarChart, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -65,13 +66,11 @@ function ClientReports() {
 
   if (!membership) {
     return (
-      <div className="glass rounded-2xl p-10 text-center">
-        <FileBarChart className="h-8 w-8 text-gold mx-auto mb-3" />
-        <h2 className="font-display text-2xl">Geen actieve klantkoppeling</h2>
-        <p className="text-sm text-muted-foreground mt-2">
-          Zodra je gekoppeld bent aan een bedrijf verschijnen hier je maandrapporten.
-        </p>
-      </div>
+      <EmptyState
+        icon={<FileBarChart className="h-5 w-5" />}
+        title="Geen actieve klantkoppeling"
+        description="Zodra je gekoppeld bent aan een bedrijf verschijnen hier je maandrapporten."
+      />
     );
   }
 

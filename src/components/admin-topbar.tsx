@@ -18,7 +18,7 @@ const TITLES: Record<string, string> = {
   "/admin/strategy": "Strategie",
   "/admin/campaigns": "Campagnes",
   "/admin/assistant": "AI Assistent",
-  "/admin/besttime": "Best time",
+  "/admin/besttime": "Beste tijd",
   "/admin/reach": "Bereik & groei",
   "/admin/engagement": "Engagement",
   "/admin/reports": "Rapporten",
@@ -98,7 +98,7 @@ export function AdminTopbar() {
             >
               <Bell className="h-4 w-4 text-gold" />
               {unreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white">
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] font-semibold leading-none text-primary-foreground">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}

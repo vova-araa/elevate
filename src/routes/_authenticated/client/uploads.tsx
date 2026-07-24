@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Upload as UploadIcon, Loader2 } from "lucide-react";
+import { Plus, Upload as UploadIcon, Loader2, Play } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -79,13 +79,11 @@ function ClientUploads() {
 
   if (!members || members.length === 0) {
     return (
-      <div className="glass rounded-2xl p-10 text-center">
-        <UploadIcon className="h-8 w-8 text-gold mx-auto mb-3" />
-        <h2 className="font-display text-2xl">Geen actieve klantkoppeling</h2>
-        <p className="text-sm text-muted-foreground mt-2">
-          Zodra je gekoppeld bent aan een bedrijf kun je hier beeld en video aanleveren.
-        </p>
-      </div>
+      <EmptyState
+        icon={<UploadIcon className="h-5 w-5" />}
+        title="Geen actieve klantkoppeling"
+        description="Zodra je gekoppeld bent aan een bedrijf kun je hier beeld en video aanleveren."
+      />
     );
   }
 
@@ -161,7 +159,14 @@ function Tile({ u }: { u: Tables<"uploads"> }) {
     >
       {url &&
         (isVideo ? (
-          <video src={url} className="h-full w-full object-cover" />
+          <>
+            <video src={url} className="h-full w-full object-cover" />
+            <div className="pointer-events-none absolute inset-0 grid place-items-center">
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white ring-1 ring-white/30 backdrop-blur-sm transition group-hover:bg-black/70">
+                <Play className="h-5 w-5 translate-x-0.5 fill-current" />
+              </span>
+            </div>
+          </>
         ) : (
           <img
             src={url}

@@ -315,7 +315,7 @@ function PlannerPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Planner</p>
-          <h1 className="font-display text-5xl mt-2">Content kalender</h1>
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Content kalender</h1>
           <p className="text-sm text-muted-foreground mt-2 max-w-xl">
             Plan posts per platform, sleep om te herplannen, en gebruik AI voor captions en
             hashtags.
