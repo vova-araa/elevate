@@ -36,8 +36,17 @@ function ApiKeysPage() {
 
   async function remove(id: string) {
     if (!(await confirmDialog("Sleutel intrekken?"))) return;
-    await supabase.from("api_keys").delete().eq("id", id);
-    qc.invalidateQueries({ queryKey: ["api-keys"] });
+    const key = ["api-keys"];
+    const previous = qc.getQueryData<Array<{ id: string }>>(key);
+    qc.setQueryData<Array<{ id: string }>>(key, (old) => (old ?? []).filter((x) => x.id !== id));
+    const { error } = await supabase.from("api_keys").delete().eq("id", id);
+    if (error) {
+      qc.setQueryData(key, previous);
+      toast.error("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    toast.success("Sleutel ingetrokken");
+    qc.invalidateQueries({ queryKey: key });
     toast.success("Ingetrokken");
   }
 

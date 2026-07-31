@@ -91,8 +91,17 @@ function AutomationsPage() {
   }
   async function remove(id: string) {
     if (!(await confirmDialog("Regel verwijderen?"))) return;
-    await supabase.from("automation_rules").delete().eq("id", id);
-    qc.invalidateQueries({ queryKey: ["automation-rules"] });
+    const key = ["automation-rules"];
+    const previous = qc.getQueryData<Array<{ id: string }>>(key);
+    qc.setQueryData<Array<{ id: string }>>(key, (old) => (old ?? []).filter((x) => x.id !== id));
+    const { error } = await supabase.from("automation_rules").delete().eq("id", id);
+    if (error) {
+      qc.setQueryData(key, previous);
+      toast.error("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    toast.success("Regel verwijderd");
+    qc.invalidateQueries({ queryKey: key });
     toast.success("Verwijderd");
   }
 

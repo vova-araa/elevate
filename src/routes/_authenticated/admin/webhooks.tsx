@@ -61,8 +61,17 @@ function WebhooksPage() {
 
   async function remove(id: string) {
     if (!(await confirmDialog("Webhook verwijderen?"))) return;
-    await supabase.from("webhook_endpoints").delete().eq("id", id);
-    qc.invalidateQueries({ queryKey: ["webhooks"] });
+    const key = ["webhooks"];
+    const previous = qc.getQueryData<Array<{ id: string }>>(key);
+    qc.setQueryData<Array<{ id: string }>>(key, (old) => (old ?? []).filter((x) => x.id !== id));
+    const { error } = await supabase.from("webhook_endpoints").delete().eq("id", id);
+    if (error) {
+      qc.setQueryData(key, previous);
+      toast.error("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    toast.success("Webhook verwijderd");
+    qc.invalidateQueries({ queryKey: key });
   }
   async function toggle(id: string, is_active: boolean) {
     await supabase.from("webhook_endpoints").update({ is_active: !is_active }).eq("id", id);
