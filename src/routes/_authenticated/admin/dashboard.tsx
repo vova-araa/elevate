@@ -269,7 +269,12 @@ function DashboardContent({
   });
 
   // Agenda: geplande posts van vandaag en morgen
-  const { data: agenda, isLoading: agendaLoading, isError: agendaError, refetch: agendaRefetch } = useQuery({
+  const {
+    data: agenda,
+    isLoading: agendaLoading,
+    isError: agendaError,
+    refetch: agendaRefetch,
+  } = useQuery({
     queryKey: ["dashboard-agenda", clientId ?? "all"],
     queryFn: async () => {
       const start = startOfDay(new Date());
@@ -328,7 +333,12 @@ function DashboardContent({
   });
 
   // Klant-gezondheid: ruwe data om per klant een score 0-100 te berekenen
-  const { data: health, isLoading: healthLoading, isError: healthError, refetch: healthRefetch } = useQuery({
+  const {
+    data: health,
+    isLoading: healthLoading,
+    isError: healthError,
+    refetch: healthRefetch,
+  } = useQuery({
     queryKey: ["dashboard-client-health", clientId ?? "all"],
     queryFn: async (): Promise<HealthData> => {
       const now = new Date();
