@@ -33,3 +33,7 @@ dist-ssr
 
 # Vercel build output
 .vercel/
+
+# secrets — niet committen
+.env
+.env.local
