@@ -34,6 +34,7 @@ import {
 } from "@/lib/analytics.functions";
 import { useAuth } from "@/lib/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { HealthRing } from "@/components/admin/health-ring";
 import { z } from "zod";
 import {
@@ -268,7 +269,7 @@ function DashboardContent({
   });
 
   // Agenda: geplande posts van vandaag en morgen
-  const { data: agenda, isLoading: agendaLoading } = useQuery({
+  const { data: agenda, isLoading: agendaLoading, isError: agendaError, refetch: agendaRefetch } = useQuery({
     queryKey: ["dashboard-agenda", clientId ?? "all"],
     queryFn: async () => {
       const start = startOfDay(new Date());
@@ -327,7 +328,7 @@ function DashboardContent({
   });
 
   // Klant-gezondheid: ruwe data om per klant een score 0-100 te berekenen
-  const { data: health, isLoading: healthLoading } = useQuery({
+  const { data: health, isLoading: healthLoading, isError: healthError, refetch: healthRefetch } = useQuery({
     queryKey: ["dashboard-client-health", clientId ?? "all"],
     queryFn: async (): Promise<HealthData> => {
       const now = new Date();
@@ -435,7 +436,9 @@ function DashboardContent({
           icon={CalendarClock}
           link={{ to: "/admin/planner", label: "Open planner" }}
         >
-          {agendaLoading ? (
+          {agendaError ? (
+            <ErrorState onRetry={() => agendaRefetch()} />
+          ) : agendaLoading ? (
             <ListSkeleton rows={4} />
           ) : (agenda ?? []).length === 0 ? (
             <Empty body="Geen posts gepland voor vandaag of morgen." />
@@ -467,7 +470,9 @@ function DashboardContent({
 
         {/* Klanten */}
         <Card title="Klanten" icon={Users}>
-          {healthLoading || !health ? (
+          {healthError ? (
+            <ErrorState onRetry={() => healthRefetch()} />
+          ) : healthLoading || !health ? (
             <ListSkeleton rows={4} />
           ) : healthRows.length === 0 ? (
             <Empty body="Nog geen klanten." />
