@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -180,7 +181,7 @@ function MediaLibrary() {
   }
 
   async function remove(u: UploadWithClient) {
-    if (!confirm(`"${u.file_name}" definitief verwijderen?`)) return;
+    if (!(await confirmDialog(`"${u.file_name}" definitief verwijderen?`))) return;
     const { error: storageError } = await supabase.storage
       .from("client-uploads")
       .remove([u.file_path]);
@@ -208,7 +209,7 @@ function MediaLibrary() {
   }
 
   async function rejectUpload(u: UploadWithClient) {
-    if (!confirm(`"${u.file_name}" afwijzen en verwijderen?`)) return;
+    if (!(await confirmDialog(`"${u.file_name}" afwijzen en verwijderen?`))) return;
     const { error: storageError } = await supabase.storage
       .from("client-uploads")
       .remove([u.file_path]);

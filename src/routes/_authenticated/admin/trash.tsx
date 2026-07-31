@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,7 +34,8 @@ function TrashPage() {
   }
 
   async function purge(id: string) {
-    if (!confirm("Definitief verwijderen? Dit kan niet ongedaan gemaakt worden.")) return;
+    if (!(await confirmDialog("Definitief verwijderen? Dit kan niet ongedaan gemaakt worden.")))
+      return;
     const { error } = await supabase.from("scheduled_posts").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Definitief verwijderd");

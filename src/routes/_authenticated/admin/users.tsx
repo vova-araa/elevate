@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -116,7 +117,7 @@ function UsersAdmin() {
   }
 
   async function handleDelete(userId: string, label: string) {
-    if (!confirm(`Verwijder ${label}? Dit kan niet ongedaan worden gemaakt.`)) return;
+    if (!(await confirmDialog(`Verwijder ${label}? Dit kan niet ongedaan worden gemaakt.`))) return;
     try {
       await removeUser({ data: { userId } });
       toast.success("Gebruiker verwijderd");

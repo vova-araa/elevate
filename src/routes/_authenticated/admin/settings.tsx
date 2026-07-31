@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -459,7 +460,7 @@ function TeamTab({ clientId }: { clientId: string }) {
   }
 
   async function removeMember(id: string) {
-    if (!confirm("Teamlid verwijderen van deze klant?")) return;
+    if (!(await confirmDialog("Teamlid verwijderen van deze klant?"))) return;
     await supabase.from("client_members").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["team", clientId] });
   }

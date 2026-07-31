@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { confirmDialog } from "@/components/ui/confirm";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -245,7 +246,7 @@ function PlannedRow({
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
   }
   async function del() {
-    if (!confirm("Geplande post verwijderen?")) return;
+    if (!(await confirmDialog("Geplande post verwijderen?"))) return;
     await supabase.from("scheduled_posts").delete().eq("id", post.id);
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
   }

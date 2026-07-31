@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,7 +60,7 @@ function WebhooksPage() {
   });
 
   async function remove(id: string) {
-    if (!confirm("Webhook verwijderen?")) return;
+    if (!(await confirmDialog("Webhook verwijderen?"))) return;
     await supabase.from("webhook_endpoints").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["webhooks"] });
   }

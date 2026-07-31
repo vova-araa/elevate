@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,7 @@ function ApiKeysPage() {
   });
 
   async function remove(id: string) {
-    if (!confirm("Sleutel intrekken?")) return;
+    if (!(await confirmDialog("Sleutel intrekken?"))) return;
     await supabase.from("api_keys").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["api-keys"] });
     toast.success("Ingetrokken");

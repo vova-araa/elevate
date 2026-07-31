@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -89,7 +90,7 @@ function AutomationsPage() {
     qc.invalidateQueries({ queryKey: ["automation-rules"] });
   }
   async function remove(id: string) {
-    if (!confirm("Regel verwijderen?")) return;
+    if (!(await confirmDialog("Regel verwijderen?"))) return;
     await supabase.from("automation_rules").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["automation-rules"] });
     toast.success("Verwijderd");

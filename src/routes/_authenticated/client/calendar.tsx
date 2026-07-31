@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,7 +222,7 @@ function ClientCalendar() {
   }
 
   async function removeItem(id: string) {
-    if (!confirm("Verwijderen?")) return;
+    if (!(await confirmDialog("Verwijderen?"))) return;
     const { error } = await supabase.from("calendar_items").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Verwijderd");

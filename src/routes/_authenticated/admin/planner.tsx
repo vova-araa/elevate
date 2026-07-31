@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -273,7 +274,7 @@ function PlannerPage() {
     qc.invalidateQueries({ queryKey: ["scheduled-posts"] });
   }
   async function removePost(id: string) {
-    if (!confirm("Naar prullenbak verplaatsen? (30 dagen herstelbaar)")) return false;
+    if (!(await confirmDialog("Naar prullenbak verplaatsen? (30 dagen herstelbaar)"))) return false;
     const { error } = await supabase
       .from("scheduled_posts")
       .update({ deleted_at: new Date().toISOString() })
