@@ -151,9 +151,9 @@ function MediaLibrary() {
 
   async function deleteFolder(f: MediaFolder) {
     if (
-      !confirm(
+      !(await confirmDialog(
         `Map "${f.name}" verwijderen? Bestanden blijven bewaard en gaan terug naar de hoofdmap.`,
-      )
+      ))
     )
       return;
     const { error } = await supabase.from("media_folders").delete().eq("id", f.id);

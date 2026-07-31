@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,9 +97,9 @@ function EditClient() {
 
   async function remove() {
     if (
-      !confirm(
+      !(await confirmDialog(
         "Weet je zeker dat je deze klant wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
-      )
+      ))
     )
       return;
     setDeleting(true);

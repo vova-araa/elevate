@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -382,9 +383,9 @@ function AdminChannels() {
                       Vernieuw
                     </button>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (
-                          window.confirm(
+                          await confirmDialog(
                             `Weet je het zeker? Publiceren naar ${label} stopt voor ${activeClient?.name}.`,
                           )
                         ) {

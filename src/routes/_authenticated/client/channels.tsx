@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -261,8 +262,10 @@ function ChannelsPage() {
               <div className="mt-4 flex items-center gap-2">
                 {connectedActive ? (
                   <button
-                    onClick={() => {
-                      if (window.confirm("Weet je het zeker? Posts vanuit dit kanaal stoppen.")) {
+                    onClick={async () => {
+                      if (
+                        await confirmDialog("Weet je het zeker? Posts vanuit dit kanaal stoppen.")
+                      ) {
                         disconnectMut.mutate(id);
                       }
                     }}

@@ -2,6 +2,7 @@
 // Het afdwingen van hun rechten in RLS-policies en de admin/client-gate is een bewuste
 // vervolgstap — deze ronde raken we bestaande RLS en de admin/client-gate niet aan.
 import { createFileRoute } from "@tanstack/react-router";
+import { confirmDialog } from "@/components/ui/confirm";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -100,9 +101,9 @@ function TeamAdmin() {
   async function handleRoleChange(userId: string, label: string, role: AppRole) {
     if (
       role === "admin" &&
-      !confirm(
+      !(await confirmDialog(
         `Weet je zeker dat je ${label} als admin wil instellen? Admins hebben volledige toegang tot alle klanten en instellingen.`,
-      )
+      ))
     ) {
       return;
     }

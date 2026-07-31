@@ -57,9 +57,9 @@ function UsersAdmin() {
     e.preventDefault();
     if (
       f.makeAdmin &&
-      !confirm(
+      !(await confirmDialog(
         `Weet je zeker dat je ${f.email || "deze gebruiker"} als admin wil aanmaken? Admins hebben volledige toegang tot alle klanten en instellingen.`,
-      )
+      ))
     ) {
       return;
     }
@@ -92,9 +92,9 @@ function UsersAdmin() {
     if (
       role === "admin" &&
       enabled &&
-      !confirm(
+      !(await confirmDialog(
         "Weet je zeker dat je deze gebruiker tot admin wil promoten? Admins hebben volledige toegang tot alle klanten en instellingen.",
-      )
+      ))
     ) {
       return;
     }
