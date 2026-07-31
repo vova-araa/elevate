@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
+import { confirmDialog } from "@/components/ui/confirm";
 import {
   CheckCircle2,
   XCircle,
@@ -152,7 +153,15 @@ function ApprovalsPage() {
   }
 
   async function reject(postId: string, clientId: string) {
-    if (!confirm("Post afwijzen en verwijderen?")) return;
+    if (
+      !(await confirmDialog({
+        title: "Post afwijzen?",
+        description: "De post wordt afgewezen en verwijderd.",
+        confirmLabel: "Afwijzen",
+        destructive: true,
+      }))
+    )
+      return;
     const { error } = await supabase.from("scheduled_posts").delete().eq("id", postId);
     if (error) return toast.error(error.message);
     await notifyTeam(
@@ -230,7 +239,15 @@ function ApprovalsPage() {
   async function bulkReject() {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
-    if (!confirm(`${ids.length} post(s) afwijzen en verwijderen?`)) return;
+    if (
+      !(await confirmDialog({
+        title: `${ids.length} post(s) afwijzen?`,
+        description: "De geselecteerde posts worden afgewezen en verwijderd.",
+        confirmLabel: "Afwijzen",
+        destructive: true,
+      }))
+    )
+      return;
     const targets = (posts ?? []).filter((p) => selected.has(p.id));
     setBulkBusy(true);
     try {

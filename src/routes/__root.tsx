@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { ConfirmHost } from "@/components/ui/confirm";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,6 +160,7 @@ function RootComponent() {
         <AuthProvider>
           <Outlet />
           <ThemedToaster />
+          <ConfirmHost />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
