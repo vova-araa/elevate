@@ -583,15 +583,19 @@ function StatTile({
   return (
     <Link
       to={to}
-      className="group relative overflow-hidden rounded-xl border border-gold/10 bg-card p-4 transition hover:border-gold/30 hover:shadow-md"
+      className="group relative overflow-hidden rounded-2xl border border-gold/15 bg-card p-5 shadow-sm transition hover:border-gold/40 hover:shadow-lg"
     >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-gold opacity-80"
+      />
       <div className="flex items-center justify-between">
         <span className={cn("grid h-9 w-9 place-items-center rounded-lg", tone)}>
           <Icon className="h-5 w-5" />
         </span>
         <ArrowRight className="h-4 w-4 text-muted-foreground/40 transition group-hover:translate-x-0.5 group-hover:text-gold" />
       </div>
-      <div className="mt-3 font-display text-3xl leading-none tabular-nums">{value}</div>
+      <div className="mt-3 font-display text-4xl leading-none tabular-nums">{value}</div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
       {children}
     </Link>
@@ -1028,10 +1032,13 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border border-gold/10 bg-card p-5", className)}>
+    <div className={cn("rounded-2xl border border-gold/15 bg-card p-5 shadow-sm", className)}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-lg flex items-center gap-2">
-          <Icon className="h-4 w-4 text-gold" /> {title}
+        <h2 className="font-display text-xl flex items-center gap-2.5">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold/12 text-gold">
+            <Icon className="h-4 w-4" />
+          </span>
+          {title}
         </h2>
         {link && (
           <Link
