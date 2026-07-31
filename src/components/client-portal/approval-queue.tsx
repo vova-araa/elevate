@@ -71,13 +71,21 @@ export function ApprovalQueue({ clientId }: { clientId: string }) {
   });
 
   async function approve(id: string) {
+    // Optimistisch: haal de post meteen uit de lijst zodat het direct voelt.
+    const key = ["client-approval-drafts", clientId];
+    const previous = qc.getQueryData<Array<{ id: string }>>(key);
+    qc.setQueryData<Array<{ id: string }>>(key, (old) => (old ?? []).filter((p) => p.id !== id));
+
     const { error } = await supabase
       .from("scheduled_posts")
       .update({ status: "scheduled" })
       .eq("id", id);
-    if (error) return toast.error("Goedkeuren mislukt: " + error.message);
+
+    if (error) {
+      qc.setQueryData(key, previous); // terugdraaien bij fout
+      return toast.error("Goedkeuren mislukt: " + error.message);
+    }
     toast.success("Post goedgekeurd — hij wordt ingepland");
-    qc.invalidateQueries({ queryKey: ["client-approval-drafts", clientId] });
     qc.invalidateQueries({ queryKey: ["client-draft-count", clientId] });
   }
 
