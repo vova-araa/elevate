@@ -5,7 +5,18 @@ import { NotFound } from "./components/not-found";
 import { RouteError } from "./components/route-error";
 
 export const getRouter = () => {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Soepeler data: kort cachen, niet herladen bij elke focus, en
+        // 1x opnieuw proberen bij een hapering (minder flikkering / lege schermen).
+        staleTime: 30_000,
+        gcTime: 5 * 60_000,
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
 
   const router = createRouter({
     routeTree,
