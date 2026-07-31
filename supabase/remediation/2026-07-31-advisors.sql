@@ -74,9 +74,32 @@ DROP INDEX IF EXISTS public.idx_client_strategy_client;
 DROP INDEX IF EXISTS public.idx_channel_invites_client;
 DROP INDEX IF EXISTS public.idx_channel_invites_token_hash;
 
--- ==== SB4 (82x) & SB5 (36x): RLS-performance ====
--- SB4: vervang auth.uid()/auth.role() in RLS door (select auth.uid()) — 1x i.p.v. per rij.
--- SB5: consolideer meerdere permissive policies per rol+actie tot één.
--- Policy-specifiek; exacte statements genereer ik op akkoord (pg_policies 1-op-1 herschrijven).
+-- ==== SB4 (82 policies): RLS-performance — auth.*() per rij -> 1x ====
+-- Idempotent en gedrag-behoudend: wrapt auth.uid()/role()/jwt()/email() in (select ...).
+-- Herschrijft alleen policies die het nog niet hebben. Veilig herhaalbaar.
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT format('ALTER POLICY %I ON %I.%I%s%s;', policyname, schemaname, tablename,
+      CASE WHEN qual IS NOT NULL AND qual<>'' THEN format(' USING (%s)',
+        regexp_replace(qual,'auth\.(uid|role|jwt|email)\(\s*\)','(select auth.\1())','g')) ELSE '' END,
+      CASE WHEN with_check IS NOT NULL AND with_check<>'' THEN format(' WITH CHECK (%s)',
+        regexp_replace(with_check,'auth\.(uid|role|jwt|email)\(\s*\)','(select auth.\1())','g')) ELSE '' END) AS ddl
+    FROM pg_policies
+    WHERE schemaname='public'
+      AND (coalesce(qual,'') ~ 'auth\.(uid|role|jwt|email)\(' OR coalesce(with_check,'') ~ 'auth\.(uid|role|jwt|email)\(')
+      AND NOT (coalesce(qual,'') ~ 'select auth\.' OR coalesce(with_check,'') ~ 'select auth\.')
+  LOOP
+    EXECUTE r.ddl;
+  END LOOP;
+END $$;
+-- Preview van de exacte statements (zonder toe te passen): draai dezelfde SELECT
+-- zonder de DO/EXECUTE — dan zie je per policy de ALTER POLICY-regel.
+
+-- ==== SB5 (36x): meerdere permissive policies per rol+actie ====
+-- Bewust NIET automatisch samengevoegd: consolideren verandert toegangslogica.
+-- Aanpak: per tabel de admin- en client-policy combineren tot één OR-conditie.
+-- Dit doe ik gericht per tabel op jouw akkoord (semantiek per geval checken).
 
 COMMIT;
