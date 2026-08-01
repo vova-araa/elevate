@@ -1,16 +1,18 @@
 services:
+  # Elevate is een TanStack Start + Nitro SSR-app: `vite build` genereert een
+  # Node-server in .output/server/index.mjs (geen statische ./dist). Daarom
+  # draait dit als een Node web service, niet als static site. `npm ci` kan
+  # hier niet (repo pint bun.lock, geen package-lock.json) — dus npm install.
   - type: web
     name: elevate
-    runtime: static
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: node .output/server/index.mjs
     pullRequestPreviewsEnabled: true
     envVars:
+      - key: NODE_VERSION
+        value: "22"
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
         sync: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
