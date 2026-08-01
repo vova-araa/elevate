@@ -247,8 +247,19 @@ function PlannedRow({
   }
   async function del() {
     if (!(await confirmDialog("Geplande post verwijderen?"))) return;
-    await supabase.from("scheduled_posts").delete().eq("id", post.id);
-    qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
+    const key = ["scheduled-posts", post.client_id];
+    const previous = qc.getQueryData<Array<{ id: string }>>(key);
+    qc.setQueryData<Array<{ id: string }>>(key, (old) =>
+      (old ?? []).filter((x) => x.id !== post.id),
+    );
+    const { error } = await supabase.from("scheduled_posts").delete().eq("id", post.id);
+    if (error) {
+      qc.setQueryData(key, previous);
+      toast.error("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    toast.success("Post verwijderd");
+    qc.invalidateQueries({ queryKey: key });
   }
   async function swap(otherId: string) {
     const other = allPlanned.find((p) => p.id === otherId);
