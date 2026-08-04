@@ -16,6 +16,7 @@ import {
   Facebook,
 } from "lucide-react";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
+import { LandingShowcase } from "@/components/landing-showcase";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -227,6 +228,18 @@ function Landing() {
           </div>
         </section>
 
+        {/* ── Showcase-carousel ── */}
+        <section className="mx-auto max-w-6xl px-6 pt-28">
+          <SectionHead
+            eyebrow="Wat we voor je doen"
+            title="Een studio die met je merk meebeweegt"
+            body="Van strategie tot groei — schuif door de kern van wat samenwerken met Elevate oplevert."
+          />
+          <div className="mt-12">
+            <LandingShowcase />
+          </div>
+        </section>
+
         {/* ── Diensten ── */}
         <section id="diensten" className="mx-auto max-w-6xl px-6 pt-28">
           <SectionHead
@@ -301,7 +314,7 @@ function Landing() {
                 ))}
               </ul>
             </div>
-            <PortalPreview large />
+            <WorkflowPreview />
           </div>
         </section>
 
@@ -374,9 +387,9 @@ function Landing() {
 }
 
 /* Zwevende preview van het portaal — puur CSS/markup, geen afbeelding nodig. */
-function PortalPreview({ large = false }: { large?: boolean }) {
+function PortalPreview() {
   return (
-    <div className={large ? "" : "lg:scale-105"}>
+    <div className="lg:scale-105">
       <div className="glass-strong shadow-elegant relative rounded-2xl border border-gold/15 p-4 md:p-5">
         {/* Topbar */}
         <div className="flex items-center justify-between border-b border-gold/10 pb-3">
@@ -441,6 +454,77 @@ function PortalPreview({ large = false }: { large?: boolean }) {
               <span className="text-[9px] uppercase tracking-wider text-gold/70">gepland</span>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Aanvullende portaal-visual: content-goedkeuring + publicatieflow.
+   Bewust ánders dan PortalPreview, zodat er geen dubbele mock op de pagina staat. */
+function WorkflowPreview() {
+  return (
+    <div className="relative">
+      <div
+        className="pointer-events-none absolute -inset-4 -z-10 rounded-3xl bg-gold/5 blur-2xl"
+        aria-hidden
+      />
+      {/* Post-kaart met goedkeuring */}
+      <div className="glass-strong shadow-elegant rounded-2xl border border-gold/15 p-4 md:p-5">
+        <div className="flex items-center justify-between border-b border-gold/10 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="grid h-6 w-6 place-items-center rounded-md bg-gradient-gold">
+              <Instagram className="h-3.5 w-3.5 text-primary-foreground" />
+            </span>
+            <span className="font-display text-sm">Nieuwe post</span>
+          </div>
+          <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[9px] uppercase tracking-wider text-gold/80">
+            wacht op akkoord
+          </span>
+        </div>
+
+        {/* Beeld-placeholder + tekstregels */}
+        <div className="mt-4 flex gap-3">
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gradient-gold">
+            <span className="grain absolute inset-0 opacity-30" aria-hidden />
+            <Sparkles className="absolute bottom-1.5 right-1.5 h-4 w-4 text-primary-foreground/80" />
+          </div>
+          <div className="flex-1 space-y-2 py-1">
+            <span className="block h-2.5 w-4/5 rounded-full bg-gold/15" />
+            <span className="block h-2.5 w-full rounded-full bg-gold/10" />
+            <span className="block h-2.5 w-2/3 rounded-full bg-gold/10" />
+            <div className="flex gap-1.5 pt-1">
+              <span className="rounded-full border border-gold/15 bg-gold/5 px-2 py-0.5 text-[8px] tracking-wide text-foreground/60">
+                #merk
+              </span>
+              <span className="rounded-full border border-gold/15 bg-gold/5 px-2 py-0.5 text-[8px] tracking-wide text-foreground/60">
+                #social
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Actieknoppen */}
+        <div className="mt-4 flex items-center gap-2">
+          <span className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gradient-gold py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-primary-foreground">
+            <Check className="h-3 w-3" /> Goedkeuren
+          </span>
+          <span className="inline-flex flex-1 items-center justify-center rounded-lg border border-gold/20 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-foreground/70">
+            Feedback
+          </span>
+        </div>
+      </div>
+
+      {/* Zwevende publicatie-badge */}
+      <div className="glass shadow-elegant absolute -bottom-5 -right-2 flex items-center gap-2.5 rounded-xl border border-gold/15 px-3.5 py-2.5 sm:-right-5">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold/12 text-gold">
+          <CalendarClock className="h-4 w-4" />
+        </span>
+        <div>
+          <div className="text-[11px] font-medium leading-tight">Automatisch gepubliceerd</div>
+          <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            naar 5 kanalen
+          </div>
         </div>
       </div>
     </div>

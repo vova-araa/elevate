@@ -7,6 +7,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database, TablesInsert } from "@/integrations/supabase/types";
 import { runToolLoop, type JsonValue, type ToolArgs } from "@/lib/ai-provider.server";
 import { defaultHourFor, type CampaignPlatform } from "@/lib/campaigns.functions";
+import type { Cadence, IntakeAnswers } from "@/lib/strategy.functions";
 
 // ── Auth (zelfde patroon als campaigns.functions.ts / ai.functions.ts) ──────
 
@@ -90,6 +91,16 @@ const tools: Anthropic.Tool[] = [
       required: ["clientId"],
     },
   },
+  {
+    name: "get_client_overview",
+    description:
+      "Haal het volledige, feitelijke overzicht van een klant op: strategie, stappenplan (roadmap), intake, gekoppelde kanalen, geplande/te-late/concept-posts, een afgeleide 'wat ontbreekt'-lijst en een indicatie of er genoeg gepland staat voor de komende 7/14 dagen. Gebruik dit om vragen te beantwoorden als 'hoe staat klant X ervoor?', 'wat ontbreekt er nog?' of 'wanneer moet er gepubliceerd worden?'.",
+    input_schema: {
+      type: "object",
+      properties: { clientId: { type: "string", description: "UUID van de klant" } },
+      required: ["clientId"],
+    },
+  },
 ];
 
 interface CreateDraftPostsArgs {
@@ -105,6 +116,227 @@ interface CreateTaskArgs {
 
 interface GetClientStatsArgs {
   clientId: string;
+}
+
+interface GetClientOverviewArgs {
+  clientId: string;
+}
+
+const ALL_PLATFORMS = [...PLATFORM_ENUM] as CampaignPlatform[];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// ── Klant-overzicht (feitelijke stand van zaken) ───────────────────────────
+
+function jsonStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+}
+
+async function buildClientOverview(clientId: string, clientName: string): Promise<JsonValue> {
+  const now = new Date();
+  const nowISO = now.toISOString();
+
+  const [strategyRes, roadmapsRes, intakeRes, connectionsRes, postsRes] = await Promise.all([
+    supabaseAdmin.from("client_strategy").select("*").eq("client_id", clientId).maybeSingle(),
+    supabaseAdmin.from("roadmaps").select("id, title, status").eq("client_id", clientId),
+    supabaseAdmin
+      .from("client_intake")
+      .select("answers, status, updated_at")
+      .eq("client_id", clientId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("social_connections")
+      .select("platform, status, follower_count, token_expires_at, account_username")
+      .eq("client_id", clientId),
+    supabaseAdmin
+      .from("scheduled_posts")
+      .select("status, scheduled_at, platform, caption, published_at")
+      .eq("client_id", clientId)
+      .is("deleted_at", null),
+  ]);
+
+  const firstError =
+    strategyRes.error ||
+    roadmapsRes.error ||
+    intakeRes.error ||
+    connectionsRes.error ||
+    postsRes.error;
+  if (firstError) return { ok: false, error: firstError.message };
+
+  const missing: string[] = [];
+
+  // ── Strategie ──
+  const strategyRow = strategyRes.data;
+  const pillars = jsonStringArray(strategyRow?.pillars);
+  const cadence = (strategyRow?.cadence ?? {}) as Cadence;
+  const hasStrategy = Boolean(
+    strategyRow &&
+    (strategyRow.positioning || strategyRow.audience || strategyRow.goals || pillars.length),
+  );
+  const cadencePerWeek = ALL_PLATFORMS.reduce((sum, p) => sum + (cadence[p] ?? 0), 0);
+  const strategy = hasStrategy
+    ? {
+        positioning: strategyRow?.positioning ?? null,
+        audience: strategyRow?.audience ?? null,
+        tone: strategyRow?.tone ?? null,
+        goals: strategyRow?.goals ?? null,
+        pillars,
+        cadencePerWeek,
+        bron: strategyRow?.source ?? "onbekend",
+      }
+    : null;
+  if (!hasStrategy) missing.push("Geen strategie vastgelegd");
+
+  // ── Stappenplan (roadmap) ──
+  const roadmapIds = (roadmapsRes.data ?? []).map((r) => r.id);
+  let stepsTotal = 0;
+  let stepsDone = 0;
+  const openSteps: { title: string; status: string }[] = [];
+  if (roadmapIds.length) {
+    const { data: steps, error: stepsError } = await supabaseAdmin
+      .from("roadmap_steps")
+      .select("title, status, step_order")
+      .in("roadmap_id", roadmapIds)
+      .order("step_order");
+    if (stepsError) return { ok: false, error: stepsError.message };
+    for (const s of steps ?? []) {
+      stepsTotal += 1;
+      if (s.status === "completed") stepsDone += 1;
+      else openSteps.push({ title: s.title, status: s.status });
+    }
+  }
+  const stepsOpen = stepsTotal - stepsDone;
+  const roadmap =
+    stepsTotal > 0
+      ? {
+          totaal: stepsTotal,
+          voltooid: stepsDone,
+          open: stepsOpen,
+          openStappen: openSteps.slice(0, 8),
+        }
+      : null;
+  if (stepsTotal === 0) missing.push("Geen stappenplan (roadmap) aangemaakt");
+  else if (stepsOpen > 0) missing.push(`${stepsOpen} openstaande stappenplan-stap(pen)`);
+
+  // ── Intake ──
+  const intakeRow = intakeRes.data;
+  const answers = (intakeRow?.answers ?? null) as IntakeAnswers | null;
+  const intakeFilled = intakeRow?.status === "completed";
+  const intakeGoals =
+    answers &&
+    [answers.goalReach && "bereik", answers.goalLeads && "leads", answers.goalSales && "verkoop"]
+      .filter(Boolean)
+      .join(", ");
+  const intake = intakeRow
+    ? {
+        ingevuld: intakeFilled,
+        status: intakeRow.status,
+        kernpunten: answers
+          ? {
+              positionering: answers.positioning || null,
+              doelgroep: answers.audience || null,
+              doelen: intakeGoals || null,
+              toneOfVoice: answers.toneOfVoice || null,
+              contentThemas: answers.contentThemes || null,
+              gewenstePlatforms: Array.isArray(answers.platforms) ? answers.platforms : [],
+              gewensteFrequentie: answers.platformFrequency || null,
+            }
+          : null,
+      }
+    : { ingevuld: false, status: "ontbreekt", kernpunten: null };
+  if (!intakeFilled) missing.push("Intake niet (volledig) ingevuld");
+
+  // ── Kanalen ──
+  const connections = connectionsRes.data ?? [];
+  const connectedPlatforms = Array.from(
+    new Set(connections.filter((c) => c.status === "active").map((c) => c.platform)),
+  );
+  const notConnected = ALL_PLATFORMS.filter(
+    (p) => !connectedPlatforms.includes(p as (typeof connectedPlatforms)[number]),
+  );
+  const expiringSoon = connections
+    .filter(
+      (c) =>
+        c.status === "active" &&
+        c.token_expires_at !== null &&
+        new Date(c.token_expires_at).getTime() - now.getTime() < 14 * DAY_MS,
+    )
+    .map((c) => ({ platform: c.platform, verlooptOp: c.token_expires_at }));
+  const channels = {
+    gekoppeld: connectedPlatforms,
+    nietGekoppeld: notConnected,
+    bijnaVerlopen: expiringSoon,
+    volgers: connections
+      .filter((c) => c.status === "active" && typeof c.follower_count === "number")
+      .map((c) => ({ platform: c.platform, volgers: c.follower_count })),
+  };
+  if (connectedPlatforms.length === 0) missing.push("Geen enkel kanaal gekoppeld");
+  if (expiringSoon.length) missing.push(`${expiringSoon.length} koppeling(en) verlopen binnenkort`);
+
+  // ── Posts ──
+  const posts = postsRes.data ?? [];
+  const counts: Record<string, number> = {};
+  for (const p of posts) counts[p.status] = (counts[p.status] ?? 0) + 1;
+
+  const scheduledFuture = posts.filter((p) => p.status === "scheduled" && p.scheduled_at >= nowISO);
+  const overdue = posts.filter(
+    (p) => p.status === "scheduled" && p.scheduled_at < nowISO && !p.published_at,
+  );
+  const drafts = counts["draft"] ?? 0;
+
+  const in7 = new Date(now.getTime() + 7 * DAY_MS).toISOString();
+  const in14 = new Date(now.getTime() + 14 * DAY_MS).toISOString();
+  const plannedNext7 = scheduledFuture.filter((p) => p.scheduled_at <= in7).length;
+  const plannedNext14 = scheduledFuture.filter((p) => p.scheduled_at <= in14).length;
+
+  const upcoming = scheduledFuture
+    .slice()
+    .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
+    .slice(0, 5)
+    .map((p) => ({
+      scheduledAt: p.scheduled_at,
+      platform: p.platform,
+      caption: (p.caption ?? "").slice(0, 80),
+    }));
+
+  if (scheduledFuture.length === 0) missing.push("Geen posts ingepland voor de toekomst");
+  else if (plannedNext7 === 0) missing.push("Niets gepland de komende 7 dagen");
+  if (overdue.length) missing.push(`${overdue.length} post(s) staan te laat (overdue)`);
+
+  // ── Publicatie-timing ──
+  // Verwachting: minstens ~1 post per gekoppeld platform per week, of de cadans
+  // uit de strategie als die er is.
+  const expectedPerWeek = cadencePerWeek > 0 ? cadencePerWeek : connectedPlatforms.length;
+  const timing = {
+    gepland7: plannedNext7,
+    gepland14: plannedNext14,
+    verwachtPerWeek: expectedPerWeek,
+    voldoende7: expectedPerWeek === 0 ? null : plannedNext7 >= expectedPerWeek,
+    advies:
+      expectedPerWeek === 0
+        ? "Stel eerst een cadans in of koppel kanalen; daarna kan er content ingepland worden."
+        : plannedNext7 >= expectedPerWeek
+          ? "Er staat genoeg gepland voor de komende week."
+          : "Er staat te weinig gepland voor de komende 7 dagen — plan extra content in.",
+  };
+
+  return {
+    ok: true,
+    klant: clientName,
+    strategie: strategy ?? "geen strategie vastgelegd",
+    stappenplan: roadmap ?? "geen stappenplan aangemaakt",
+    intake,
+    kanalen: channels,
+    posts: {
+      counts,
+      geplandToekomst: scheduledFuture.length,
+      teLaat: overdue.length,
+      concepten: drafts,
+      eerstvolgende: upcoming,
+    },
+    publicatieTiming: timing,
+    watOntbreekt: missing.length ? missing : ["Alles op orde — geen directe hiaten gevonden."],
+  };
 }
 
 // ── Server function ──────────────────────────────────────────────────────
@@ -224,6 +456,12 @@ export const runAssistant = createServerFn({ method: "POST" })
         return { ok: true, counts, upcoming };
       }
 
+      if (name === "get_client_overview") {
+        const args = rawArgs as unknown as GetClientOverviewArgs;
+        if (!args.clientId) return { ok: false, error: "clientId ontbreekt" };
+        return buildClientOverview(args.clientId, clientName(args.clientId));
+      }
+
       return { ok: false, error: "Onbekende tool" };
     }
 
@@ -235,7 +473,9 @@ Beschikbare klanten:
 ${clientList || "(nog geen klanten)"}
 
 Regels:
-- Zoek altijd eerst de juiste clientId op (via list_clients of de lijst hierboven) voordat je create_draft_posts, create_task of get_client_stats aanroept.
+- Zoek altijd eerst de juiste clientId op (via list_clients of de lijst hierboven) voordat je create_draft_posts, create_task, get_client_stats of get_client_overview aanroept.
+- Voor vragen over hoe een klant ervoor staat ("hoe staat klant X ervoor?", "wat ontbreekt er nog?", "wanneer moet er gepubliceerd worden?", "wat is de strategie?"), gebruik get_client_overview: dat geeft de volledige, feitelijke stand (strategie, stappenplan, intake, gekoppelde kanalen, geplande/te-late/concept-posts, een 'wat ontbreekt'-lijst en of er genoeg gepland staat voor de komende 7/14 dagen). Adviseer op basis daarvan proactief wat ontbreekt en of er content ingepland moet worden.
+- Baseer je antwoorden uitsluitend op de echte data uit de tools — verzin nooit cijfers, kanalen of planningen.
 - create_draft_posts maakt CONCEPTEN aan (status draft) — nooit direct live posts. Zeg dat er expliciet bij.
 - Vraag om verduidelijking als de klant, datum of het onderwerp niet duidelijk genoeg is in plaats van te gokken.
 - Bevestig na een tool-aanroep kort en concreet wat er is gebeurd.`;
