@@ -96,7 +96,6 @@ export function LandingShowcase() {
 
   return (
     <div
-      className="fade-in-up"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
       onFocusCapture={() => (paused.current = true)}

@@ -19,7 +19,15 @@ import {
 } from "lucide-react";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { LandingShowcase } from "@/components/landing-showcase";
-import { Atmosphere, KeywordMarquee, LandingStyles } from "@/components/landing-decor";
+import {
+  Atmosphere,
+  CountUp,
+  HeroGlow,
+  KeywordMarquee,
+  LandingStyles,
+  Reveal,
+} from "@/components/landing-decor";
+import { useParallax, useReveal } from "@/components/landing-motion";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -128,6 +136,9 @@ const STATS: [string, string][] = [
 ];
 
 function Landing() {
+  const portalParallax = useParallax<HTMLDivElement>(22);
+  const cinemaGlow = useParallax<HTMLDivElement>(-30);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-luxe">
       <LandingStyles />
@@ -168,9 +179,11 @@ function Landing() {
       <main className="relative z-10">
         {/* ── Hero ── */}
         <section className="relative mx-auto max-w-6xl px-6 pb-8 pt-20 md:pt-28">
+          {/* Cursor-reactieve gouden gloed (drift op touch/reduced-motion) */}
+          <HeroGlow />
           {/* Oversized woordmerk op de achtergrond */}
           <span
-            className="lp-float-slow pointer-events-none absolute -top-4 left-1/2 -z-0 -translate-x-1/2 select-none whitespace-nowrap font-display text-[26vw] font-medium leading-none text-gold/[0.05] md:text-[20vw]"
+            className="lp-wordmark pointer-events-none absolute -top-4 left-1/2 -z-0 -translate-x-1/2 select-none whitespace-nowrap font-display text-[26vw] font-medium leading-none text-gold/[0.05] md:text-[20vw]"
             aria-hidden
           >
             Elevate
@@ -183,12 +196,16 @@ function Landing() {
               </div>
 
               <h1
-                className="fade-in-up mt-6 font-display font-medium leading-[0.95] tracking-tight"
-                style={{ animationDelay: "80ms", fontSize: "clamp(3rem, 11vw, 6.5rem)" }}
+                className="mt-6 font-display font-medium leading-[0.95] tracking-tight"
+                style={{ fontSize: "clamp(3rem, 11vw, 6.5rem)" }}
               >
-                <span className="block">Elevate</span>
-                <span className="lp-sheen block text-gradient-gold font-light italic">
-                  your brand
+                <span className="lp-line" style={{ animationDelay: "80ms" }}>
+                  Elevate
+                </span>
+                <span className="lp-line" style={{ animationDelay: "220ms" }}>
+                  <span className="lp-sheen block text-gradient-gold font-light italic">
+                    your brand
+                  </span>
                 </span>
               </h1>
 
@@ -240,14 +257,16 @@ function Landing() {
               </div>
             </div>
 
-            {/* Hero-visual: zwevende portaal-preview */}
+            {/* Hero-visual: zwevende portaal-preview (subtiele scroll-parallax) */}
             <div className="fade-in-up relative lg:pl-4" style={{ animationDelay: "200ms" }}>
               <div
                 className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-gold/10 blur-3xl"
                 aria-hidden
               />
-              <div className="lp-float">
-                <PortalPreview />
+              <div ref={portalParallax} className="will-change-transform">
+                <div className="lp-float">
+                  <PortalPreview />
+                </div>
               </div>
             </div>
           </div>
@@ -260,87 +279,77 @@ function Landing() {
 
         {/* ── Showcase-carousel ── */}
         <section className="mx-auto max-w-6xl px-6 pt-24 md:pt-28">
-          <SectionHead
-            eyebrow="Wat we voor je doen"
-            title={
-              <>
-                Een studio die met je <span className="italic text-gradient-gold">merk</span>{" "}
-                meebeweegt
-              </>
-            }
-            body="Van strategie tot groei — schuif door de kern van wat samenwerken met Elevate oplevert."
-          />
-          <div className="mt-12">
+          <Reveal>
+            <SectionHead
+              eyebrow="Wat we voor je doen"
+              title={
+                <>
+                  Een studio die met je <span className="italic text-gradient-gold">merk</span>{" "}
+                  meebeweegt
+                </>
+              }
+              body="Van strategie tot groei — schuif door de kern van wat samenwerken met Elevate oplevert."
+            />
+          </Reveal>
+          <Reveal className="mt-12" delay={80}>
             <LandingShowcase />
-          </div>
+          </Reveal>
         </section>
 
-        {/* ── Statement / manifest ── */}
+        {/* ── Statement / manifest — bewust donkere, filmische contrastsectie ── */}
         <section className="mx-auto max-w-6xl px-6 pt-28">
-          <figure className="relative overflow-hidden rounded-3xl border border-gold/15 bg-card/50 px-7 py-16 text-center backdrop-blur-sm md:px-16 md:py-20">
-            <div className="grain absolute inset-0" aria-hidden />
-            <div
-              className="pointer-events-none absolute inset-x-0 -top-20 h-56 opacity-70"
-              style={{ background: "var(--gradient-glow)" }}
-              aria-hidden
-            />
-            <Quote className="relative mx-auto h-8 w-8 text-gold/50" aria-hidden />
-            <blockquote className="relative mx-auto mt-6 max-w-3xl font-display text-3xl leading-[1.2] tracking-tight md:text-[2.75rem]">
-              Een merk is geen logo. Het is het{" "}
-              <span className="italic text-gradient-gold">gevoel</span> dat achterblijft — en dat
-              bouwen we op met strategie, ambacht en{" "}
-              <span className="italic text-gradient-gold">rust</span> in de uitvoering.
-            </blockquote>
-            <figcaption className="relative mt-8 text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-              Het handschrift van Elevate Design
-            </figcaption>
-          </figure>
+          <Reveal>
+            <figure className="lp-cinema lp-cinema-grain relative overflow-hidden rounded-3xl border px-7 py-20 text-center shadow-elegant md:px-16 md:py-28">
+              {/* Oversized woordmerk op de achtergrond */}
+              <span
+                className="lp-float-slow pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 select-none whitespace-nowrap font-display text-[24vw] font-medium leading-none text-gold/[0.06] md:text-[16vw]"
+                aria-hidden
+              >
+                Elevate
+              </span>
+              {/* Gouden gloed met subtiele scroll-parallax */}
+              <div
+                ref={cinemaGlow}
+                className="pointer-events-none absolute inset-x-0 -top-24 h-64 opacity-70 will-change-transform"
+                style={{ background: "var(--gradient-glow)" }}
+                aria-hidden
+              />
+              {/* Filmische vignette voor diepte */}
+              <div
+                className="lp-cinema-vignette pointer-events-none absolute inset-0"
+                aria-hidden
+              />
+              <Quote className="relative mx-auto h-9 w-9 text-gold/70" aria-hidden />
+              <blockquote className="relative mx-auto mt-7 max-w-3xl font-display text-3xl leading-[1.15] tracking-tight md:text-[3.25rem]">
+                Een merk is geen logo. Het is het{" "}
+                <span className="italic text-gradient-gold">gevoel</span> dat achterblijft — en dat
+                bouwen we op met strategie, ambacht en{" "}
+                <span className="italic text-gradient-gold">rust</span> in de uitvoering.
+              </blockquote>
+              <figcaption className="relative mt-9 text-[11px] uppercase tracking-[0.28em] text-gold/60">
+                Het handschrift van Elevate Design
+              </figcaption>
+            </figure>
+          </Reveal>
         </section>
 
         {/* ── Diensten (bento) ── */}
         <section id="diensten" className="mx-auto max-w-6xl px-6 pt-28">
-          <SectionHead
-            eyebrow="Diensten"
-            title={
-              <>
-                Alles wat je merk online <span className="italic text-gradient-gold">sterk</span>{" "}
-                maakt
-              </>
-            }
-            body="Van eerste strategie tot dagelijkse publicatie — vier vakgebieden, één vloeiend proces."
-          />
+          <Reveal>
+            <SectionHead
+              eyebrow="Diensten"
+              title={
+                <>
+                  Alles wat je merk online <span className="italic text-gradient-gold">sterk</span>{" "}
+                  maakt
+                </>
+              }
+              body="Van eerste strategie tot dagelijkse publicatie — vier vakgebieden, één vloeiend proces."
+            />
+          </Reveal>
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-6">
             {SERVICES.map((s, i) => (
-              <article
-                key={s.title}
-                className={
-                  "fade-in-up group relative overflow-hidden rounded-2xl border border-gold/10 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant " +
-                  (s.wide ? "lg:col-span-4" : "lg:col-span-2")
-                }
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <div
-                  className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gold/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
-                  aria-hidden
-                />
-                <div className="relative flex h-full flex-col">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold/12 text-gold transition-colors group-hover:bg-gold/20">
-                      <s.icon className="h-5 w-5" />
-                    </span>
-                    <span className="font-display text-[10px] uppercase tracking-[0.24em] text-gold/70">
-                      0{i + 1}
-                    </span>
-                  </div>
-                  <h3 className="mt-5 font-display text-xl md:text-2xl">{s.title}</h3>
-                  <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-                    {s.body}
-                  </p>
-                  <div className="mt-auto pt-6">
-                    <ServiceVisualBlock kind={s.visual} />
-                  </div>
-                </div>
-              </article>
+              <ServiceCard key={s.title} service={s} index={i} />
             ))}
           </div>
         </section>
@@ -349,15 +358,18 @@ function Landing() {
         <section id="werkwijze" className="mx-auto max-w-6xl px-6 pt-28">
           <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr]">
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <SectionHead
-                eyebrow="Werkwijze"
-                title={
-                  <>
-                    Van intake tot <span className="italic text-gradient-gold">meetbare</span> groei
-                  </>
-                }
-                body="Een helder pad in vier stappen. Jij houdt de regie, wij doen het werk."
-              />
+              <Reveal>
+                <SectionHead
+                  eyebrow="Werkwijze"
+                  title={
+                    <>
+                      Van intake tot <span className="italic text-gradient-gold">meetbare</span>{" "}
+                      groei
+                    </>
+                  }
+                  body="Een helder pad in vier stappen. Jij houdt de regie, wij doen het werk."
+                />
+              </Reveal>
               <Link
                 to="/dashboard"
                 className="group mt-8 hidden items-center gap-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold lg:inline-flex"
@@ -374,27 +386,7 @@ function Landing() {
                 aria-hidden
               />
               {STEPS.map((s, i) => (
-                <li
-                  key={s.n}
-                  className="fade-in-up relative pl-8"
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  <span
-                    className="absolute left-0 top-2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-gold/40 bg-background"
-                    aria-hidden
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-gold" />
-                  </span>
-                  <div className="group rounded-2xl border border-gold/10 bg-card/60 p-5 transition-all duration-300 hover:border-gold/25 hover:bg-card hover:shadow-elegant">
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-display text-3xl text-gold/30 transition-colors group-hover:text-gold/60">
-                        {s.n}
-                      </span>
-                      <h3 className="font-display text-lg">{s.title}</h3>
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-                  </div>
-                </li>
+                <TimelineStep key={s.n} step={s} index={i} />
               ))}
             </ol>
           </div>
@@ -402,7 +394,7 @@ function Landing() {
 
         {/* ── Elevate in cijfers ── */}
         <section className="mx-auto max-w-6xl px-6 pt-28">
-          <div className="relative overflow-hidden rounded-3xl border border-gold/15 bg-card/50 backdrop-blur-sm">
+          <Reveal className="relative overflow-hidden rounded-3xl border border-gold/15 bg-card/50 backdrop-blur-sm">
             <div className="grain absolute inset-0" aria-hidden />
             <div
               className="pointer-events-none absolute inset-x-0 -bottom-24 h-56 opacity-60"
@@ -421,20 +413,22 @@ function Landing() {
                     (i === 3 ? "md:border-l " : "")
                   }
                 >
-                  <div className="font-display text-4xl text-gradient-gold md:text-5xl">{n}</div>
+                  <div className="font-display text-4xl md:text-5xl">
+                    <CountUp value={n} className="text-gradient-gold" />
+                  </div>
                   <div className="mt-1.5 text-xs uppercase tracking-[0.14em] text-muted-foreground">
                     {l}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </Reveal>
         </section>
 
         {/* ── Portaal-showcase ── */}
         <section id="portaal" className="mx-auto max-w-6xl px-6 pt-28">
           <div className="grid items-center gap-14 lg:grid-cols-2">
-            <div>
+            <Reveal>
               <div className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-[10px] uppercase tracking-[0.22em] text-gold/90">
                 <Layers className="h-3 w-3" /> Het portaal
               </div>
@@ -458,14 +452,16 @@ function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
-            <WorkflowPreview />
+            </Reveal>
+            <Reveal delay={100}>
+              <WorkflowPreview />
+            </Reveal>
           </div>
         </section>
 
         {/* ── Slot-CTA ── */}
         <section className="mx-auto max-w-6xl px-6 py-28">
-          <div className="relative overflow-hidden rounded-3xl border border-gold/15 bg-card px-7 py-16 text-center md:px-16 md:py-20">
+          <Reveal className="relative overflow-hidden rounded-3xl border border-gold/15 bg-card px-7 py-16 text-center md:px-16 md:py-20">
             <div className="grain absolute inset-0" aria-hidden />
             <span
               className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 select-none whitespace-nowrap font-display text-[22vw] leading-none text-gold/[0.04] md:text-[14vw]"
@@ -499,7 +495,7 @@ function Landing() {
                 Ontdek de aanpak
               </a>
             </div>
-          </div>
+          </Reveal>
         </section>
       </main>
 
@@ -773,6 +769,69 @@ function WorkflowPreview() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* Bento-dienstkaart met scroll-reveal (stagger via index). */
+function ServiceCard({ service, index }: { service: (typeof SERVICES)[number]; index: number }) {
+  const { ref, className, style } = useReveal<HTMLElement>(index * 80);
+  const Icon = service.icon;
+  return (
+    <article
+      ref={ref}
+      className={
+        className +
+        " group relative overflow-hidden rounded-2xl border border-gold/10 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant " +
+        (service.wide ? "lg:col-span-4" : "lg:col-span-2")
+      }
+      style={style}
+    >
+      <div
+        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gold/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
+        aria-hidden
+      />
+      <div className="relative flex h-full flex-col">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold/12 text-gold transition-colors group-hover:bg-gold/20">
+            <Icon className="h-5 w-5" />
+          </span>
+          <span className="font-display text-[10px] uppercase tracking-[0.24em] text-gold/70">
+            0{index + 1}
+          </span>
+        </div>
+        <h3 className="mt-5 font-display text-xl md:text-2xl">{service.title}</h3>
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+          {service.body}
+        </p>
+        <div className="mt-auto pt-6">
+          <ServiceVisualBlock kind={service.visual} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/* Tijdlijn-stap met scroll-reveal (stagger via index). */
+function TimelineStep({ step, index }: { step: (typeof STEPS)[number]; index: number }) {
+  const { ref, className, style } = useReveal<HTMLLIElement>(index * 90);
+  return (
+    <li ref={ref} className={className + " relative pl-8"} style={style}>
+      <span
+        className="absolute left-0 top-2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-gold/40 bg-background"
+        aria-hidden
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-gradient-gold" />
+      </span>
+      <div className="group rounded-2xl border border-gold/10 bg-card/60 p-5 transition-all duration-300 hover:border-gold/25 hover:bg-card hover:shadow-elegant">
+        <div className="flex items-baseline gap-3">
+          <span className="font-display text-3xl text-gold/30 transition-colors group-hover:text-gold/60">
+            {step.n}
+          </span>
+          <h3 className="font-display text-lg">{step.title}</h3>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+      </div>
+    </li>
   );
 }
 
