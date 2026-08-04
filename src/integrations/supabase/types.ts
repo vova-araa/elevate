@@ -1451,6 +1451,7 @@ export type Database = {
           id: string;
           is_queued: boolean;
           media_path: string | null;
+          media_purged_at: string | null;
           media_type: string | null;
           notes: string | null;
           parent_recurring_id: string | null;
@@ -1473,6 +1474,7 @@ export type Database = {
           id?: string;
           is_queued?: boolean;
           media_path?: string | null;
+          media_purged_at?: string | null;
           media_type?: string | null;
           notes?: string | null;
           parent_recurring_id?: string | null;
@@ -1495,6 +1497,7 @@ export type Database = {
           id?: string;
           is_queued?: boolean;
           media_path?: string | null;
+          media_purged_at?: string | null;
           media_type?: string | null;
           notes?: string | null;
           parent_recurring_id?: string | null;
@@ -1730,6 +1733,7 @@ export type Database = {
           file_type: string | null;
           folder_id: string | null;
           id: string;
+          media_purged_at: string | null;
           status: string;
           uploader_id: string | null;
         };
@@ -1746,6 +1750,7 @@ export type Database = {
           file_type?: string | null;
           folder_id?: string | null;
           id?: string;
+          media_purged_at?: string | null;
           status?: string;
           uploader_id?: string | null;
         };
@@ -1762,6 +1767,7 @@ export type Database = {
           file_type?: string | null;
           folder_id?: string | null;
           id?: string;
+          media_purged_at?: string | null;
           status?: string;
           uploader_id?: string | null;
         };

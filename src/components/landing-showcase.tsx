@@ -109,9 +109,9 @@ export function LandingShowcase() {
         aria-label="Wat Elevate voor je doet"
       >
         <CarouselContent className="-ml-4">
-          {SLIDES.map((s) => (
+          {SLIDES.map((s, i) => (
             <CarouselItem key={s.title} className="pl-4 md:basis-1/2 lg:basis-1/3">
-              <ShowcaseCard slide={s} />
+              <ShowcaseCard slide={s} index={i} />
             </CarouselItem>
           ))}
         </CarouselContent>
@@ -140,17 +140,29 @@ export function LandingShowcase() {
   );
 }
 
-function ShowcaseCard({ slide }: { slide: Slide }) {
+function ShowcaseCard({ slide, index }: { slide: Slide; index: number }) {
   const Icon = slide.icon;
   return (
-    <div className="group relative h-full overflow-hidden rounded-2xl border border-gold/10 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold/10 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant">
+      {/* Gouden accentlijn bovenaan, groeit bij hover */}
+      <span
+        className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-gradient-gold transition-transform duration-500 group-hover:scale-x-100"
+        aria-hidden
+      />
       <div
         className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gold/10 opacity-70 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
         aria-hidden
       />
+      {/* Decoratief slide-nummer */}
+      <span
+        className="pointer-events-none absolute right-4 top-3 select-none font-display text-5xl text-gold/[0.08]"
+        aria-hidden
+      >
+        0{index + 1}
+      </span>
       <div className="relative flex items-center gap-3">
         <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/12 text-gold transition-colors group-hover:bg-gold/20">
-          <Icon className="h-5 w-5" />
+          <Icon className="h-5 w-5" aria-hidden />
         </span>
         <span className="text-[10px] uppercase tracking-[0.24em] text-gold/80">
           {slide.eyebrow}
@@ -158,7 +170,7 @@ function ShowcaseCard({ slide }: { slide: Slide }) {
       </div>
       <h3 className="relative mt-5 font-display text-2xl leading-tight">{slide.title}</h3>
       <p className="relative mt-2 text-sm leading-relaxed text-muted-foreground">{slide.body}</p>
-      <div className="relative mt-6">
+      <div className="relative mt-auto pt-6">
         <SlideVisual kind={slide.visual} />
       </div>
     </div>

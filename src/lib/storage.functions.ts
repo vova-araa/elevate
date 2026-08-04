@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -38,6 +39,7 @@ export interface StorageUsage {
 interface UploadRow {
   client_id: string;
   file_size: number | null;
+  media_purged_at: string | null;
 }
 
 interface ClientRow {
@@ -53,7 +55,7 @@ export const getStorageUsage = createServerFn({ method: "POST" })
     await assertAdmin(context);
 
     const [uploadsRes, clientsRes] = await Promise.all([
-      supabaseAdmin.from("uploads").select("client_id, file_size"),
+      supabaseAdmin.from("uploads").select("client_id, file_size, media_purged_at"),
       supabaseAdmin.from("clients").select("id, name"),
     ]);
     if (uploadsRes.error) throw new Error(uploadsRes.error.message);
@@ -64,10 +66,14 @@ export const getStorageUsage = createServerFn({ method: "POST" })
     const nameById = new Map(clients.map((c) => [c.id, c.name]));
 
     let totalBytes = 0;
+    let storedFiles = 0;
     const perClientMap = new Map<string, { bytes: number; files: number }>();
     for (const row of uploads) {
+      // Opgeruimde bestanden staan niet meer in de opslag → tellen niet mee.
+      if (row.media_purged_at) continue;
       const bytes = row.file_size ?? 0;
       totalBytes += bytes;
+      storedFiles += 1;
       const entry = perClientMap.get(row.client_id) ?? { bytes: 0, files: 0 };
       entry.bytes += bytes;
       entry.files += 1;
@@ -85,7 +91,57 @@ export const getStorageUsage = createServerFn({ method: "POST" })
 
     return {
       totalBytes,
-      fileCount: uploads.length,
+      fileCount: storedFiles,
       perClient,
     };
+  });
+
+/**
+ * Handmatig bulk-opruimen: verwijdert de mediabestanden van geselecteerde
+ * uploads UIT DE OPSLAG, maar houdt de registratie (rij + `media_purged_at`).
+ * Alleen media die al is GEPUBLICEERD wordt opgeruimd — zo kun je nooit per
+ * ongeluk nog-te-plaatsen content wissen, en blijft zichtbaar dat het gebruikt
+ * is (voorkomt dubbel plaatsen). Niet-gepubliceerde selecties worden
+ * overgeslagen.
+ */
+export const purgePostedMedia = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ uploadIds: z.array(z.string().uuid()).min(1) }).parse(d))
+  .handler(async ({ data, context }): Promise<{ purged: number; skipped: number }> => {
+    await assertAdmin(context);
+    const now = new Date().toISOString();
+
+    const { data: ups, error } = await supabaseAdmin
+      .from("uploads")
+      .select("id, file_path, media_purged_at")
+      .in("id", data.uploadIds);
+    if (error) throw new Error(error.message);
+
+    let purged = 0;
+    let skipped = 0;
+    for (const u of ups ?? []) {
+      if (u.media_purged_at) {
+        skipped++;
+        continue;
+      }
+      // Alleen opruimen als dit bestand daadwerkelijk al gepubliceerd is.
+      const { count } = await supabaseAdmin
+        .from("scheduled_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("media_path", u.file_path)
+        .eq("status", "published");
+      if (!count) {
+        skipped++;
+        continue;
+      }
+      await supabaseAdmin.storage.from("client-uploads").remove([u.file_path]);
+      await supabaseAdmin.from("uploads").update({ media_purged_at: now }).eq("id", u.id);
+      await supabaseAdmin
+        .from("scheduled_posts")
+        .update({ media_purged_at: now })
+        .eq("media_path", u.file_path)
+        .eq("status", "published");
+      purged++;
+    }
+    return { purged, skipped };
   });

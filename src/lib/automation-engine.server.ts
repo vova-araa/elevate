@@ -207,7 +207,7 @@ function isDue(rule: AutomationRule, now: Date): boolean {
 export async function runTick() {
   const sb = admin();
   const now = new Date();
-  const summary = { published: 0, rules_run: 0, errors: 0 };
+  const summary = { published: 0, rules_run: 0, errors: 0, purged: 0 };
 
   // 0) Verweesde posts herstellen: als een vorige tick crashte tussen "claimen"
   // (→ publishing) en de eind-update, blijft een post op "publishing" hangen.
@@ -280,6 +280,34 @@ export async function runTick() {
       summary.errors++;
       await dispatchEvent("post.failed", { post: p, error: message }, p.client_id);
     }
+  }
+
+  // 1b) Media-retentie: ruim mediabestanden op die >30 dagen geleden zijn
+  // gepubliceerd. Het bestand gaat uit de opslag (ruimte vrij), maar de post +
+  // registratie blijven bestaan (je ziet dat het gebruikt is → geen dubbele
+  // plaatsing). `media_purged_at` voorkomt dat we hetzelfde bestand twee keer
+  // proberen te verwijderen.
+  const RETENTION_DAYS = 30;
+  const retentionCutoff = new Date(now.getTime() - RETENTION_DAYS * 86400000).toISOString();
+  const { data: oldPosts } = await sb
+    .from("scheduled_posts")
+    .select("id, media_path")
+    .eq("status", "published")
+    .not("media_path", "is", null)
+    .is("media_purged_at", null)
+    .lt("published_at", retentionCutoff)
+    .limit(200);
+  for (const p of oldPosts ?? []) {
+    if (p.media_path) {
+      await sb.storage.from("client-uploads").remove([p.media_path]);
+      // Ook de mediabibliotheek-registratie markeren als opgeruimd.
+      await sb
+        .from("uploads")
+        .update({ media_purged_at: now.toISOString() })
+        .eq("file_path", p.media_path);
+    }
+    await sb.from("scheduled_posts").update({ media_purged_at: now.toISOString() }).eq("id", p.id);
+    summary.purged++;
   }
 
   // 2) Schedule-triggered rules

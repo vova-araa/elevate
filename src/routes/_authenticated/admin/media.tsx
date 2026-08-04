@@ -27,6 +27,10 @@ import {
   ChevronDown,
   ChevronUp,
   HardDrive,
+  Archive,
+  ImageOff,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import {
   Dialog,
@@ -37,7 +41,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { importMediaFromUrl } from "@/lib/media-import.functions";
-import { getStorageUsage, type StorageUsage } from "@/lib/storage.functions";
+import { getStorageUsage, purgePostedMedia, type StorageUsage } from "@/lib/storage.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/media")({
   component: MediaLibrary,
@@ -68,6 +72,7 @@ function MediaLibrary() {
   const qc = useQueryClient();
   const importFromUrl = useServerFn(importMediaFromUrl);
   const storageUsage = useServerFn(getStorageUsage);
+  const purgeMedia = useServerFn(purgePostedMedia);
   const [clientId, setClientId] = useState<string>("");
   const [folderId, setFolderId] = useState<string | null>(null); // null = root van klant
   const [q, setQ] = useState("");
@@ -82,9 +87,13 @@ function MediaLibrary() {
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(true);
+  // Selectie voor bulk-acties (opruimen na publicatie).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [purging, setPurging] = useState(false);
 
   useEffect(() => {
     setFolderId(null);
+    setSelectedIds(new Set());
   }, [clientId]);
 
   const { data: storage, isLoading: storageLoading } = useQuery({
@@ -215,6 +224,46 @@ function MediaLibrary() {
     toast.success("Verwijderd");
     qc.invalidateQueries({ queryKey: ["admin-media"] });
     qc.invalidateQueries({ queryKey: ["storage-usage"] });
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function purgeSelected() {
+    // Alleen nog-niet-opgeruimde items daadwerkelijk aanbieden aan de server.
+    const ids = Array.from(selectedIds).filter((id) => {
+      const u = (uploads ?? []).find((x: UploadWithClient) => x.id === id);
+      return u && !u.media_purged_at;
+    });
+    if (ids.length === 0) {
+      return toast.error("Geen op te ruimen bestanden geselecteerd");
+    }
+    const ok = await confirmDialog({
+      title: "Bestanden opruimen?",
+      description:
+        "Dit verwijdert het mediabestand uit de opslag om ruimte vrij te maken. De registratie blijft bewaard, zodat je ziet dat het al gepubliceerd is. Alleen al gepubliceerde media wordt opgeruimd.",
+      confirmLabel: "Opruimen",
+      destructive: true,
+    });
+    if (!ok) return;
+    setPurging(true);
+    try {
+      const res = await purgeMedia({ data: { uploadIds: ids } });
+      toast.success(`${res.purged} opgeruimd, ${res.skipped} overgeslagen (nog niet gepubliceerd)`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["admin-media"] });
+      qc.invalidateQueries({ queryKey: ["storage-usage"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Opruimen mislukt");
+    } finally {
+      setPurging(false);
+    }
   }
 
   async function approveUpload(u: UploadWithClient) {
@@ -459,6 +508,30 @@ function MediaLibrary() {
         <div className="ml-auto text-xs text-muted-foreground">{filtered.length} items</div>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gold/10 bg-card p-3">
+          <span className="text-sm text-muted-foreground">{selectedIds.size} geselecteerd</span>
+          <button
+            onClick={purgeSelected}
+            disabled={purging}
+            className="flex items-center gap-1.5 rounded-lg bg-gold/15 text-gold hairline px-3 py-2 text-sm hover:bg-gold/25 disabled:opacity-60"
+          >
+            {purging ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Archive className="h-4 w-4" />
+            )}
+            Bestanden opruimen (na publicatie)
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="rounded-lg bg-input/60 hairline px-3 py-2 text-sm hover:bg-accent/40"
+          >
+            Deselecteer
+          </button>
+        </div>
+      )}
+
       <div
         onDragOver={(e) => {
           if (!clientId) return;
@@ -542,6 +615,8 @@ function MediaLibrary() {
               <Tile
                 key={u.id}
                 u={u}
+                selected={selectedIds.has(u.id)}
+                onToggleSelect={() => toggleSelect(u.id)}
                 onDelete={() => remove(u)}
                 onMove={clientId ? () => moveUpload(u) : undefined}
               />
@@ -672,30 +747,82 @@ function StorageCard({
           )}
         </div>
       </div>
+
+      <p className="mt-4 text-xs text-muted-foreground">
+        Bestanden worden 30 dagen na publicatie automatisch opgeruimd; de registratie blijft
+        bewaard.
+      </p>
     </div>
   );
 }
 
 function Tile({
   u,
+  selected,
+  onToggleSelect,
   onDelete,
   onMove,
 }: {
   u: UploadWithClient;
+  selected: boolean;
+  onToggleSelect: () => void;
   onDelete: () => void;
   onMove?: () => void;
 }) {
+  const isPurged = !!u.media_purged_at;
   const [url, setUrl] = useState("");
   useEffect(() => {
+    // Opgeruimde media staat niet meer in de opslag — geen signed URL ophalen
+    // (voorkomt 404-pogingen); we tonen een placeholder-tegel.
+    if (isPurged) return;
     supabase.storage
       .from("client-uploads")
       .createSignedUrl(u.file_path, 3600)
       .then(({ data }) => setUrl(data?.signedUrl || ""));
-  }, [u.file_path]);
+  }, [u.file_path, isPurged]);
   const isImage = u.file_type?.startsWith("image/");
   const isVideo = u.file_type?.startsWith("video/");
+
+  if (isPurged) {
+    return (
+      <div className="group relative aspect-square overflow-hidden rounded-xl glass bg-card">
+        <button
+          onClick={onToggleSelect}
+          className="absolute left-2 top-2 z-10 rounded-md bg-background/80 p-0.5 text-gold hover:bg-background"
+          title={selected ? "Deselecteer" : "Selecteer"}
+        >
+          {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+        </button>
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted-foreground/10">
+            {isImage || isVideo ? (
+              <ImageOff className="h-6 w-6 text-muted-foreground" />
+            ) : (
+              <Archive className="h-6 w-6 text-muted-foreground" />
+            )}
+          </div>
+          <span className="inline-flex items-center gap-1 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-gold">
+            <Archive className="h-3 w-3" /> Opgeruimd
+          </span>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+          {u.file_name && <div className="text-[11px] text-white/90 truncate">{u.file_name}</div>}
+          {u.media_purged_at && (
+            <div className="text-[10px] text-white/60">
+              Opgeruimd op {new Date(u.media_purged_at).toLocaleDateString("nl-NL")}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-xl glass">
+    <div
+      className={`group relative aspect-square overflow-hidden rounded-xl glass ${
+        selected ? "ring-2 ring-gold" : ""
+      }`}
+    >
       {url && isImage && (
         <img
           src={url}
@@ -709,8 +836,17 @@ function Tile({
           <FileText className="h-10 w-10 text-muted-foreground" />
         </div>
       )}
+      <button
+        onClick={onToggleSelect}
+        className={`absolute left-2 top-2 z-10 rounded-md bg-black/60 p-0.5 text-white transition hover:bg-black/80 ${
+          selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        }`}
+        title={selected ? "Deselecteer" : "Selecteer"}
+      >
+        {selected ? <CheckSquare className="h-4 w-4 text-gold" /> : <Square className="h-4 w-4" />}
+      </button>
       <div className="absolute inset-x-0 top-0 flex items-center justify-between p-2 bg-gradient-to-b from-black/70 to-transparent">
-        <span className="text-[10px] uppercase tracking-wider text-white/80 flex items-center gap-1">
+        <span className="text-[10px] uppercase tracking-wider text-white/80 flex items-center gap-1 pl-6">
           {isImage ? (
             <ImageIcon className="h-3 w-3" />
           ) : isVideo ? (
