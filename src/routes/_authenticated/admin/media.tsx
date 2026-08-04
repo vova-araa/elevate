@@ -26,6 +26,7 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  HardDrive,
 } from "lucide-react";
 import {
   Dialog,
@@ -36,10 +37,27 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { importMediaFromUrl } from "@/lib/media-import.functions";
+import { getStorageUsage, type StorageUsage } from "@/lib/storage.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/media")({
   component: MediaLibrary,
 });
+
+// Supabase Free = 1 GB; upgrade naar Pro = 100 GB — pas deze waarde aan je plan aan.
+const STORAGE_LIMIT_GB = 1;
+// Supabase-standaard per-bestand limiet op Free; verhoog na plan-upgrade.
+const MAX_UPLOAD_MB = 50;
+
+// Bytes → leesbaar (GB/MB). Gebruikt 1024-basis (binair), zoals opslagplannen.
+function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0 MB";
+  const mb = bytes / (1024 * 1024);
+  if (mb < 1024) {
+    return `${mb.toLocaleString("nl-NL", { maximumFractionDigits: mb < 10 ? 1 : 0 })} MB`;
+  }
+  const gb = mb / 1024;
+  return `${gb.toLocaleString("nl-NL", { maximumFractionDigits: 1 })} GB`;
+}
 
 type MediaFolder = Tables<"media_folders">;
 type UploadWithClient = Tables<"uploads"> & {
@@ -49,6 +67,7 @@ type UploadWithClient = Tables<"uploads"> & {
 function MediaLibrary() {
   const qc = useQueryClient();
   const importFromUrl = useServerFn(importMediaFromUrl);
+  const storageUsage = useServerFn(getStorageUsage);
   const [clientId, setClientId] = useState<string>("");
   const [folderId, setFolderId] = useState<string | null>(null); // null = root van klant
   const [q, setQ] = useState("");
@@ -67,6 +86,11 @@ function MediaLibrary() {
   useEffect(() => {
     setFolderId(null);
   }, [clientId]);
+
+  const { data: storage, isLoading: storageLoading } = useQuery({
+    queryKey: ["storage-usage"],
+    queryFn: () => storageUsage(),
+  });
 
   const { data: clients } = useQuery({
     queryKey: ["admin-clients-list"],
@@ -190,6 +214,7 @@ function MediaLibrary() {
     if (error) return toast.error(error.message);
     toast.success("Verwijderd");
     qc.invalidateQueries({ queryKey: ["admin-media"] });
+    qc.invalidateQueries({ queryKey: ["storage-usage"] });
   }
 
   async function approveUpload(u: UploadWithClient) {
@@ -223,11 +248,23 @@ function MediaLibrary() {
   async function uploadFiles(files: File[]) {
     if (!clientId) return toast.error("Kies eerst een klant");
     if (files.length === 0) return;
+    // Bestanden groter dan de per-bestand limiet overslaan (geen compressie —
+    // originelen blijven vol kwaliteit).
+    const uploadable = files.filter((file) => {
+      if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        toast.error(
+          `Bestand ${file.name} is te groot (>${MAX_UPLOAD_MB} MB). Verklein de video of upgrade het opslagplan.`,
+        );
+        return false;
+      }
+      return true;
+    });
+    if (uploadable.length === 0) return;
     setUploading(true);
-    setUploadProgress({ done: 0, total: files.length });
+    setUploadProgress({ done: 0, total: uploadable.length });
     const { data: u } = await supabase.auth.getUser();
     let successCount = 0;
-    for (const file of files) {
+    for (const file of uploadable) {
       const safeName = file.name.replace(/[\\/]/g, "_");
       const path = `${clientId}/${folderId ? `${folderId}/` : ""}${Date.now()}-${safeName}`;
       const { error: uploadError } = await supabase.storage
@@ -261,6 +298,7 @@ function MediaLibrary() {
       toast.success(`${successCount} bestand${successCount === 1 ? "" : "en"} geüpload`);
     }
     qc.invalidateQueries({ queryKey: ["admin-media"] });
+    qc.invalidateQueries({ queryKey: ["storage-usage"] });
   }
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
@@ -305,6 +343,8 @@ function MediaLibrary() {
           overzichtelijk mappen aan.
         </p>
       </div>
+
+      <StorageCard storage={storage} isLoading={storageLoading} />
 
       {pendingCount > 0 && (
         <div className="rounded-2xl border border-amber-400/30 bg-amber-500/5">
@@ -547,6 +587,91 @@ function MediaLibrary() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function StorageCard({
+  storage,
+  isLoading,
+}: {
+  storage: StorageUsage | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading || !storage) {
+    return (
+      <div className="rounded-xl border border-gold/10 bg-card p-5">
+        <div className="animate-pulse space-y-4">
+          <div className="h-3 w-24 rounded bg-muted-foreground/15" />
+          <div className="h-8 w-40 rounded bg-muted-foreground/15" />
+          <div className="h-2.5 w-full rounded-full bg-muted-foreground/10" />
+          <div className="h-3 w-56 rounded bg-muted-foreground/15" />
+        </div>
+      </div>
+    );
+  }
+
+  const limitBytes = STORAGE_LIMIT_GB * 1024 * 1024 * 1024;
+  const usedGb = storage.totalBytes / (1024 * 1024 * 1024);
+  const pct = limitBytes > 0 ? Math.min(100, (storage.totalBytes / limitBytes) * 100) : 0;
+  const barColor = pct > 90 ? "bg-red-500" : pct > 70 ? "bg-amber-500" : "bg-gradient-gold";
+  const topClients = storage.perClient.slice(0, 5);
+
+  return (
+    <div className="rounded-xl border border-gold/10 bg-card p-5">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-gold/80">
+        <HardDrive className="h-3.5 w-3.5" />
+        Opslag
+      </div>
+
+      <div className="mt-4 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div>
+          <div className="font-display text-4xl leading-none">
+            {storage.totalBytes === 0 ? "0 MB" : formatBytes(storage.totalBytes)}
+          </div>
+          <div className="mt-1.5 text-sm text-muted-foreground">
+            {storage.totalBytes === 0
+              ? "nog geen media"
+              : `${storage.fileCount.toLocaleString("nl-NL")} bestand${
+                  storage.fileCount === 1 ? "" : "en"
+                }`}
+          </div>
+
+          <div className="mt-4">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted-foreground/10">
+              <div
+                className={`h-full rounded-full transition-all ${barColor}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {usedGb.toLocaleString("nl-NL", { maximumFractionDigits: 2 })} GB van{" "}
+                {STORAGE_LIMIT_GB} GB
+              </span>
+              <span className={pct > 90 ? "text-red-500" : pct > 70 ? "text-amber-500" : ""}>
+                {pct.toLocaleString("nl-NL", { maximumFractionDigits: 0 })}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Per klant</div>
+          {topClients.length === 0 ? (
+            <div className="mt-2 text-sm text-muted-foreground">Nog geen media.</div>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {topClients.map((c) => (
+                <li key={c.clientId} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="truncate">{c.clientName}</span>
+                  <span className="shrink-0 text-muted-foreground">{formatBytes(c.bytes)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -13,6 +13,9 @@ export const Route = createFileRoute("/_authenticated/client/uploads")({
   component: ClientUploads,
 });
 
+// Supabase-standaard per-bestand limiet op Free; verhoog na plan-upgrade.
+const MAX_UPLOAD_MB = 50;
+
 function ClientUploads() {
   const qc = useQueryClient();
   const { data: members, isLoading: loadingMembers } = useQuery({
@@ -43,6 +46,14 @@ function ClientUploads() {
     const files = Array.from(e.target.files ?? []);
     const { data: u } = await supabase.auth.getUser();
     for (const file of files) {
+      // Bestanden groter dan de per-bestand limiet overslaan (geen compressie —
+      // originelen blijven vol kwaliteit).
+      if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        toast.error(
+          `Bestand ${file.name} is te groot (>${MAX_UPLOAD_MB} MB). Verklein de video of upgrade het opslagplan.`,
+        );
+        continue;
+      }
       // Sanitize bestandsnaam zodat er nooit buiten de map van deze klant geschreven kan worden.
       const safeName = file.name.replace(/[\\/]/g, "_");
       const path = `${clientId}/${Date.now()}-${safeName}`;

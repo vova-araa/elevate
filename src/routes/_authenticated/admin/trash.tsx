@@ -36,6 +36,22 @@ function TrashPage() {
   async function purge(id: string) {
     if (!(await confirmDialog("Definitief verwijderen? Dit kan niet ongedaan gemaakt worden.")))
       return;
+    // Haal eerst het media-pad op zodat we het bijbehorende bestand uit storage
+    // kunnen opruimen — anders blijft het bestand achter (opslag-lek).
+    const { data: post } = await supabase
+      .from("scheduled_posts")
+      .select("media_path")
+      .eq("id", id)
+      .maybeSingle();
+    if (post?.media_path) {
+      // Storage-fouten mogen de purge niet blokkeren (bestand kan al weg zijn).
+      const { error: storageError } = await supabase.storage
+        .from("client-uploads")
+        .remove([post.media_path]);
+      if (storageError) {
+        console.warn("Media-bestand kon niet worden verwijderd:", storageError.message);
+      }
+    }
     const { error } = await supabase.from("scheduled_posts").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Definitief verwijderd");
