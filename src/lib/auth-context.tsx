@@ -52,15 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function loadRole(userId: string) {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-    if (data && data.length > 0) {
-      const isAdmin = data.some((r) => r.role === "admin" || r.role === "super_admin");
-      setRole(isAdmin ? "admin" : "client");
-      setIsSuperAdmin(data.some((r) => r.role === "super_admin"));
+    // Veilige weg: SECURITY DEFINER-RPC die uitsluitend de eigen rollen
+    // teruggeeft en niet afhangt van is_admin-rechten of RLS op user_roles.
+    // Valt terug op een directe query als de RPC (nog) niet bestaat.
+    let roles: string[] = [];
+    const rpc = await supabase.rpc("current_user_roles");
+    if (!rpc.error && Array.isArray(rpc.data)) {
+      roles = rpc.data as string[];
     } else {
-      setRole("client");
-      setIsSuperAdmin(false);
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+      roles = (data ?? []).map((r) => String(r.role));
     }
+    const isAdmin = roles.includes("admin") || roles.includes("super_admin");
+    setRole(isAdmin ? "admin" : "client");
+    setIsSuperAdmin(roles.includes("super_admin"));
   }
 
   async function signIn(email: string, password: string) {
