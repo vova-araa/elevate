@@ -593,7 +593,7 @@ function StatTile({
   return (
     <Link
       to={to}
-      className="group relative overflow-hidden rounded-2xl border border-gold/15 bg-card p-5 shadow-sm transition hover:border-gold/40 hover:shadow-lg"
+      className="card-lift group relative overflow-hidden rounded-2xl border border-gold/15 bg-card p-5 shadow-sm"
     >
       <span
         aria-hidden

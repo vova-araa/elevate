@@ -235,7 +235,7 @@ function ClientOverview() {
   return (
     <div className="space-y-8">
       {/* Kop */}
-      <header>
+      <header className="aurora">
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">
           {clientName ?? "Elevate"}
         </p>
@@ -596,8 +596,8 @@ function StatTile({
     <Link
       to={to}
       className={cn(
-        "group rounded-xl border bg-card p-4 transition hover:-translate-y-0.5 hover:shadow-elegant",
-        accent ? "border-gold/40 gold-ring" : "border-gold/10 hover:border-gold/25",
+        "card-lift group rounded-xl border bg-card p-4",
+        accent ? "border-gold/40 gold-ring" : "border-gold/10",
       )}
     >
       <div

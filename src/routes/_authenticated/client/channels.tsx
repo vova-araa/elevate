@@ -190,7 +190,7 @@ function ChannelsPage() {
 
   return (
     <div className="space-y-5 max-w-5xl">
-      <header>
+      <header className="aurora">
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Koppelingen</p>
         <h1 className="font-display text-4xl sm:text-5xl mt-2">Kanalen</h1>
         <p className="text-sm text-muted-foreground mt-2">
@@ -226,7 +226,7 @@ function ChannelsPage() {
               <div
                 key={id}
                 className={cn(
-                  "relative rounded-2xl border border-gold/15 bg-card p-4 overflow-hidden",
+                  "card-lift relative rounded-2xl border border-gold/15 bg-card p-4 overflow-hidden",
                   "bg-gradient-to-br",
                   tint,
                 )}

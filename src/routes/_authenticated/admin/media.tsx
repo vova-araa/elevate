@@ -386,7 +386,7 @@ function MediaLibrary() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="aurora">
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Bibliotheek</p>
         <h1 className="font-display text-4xl sm:text-5xl mt-2">Media</h1>
         <p className="text-sm text-muted-foreground mt-2">
