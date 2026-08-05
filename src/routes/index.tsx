@@ -513,6 +513,9 @@ function Landing() {
             <Link to="/privacy" className="transition-colors hover:text-gold">
               Privacy
             </Link>
+            <Link to="/data-deletion" className="transition-colors hover:text-gold">
+              Gegevens verwijderen
+            </Link>
             <Link to="/dashboard" className="transition-colors hover:text-gold">
               Portaal
             </Link>
