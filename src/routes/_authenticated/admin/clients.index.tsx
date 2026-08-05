@@ -16,6 +16,7 @@ import {
   X,
   Sparkles,
 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 
 type SortKey = "name" | "pipeline" | "openTasks" | "meetings" | "lastEval";
 type SortDir = "asc" | "desc";
@@ -200,8 +201,8 @@ function ClientsList() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Klanten</p>
-          <h1 className="font-display text-5xl mt-2">Klanten</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Klanten</h1>
+          <p className="text-sm text-muted-foreground mt-2">
             {clients?.length ?? 0} bedrijven · klik op een kaart voor het volledige dossier
           </p>
         </div>
@@ -370,7 +371,7 @@ function ClientsList() {
               key={c.id}
               to="/admin/clients/$id"
               params={{ id: c.id }}
-              className="glass rounded-2xl p-5 transition hover:gold-ring group"
+              className="glass rounded-2xl p-5 transition duration-200 hover:-translate-y-0.5 hover:border-gold/30 hover:gold-ring hover:shadow-elegant group"
             >
               <div className="flex items-center gap-3">
                 {c.logo_url ? (
@@ -413,16 +414,44 @@ function ClientsList() {
             </Link>
           );
         })}
-        {filteredSorted.length === 0 && (
-          <div className="col-span-full text-center py-12">
-            <Search className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">
-              {activeFilters > 0
-                ? "Geen klanten gevonden met deze filters."
-                : "Nog geen klanten. Voeg er één toe."}
-            </p>
-          </div>
-        )}
+        {filteredSorted.length === 0 &&
+          (activeFilters > 0 ? (
+            <EmptyState
+              className="col-span-full"
+              icon={<Search className="h-5 w-5" />}
+              title="Geen klanten gevonden"
+              description="Geen bedrijven passen bij deze filters. Pas je zoekopdracht of filters aan."
+              action={
+                <button
+                  onClick={() => {
+                    setQ("");
+                    setIndustryFilter("");
+                    setMinPipeline("");
+                    setSortKey("name");
+                    setSortDir("asc");
+                  }}
+                  className="rounded-full border border-gold/30 px-4 py-2 text-sm text-gold hover:bg-gold/10 transition"
+                >
+                  Reset filters
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              className="col-span-full"
+              icon={<Briefcase className="h-5 w-5" />}
+              title="Nog geen klanten"
+              description="Voeg je eerste bedrijf toe om dossiers, planning en resultaten bij te houden."
+              action={
+                <Link
+                  to="/admin/clients/new"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-gold px-5 py-2.5 text-sm font-medium text-primary-foreground glow-gold"
+                >
+                  <Plus className="h-4 w-4" /> Nieuwe klant
+                </Link>
+              }
+            />
+          ))}
       </div>
     </div>
   );
@@ -470,7 +499,9 @@ function Stat({
   return (
     <div className="text-center">
       <Icon className={`h-3.5 w-3.5 mx-auto ${highlight ? "text-gold" : "text-gold/70"}`} />
-      <div className={`font-display text-lg mt-1 leading-none ${highlight ? "text-gold" : ""}`}>
+      <div
+        className={`font-display text-lg mt-1 leading-none tabular-nums ${highlight ? "text-gold" : ""}`}
+      >
         {value}
       </div>
       <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5">

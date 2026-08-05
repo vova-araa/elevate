@@ -64,9 +64,9 @@ function AdminMessages() {
   return (
     <div className="space-y-4">
       <div>
-        <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Module 6</div>
-        <h1 className="font-display text-3xl sm:text-4xl text-gold mt-1">Berichten</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Communicatie</p>
+        <h1 className="font-display text-4xl sm:text-5xl mt-2">Berichten</h1>
+        <p className="text-sm text-muted-foreground mt-2">
           Alle klant-conversaties in één overzicht. Reageer, deel deliverables en feedback.
         </p>
       </div>

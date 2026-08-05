@@ -8,6 +8,8 @@ interface AuthCtx {
   user: User | null;
   session: Session | null;
   role: AppRole | null;
+  /** Super-admin heeft alle admin-rechten plus het super-admin-dashboard. */
+  isSuperAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -19,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => loadRole(s.user.id), 0);
       } else {
         setRole(null);
+        setIsSuperAdmin(false);
       }
     });
 
@@ -39,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loadRole(data.session.user.id).finally(() => setLoading(false));
       } else {
         setRole(null);
+        setIsSuperAdmin(false);
         setLoading(false);
       }
     });
@@ -49,10 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadRole(userId: string) {
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
     if (data && data.length > 0) {
-      const isAdmin = data.some((r) => r.role === "admin");
+      const isAdmin = data.some((r) => r.role === "admin" || r.role === "super_admin");
       setRole(isAdmin ? "admin" : "client");
+      setIsSuperAdmin(data.some((r) => r.role === "super_admin"));
     } else {
       setRole("client");
+      setIsSuperAdmin(false);
     }
   }
 
@@ -88,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ user, session, role, loading, signIn, signOut }}>
+    <Ctx.Provider value={{ user, session, role, isSuperAdmin, loading, signIn, signOut }}>
       {children}
     </Ctx.Provider>
   );

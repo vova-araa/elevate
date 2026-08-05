@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Compass, Clock, CheckCircle2, Circle, ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Tables } from "@/integrations/supabase/types";
 
 type RoadmapWithSteps = Tables<"roadmaps"> & { roadmap_steps: Tables<"roadmap_steps">[] };
@@ -88,8 +89,20 @@ export function ClientRoadmap() {
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Jouw traject</p>
           <h1 className="font-display text-4xl sm:text-5xl mt-2">Stappenplan</h1>
         </div>
-        <div className="glass-strong rounded-2xl p-10 text-center text-sm text-muted-foreground">
-          Stappenplan laden…
+        <div className="glass-strong rounded-2xl p-4 sm:p-6 md:p-8 space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-56 rounded-lg" />
+              <Skeleton className="h-4 w-72 rounded" />
+            </div>
+            <Skeleton className="h-12 w-16 rounded-lg" />
+          </div>
+          <Skeleton className="h-2 w-full rounded-full" />
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            ))}
+          </div>
         </div>
       </div>
     );

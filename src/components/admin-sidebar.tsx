@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, ChevronsUpDown, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, ChevronsUpDown, Check, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useEffect, useState } from "react";
@@ -11,6 +12,7 @@ import { ADMIN_NAV, badgeClasses, initials, type SidebarCounts } from "@/lib/adm
 
 export function AdminSidebar() {
   const { sidebarCollapsed: collapsed, toggleSidebar } = useUIStore();
+  const { isSuperAdmin } = useAuth();
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
@@ -210,6 +212,39 @@ export function AdminSidebar() {
 
       {/* Navigatie */}
       <nav className="flex-1 overflow-y-auto scrollbar-thin py-2">
+        {/* Super-admin-ingang — alleen zichtbaar voor super admins */}
+        {isSuperAdmin && (
+          <div className="mb-3 px-2">
+            {!collapsed && (
+              <div className="mb-1 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-gold/70">
+                Super admin
+              </div>
+            )}
+            <Link
+              to="/admin/super"
+              className={cn(
+                "group relative flex items-center rounded-xl text-sm transition-colors duration-150 active:scale-[0.99]",
+                collapsed ? "mx-auto h-10 w-10 justify-center" : "gap-3 px-2 py-2",
+                isActive("/admin/super")
+                  ? "bg-gold/12 font-medium text-gold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-gold"
+                  : "text-foreground/75 hover:bg-accent/40 hover:text-foreground",
+              )}
+              title={collapsed ? "Super admin" : undefined}
+            >
+              <span
+                className={cn(
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-150",
+                  isActive("/admin/super")
+                    ? "bg-gold/15 text-gold"
+                    : "bg-background/50 text-muted-foreground group-hover:text-foreground",
+                )}
+              >
+                <Shield className="h-4 w-4" />
+              </span>
+              {!collapsed && <span className="flex-1 truncate">Bureau-overzicht</span>}
+            </Link>
+          </div>
+        )}
         {ADMIN_NAV.map((section) => (
           <div key={section.label} className="mb-3 px-2">
             {!collapsed && (

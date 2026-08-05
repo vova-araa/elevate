@@ -1939,7 +1939,7 @@ export type Database = {
       };
     };
     Enums: {
-      app_role: "admin" | "client" | "editor" | "viewer";
+      app_role: "admin" | "client" | "editor" | "super_admin" | "viewer";
       automation_action:
         "create_notification" | "create_task" | "send_webhook" | "change_post_status";
       automation_trigger:
@@ -2095,7 +2095,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "client", "editor", "viewer"],
+      app_role: ["admin", "client", "editor", "super_admin", "viewer"],
       automation_action: [
         "create_notification",
         "create_task",

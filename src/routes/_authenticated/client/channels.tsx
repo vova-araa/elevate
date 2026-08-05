@@ -28,6 +28,7 @@ import {
   getSocialSetupStatus,
 } from "@/lib/channels.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const searchSchema = z.object({
   connected: z.string().optional(),
@@ -203,99 +204,107 @@ function ChannelsPage() {
         </div>
       )}
 
-      {isLoading && <div className="text-sm text-muted-foreground">Laden…</div>}
+      {isLoading && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {PLATFORMS.map(({ id }) => (
+            <Skeleton key={id} className="h-[132px] w-full rounded-2xl" />
+          ))}
+        </div>
+      )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {PLATFORMS.map(({ id, label, Icon, tint, iconTint }) => {
-          const ch = channelsByPlatform.get(id);
-          const connectedActive = !!ch && ch.status === "active";
-          const expired = !!ch && ch.status === "expired";
-          const warn = tokenExpiryWarning(ch?.token_expires_at);
-          // Alleen tonen als "Koppelen" wanneer het platform in de omgeving is
-          // ingesteld. Zonder setup-status (nog aan het laden) niet blokkeren.
-          const available = !setup || !!setup.platforms[id]?.configured;
-          return (
-            <div
-              key={id}
-              className={cn(
-                "relative rounded-2xl border border-gold/15 bg-card p-4 overflow-hidden",
-                "bg-gradient-to-br",
-                tint,
-              )}
-            >
-              {connectedActive && (
-                <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-400/30 rounded-full px-2 py-0.5">
-                  <CheckCircle2 className="h-3 w-3" /> Gekoppeld
-                </span>
-              )}
-              {expired && (
-                <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-full px-2 py-0.5">
-                  <AlertTriangle className="h-3 w-3" /> Verlopen — koppel opnieuw
-                </span>
-              )}
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-xl bg-background/40 grid place-items-center">
-                  <Icon className={cn("h-5 w-5", iconTint)} />
+      {!isLoading && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {PLATFORMS.map(({ id, label, Icon, tint, iconTint }) => {
+            const ch = channelsByPlatform.get(id);
+            const connectedActive = !!ch && ch.status === "active";
+            const expired = !!ch && ch.status === "expired";
+            const warn = tokenExpiryWarning(ch?.token_expires_at);
+            // Alleen tonen als "Koppelen" wanneer het platform in de omgeving is
+            // ingesteld. Zonder setup-status (nog aan het laden) niet blokkeren.
+            const available = !setup || !!setup.platforms[id]?.configured;
+            return (
+              <div
+                key={id}
+                className={cn(
+                  "relative rounded-2xl border border-gold/15 bg-card p-4 overflow-hidden",
+                  "bg-gradient-to-br",
+                  tint,
+                )}
+              >
+                {connectedActive && (
+                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-400/30 rounded-full px-2 py-0.5">
+                    <CheckCircle2 className="h-3 w-3" /> Gekoppeld
+                  </span>
+                )}
+                {expired && (
+                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-full px-2 py-0.5">
+                    <AlertTriangle className="h-3 w-3" /> Verlopen — koppel opnieuw
+                  </span>
+                )}
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-xl bg-background/40 grid place-items-center">
+                    <Icon className={cn("h-5 w-5", iconTint)} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium">{label}</div>
+                    {ch ? (
+                      <div className="text-xs text-muted-foreground truncate">
+                        {ch.account_username ?? "—"}
+                        {typeof ch.follower_count === "number" && (
+                          <> · {ch.follower_count.toLocaleString("nl-NL")} volgers</>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">Niet gekoppeld</div>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <div className="font-medium">{label}</div>
-                  {ch ? (
-                    <div className="text-xs text-muted-foreground truncate">
-                      {ch.account_username ?? "—"}
-                      {typeof ch.follower_count === "number" && (
-                        <> · {ch.follower_count.toLocaleString("nl-NL")} volgers</>
+
+                {warn && !expired && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {warn.message}
+                  </div>
+                )}
+
+                <div className="mt-4 flex items-center gap-2">
+                  {connectedActive ? (
+                    <button
+                      onClick={async () => {
+                        if (
+                          await confirmDialog("Weet je het zeker? Posts vanuit dit kanaal stoppen.")
+                        ) {
+                          disconnectMut.mutate(id);
+                        }
+                      }}
+                      disabled={disconnectMut.isPending}
+                      className="text-xs min-h-11 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
+                    >
+                      {disconnectMut.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        "Ontkoppelen"
                       )}
-                    </div>
+                    </button>
+                  ) : available ? (
+                    <button
+                      onClick={() => setConfirm(id)}
+                      disabled={connectMut.isPending}
+                      className="text-xs min-h-11 px-3 rounded-lg bg-gold/20 text-gold font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <Link2 className="h-3.5 w-3.5" /> Koppelen
+                    </button>
                   ) : (
-                    <div className="text-xs text-muted-foreground">Niet gekoppeld</div>
+                    <span className="text-xs min-h-11 px-3 rounded-lg border border-border/60 bg-background/20 text-muted-foreground inline-flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Nog niet beschikbaar
+                    </span>
                   )}
                 </div>
               </div>
-
-              {warn && !expired && (
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                  {warn.message}
-                </div>
-              )}
-
-              <div className="mt-4 flex items-center gap-2">
-                {connectedActive ? (
-                  <button
-                    onClick={async () => {
-                      if (
-                        await confirmDialog("Weet je het zeker? Posts vanuit dit kanaal stoppen.")
-                      ) {
-                        disconnectMut.mutate(id);
-                      }
-                    }}
-                    disabled={disconnectMut.isPending}
-                    className="text-xs min-h-11 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
-                  >
-                    {disconnectMut.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      "Ontkoppelen"
-                    )}
-                  </button>
-                ) : available ? (
-                  <button
-                    onClick={() => setConfirm(id)}
-                    disabled={connectMut.isPending}
-                    className="text-xs min-h-11 px-3 rounded-lg bg-gold/20 text-gold font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <Link2 className="h-3.5 w-3.5" /> Koppelen
-                  </button>
-                ) : (
-                  <span className="text-xs min-h-11 px-3 rounded-lg border border-border/60 bg-background/20 text-muted-foreground inline-flex items-center gap-1.5">
-                    <AlertTriangle className="h-3.5 w-3.5" /> Nog niet beschikbaar
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Confirm sheet/modal */}
       {confirm &&

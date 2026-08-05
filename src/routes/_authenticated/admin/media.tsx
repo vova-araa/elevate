@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import { importMediaFromUrl } from "@/lib/media-import.functions";
 import { getStorageUsage, purgePostedMedia, type StorageUsage } from "@/lib/storage.functions";
+import { EmptyState } from "@/components/empty-state";
 
 export const Route = createFileRoute("/_authenticated/admin/media")({
   component: MediaLibrary,
@@ -386,7 +387,7 @@ function MediaLibrary() {
     <div className="space-y-6">
       <div>
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Bibliotheek</p>
-        <h1 className="font-display text-5xl mt-2">Media</h1>
+        <h1 className="font-display text-4xl sm:text-5xl mt-2">Media</h1>
         <p className="text-sm text-muted-foreground mt-2">
           Alle beelden, video's en bestanden van klanten op één plek. Maak per bedrijf
           overzichtelijk mappen aan.
@@ -598,17 +599,28 @@ function MediaLibrary() {
         )}
 
         {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-gold" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {Array.from({ length: 10 }, (_, i) => (
+              <div
+                key={i}
+                className="aspect-square w-full rounded-xl bg-muted-foreground/10 animate-pulse"
+              />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center text-muted-foreground">
-            {clientId
-              ? folderId
-                ? "Deze map is leeg"
-                : "Geen losse bestanden — kies of maak een map"
-              : "Geen media gevonden"}
-          </div>
+          <EmptyState
+            icon={<ImageOff className="h-5 w-5" />}
+            title={
+              clientId ? (folderId ? "Deze map is leeg" : "Geen losse bestanden") : "Nog geen media"
+            }
+            description={
+              clientId
+                ? folderId
+                  ? "Upload of importeer bestanden om ze hier te tonen."
+                  : "Kies of maak een map, of upload bestanden in de hoofdmap."
+                : "Kies een klant of upload media om je bibliotheek te vullen."
+            }
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {filtered.map((u: UploadWithClient) => (

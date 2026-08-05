@@ -81,9 +81,9 @@ function SettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Module 7</div>
-          <h1 className="font-display text-3xl sm:text-4xl text-gold mt-1">Account & Bedrijf</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Instellingen</p>
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Account &amp; Bedrijf</h1>
+          <p className="text-sm text-muted-foreground mt-2">
             Bedrijfsprofiel, social accounts, team en notificatievoorkeuren.
           </p>
         </div>

@@ -37,6 +37,7 @@ import {
   BarChart3,
   type LucideIcon,
 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -119,8 +120,12 @@ function AnalyticsPage() {
   if (!clients) return <AnalyticsSkeleton />;
   if (clients.length === 0) {
     return (
-      <div className="glass-strong rounded-xl p-8 text-center text-muted-foreground">
-        Voeg eerst een klant toe om analytics te zien.
+      <div className="max-w-2xl">
+        <EmptyState
+          icon={<Users className="h-5 w-5" />}
+          title="Nog geen klanten"
+          description="Voeg eerst een klant toe om analytics per bedrijf te zien."
+        />
       </div>
     );
   }
@@ -147,9 +152,9 @@ function AnalyticsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Per klant</div>
-          <h1 className="font-display text-3xl sm:text-4xl text-gold mt-1">Analytics</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Per klant</p>
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Analytics</h1>
+          <p className="text-sm text-muted-foreground mt-2">
             Inzicht in posting performance, platforms en trends per klant.
           </p>
         </div>
@@ -522,7 +527,9 @@ function Kpi({
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className={cn("h-3.5 w-3.5", tint ?? "text-gold")} /> {label}
       </div>
-      <div className={cn("mt-2 text-2xl font-display", tint ?? "text-foreground")}>{value}</div>
+      <div className={cn("mt-2 text-2xl font-display tabular-nums", tint ?? "text-foreground")}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -543,7 +550,7 @@ function StatCard({
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
-      <div className="mt-2 text-3xl font-display text-gold">{value}</div>
+      <div className="mt-2 text-3xl font-display tabular-nums text-gold">{value}</div>
       <div className="text-xs text-muted-foreground mt-2">{hint}</div>
     </div>
   );
@@ -569,7 +576,7 @@ function FollowerGrowthCard({ growth, days }: { growth: number | null; days: num
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
         <Icon className={cn("h-3.5 w-3.5", tint)} /> Volgersgroei
       </div>
-      <div className={cn("mt-2 text-3xl font-display", tint)}>{value}</div>
+      <div className={cn("mt-2 text-3xl font-display tabular-nums", tint)}>{value}</div>
       <div className="text-xs text-muted-foreground mt-2">{hint}</div>
     </div>
   );

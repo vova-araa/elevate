@@ -86,14 +86,12 @@ function ClientReports() {
       </div>
 
       {(reports?.length ?? 0) === 0 && (
-        <div className="glass rounded-2xl p-12 text-center">
-          <FileBarChart className="h-10 w-10 text-gold mx-auto mb-4" />
-          <h2 className="font-display text-2xl">Nog geen rapporten</h2>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-            Je eerste maandrapport verschijnt hier zodra je team het klaargezet heeft. Meestal
-            ontvang je aan het begin van elke maand een terugblik.
-          </p>
-        </div>
+        <EmptyState
+          icon={<FileBarChart className="h-5 w-5" />}
+          title="Nog geen rapporten"
+          description="Je eerste maandrapport verschijnt hier zodra je team het klaargezet heeft. Meestal ontvang je aan het begin van elke maand een terugblik."
+          className="py-12"
+        />
       )}
 
       {byYear.map(([year, items]) => (

@@ -33,6 +33,7 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminTrashRouteImport } from './routes/_authenticated/admin/trash'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminTasksRouteImport } from './routes/_authenticated/admin/tasks'
+import { Route as AuthenticatedAdminSuperRouteImport } from './routes/_authenticated/admin/super'
 import { Route as AuthenticatedAdminStrategyRouteImport } from './routes/_authenticated/admin/strategy'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminSearchRouteImport } from './routes/_authenticated/admin/search'
@@ -194,6 +195,11 @@ const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
 const AuthenticatedAdminTasksRoute = AuthenticatedAdminTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const AuthenticatedAdminSuperRoute = AuthenticatedAdminSuperRouteImport.update({
+  id: '/super',
+  path: '/super',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
 const AuthenticatedAdminStrategyRoute =
@@ -420,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/admin/search': typeof AuthenticatedAdminSearchRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/strategy': typeof AuthenticatedAdminStrategyRoute
+  '/admin/super': typeof AuthenticatedAdminSuperRoute
   '/admin/tasks': typeof AuthenticatedAdminTasksRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/trash': typeof AuthenticatedAdminTrashRoute
@@ -478,6 +485,7 @@ export interface FileRoutesByTo {
   '/admin/search': typeof AuthenticatedAdminSearchRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/strategy': typeof AuthenticatedAdminStrategyRoute
+  '/admin/super': typeof AuthenticatedAdminSuperRoute
   '/admin/tasks': typeof AuthenticatedAdminTasksRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/trash': typeof AuthenticatedAdminTrashRoute
@@ -538,6 +546,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/search': typeof AuthenticatedAdminSearchRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/strategy': typeof AuthenticatedAdminStrategyRoute
+  '/_authenticated/admin/super': typeof AuthenticatedAdminSuperRoute
   '/_authenticated/admin/tasks': typeof AuthenticatedAdminTasksRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/trash': typeof AuthenticatedAdminTrashRoute
@@ -598,6 +607,7 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/settings'
     | '/admin/strategy'
+    | '/admin/super'
     | '/admin/tasks'
     | '/admin/team'
     | '/admin/trash'
@@ -656,6 +666,7 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/settings'
     | '/admin/strategy'
+    | '/admin/super'
     | '/admin/tasks'
     | '/admin/team'
     | '/admin/trash'
@@ -715,6 +726,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/search'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/strategy'
+    | '/_authenticated/admin/super'
     | '/_authenticated/admin/tasks'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/trash'
@@ -923,6 +935,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/admin/tasks'
       preLoaderRoute: typeof AuthenticatedAdminTasksRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/super': {
+      id: '/_authenticated/admin/super'
+      path: '/super'
+      fullPath: '/admin/super'
+      preLoaderRoute: typeof AuthenticatedAdminSuperRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/strategy': {
@@ -1201,6 +1220,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSearchRoute: typeof AuthenticatedAdminSearchRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminStrategyRoute: typeof AuthenticatedAdminStrategyRoute
+  AuthenticatedAdminSuperRoute: typeof AuthenticatedAdminSuperRoute
   AuthenticatedAdminTasksRoute: typeof AuthenticatedAdminTasksRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminTrashRoute: typeof AuthenticatedAdminTrashRoute
@@ -1238,6 +1258,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSearchRoute: AuthenticatedAdminSearchRoute,
     AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
     AuthenticatedAdminStrategyRoute: AuthenticatedAdminStrategyRoute,
+    AuthenticatedAdminSuperRoute: AuthenticatedAdminSuperRoute,
     AuthenticatedAdminTasksRoute: AuthenticatedAdminTasksRoute,
     AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
     AuthenticatedAdminTrashRoute: AuthenticatedAdminTrashRoute,

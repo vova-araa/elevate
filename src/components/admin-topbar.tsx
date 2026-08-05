@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { NotificationCenter, useNotificationCenter } from "@/components/notification-center";
 
 const TITLES: Record<string, string> = {
+  "/admin/super": "Bureau-overzicht",
   "/admin/dashboard": "Dashboard",
   "/admin/planner": "Planner",
   "/admin/compose": "Nieuwe post",

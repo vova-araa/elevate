@@ -54,6 +54,7 @@ import { PostChip } from "@/components/planner/post-chip";
 import { WeekView } from "@/components/planner/week-view";
 import { ClientLegend } from "@/components/planner/client-legend";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/empty-state";
 
 const searchSchema = z.object({
   clientId: z.string().uuid().optional(),
@@ -298,14 +299,20 @@ function PlannerPage() {
 
   if (clients.length === 0) {
     return (
-      <div className="glass-strong rounded-2xl p-10 text-center">
-        <p className="text-muted-foreground">Nog geen klanten. Maak eerst een klant aan.</p>
-        <Link
-          to="/admin/clients/new"
-          className="inline-block mt-4 rounded-full bg-gradient-gold text-primary-foreground px-4 py-2 text-sm"
-        >
-          Nieuwe klant
-        </Link>
+      <div className="max-w-2xl">
+        <EmptyState
+          icon={<CalendarDays className="h-5 w-5" />}
+          title="Nog geen klanten"
+          description="Maak eerst een klant aan; daarna kun je content plannen op de kalender."
+          action={
+            <Link
+              to="/admin/clients/new"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-gold text-primary-foreground px-4 py-2 text-sm font-medium"
+            >
+              <Plus className="h-4 w-4" /> Nieuwe klant
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -733,9 +740,11 @@ function DayView({
         </button>
       </div>
       {sorted.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/40 p-10 text-center text-sm text-muted-foreground">
-          Geen posts voor deze dag.
-        </div>
+        <EmptyState
+          icon={<CalIcon className="h-5 w-5" />}
+          title="Geen posts vandaag"
+          description="Er staat niets gepland voor deze dag. Voeg een post toe om te beginnen."
+        />
       ) : (
         <div className="space-y-3">
           {sorted.map((p) => (
@@ -785,9 +794,11 @@ function AgendaView({
 
   if (grouped.length === 0) {
     return (
-      <div className="glass-strong rounded-2xl p-10 text-center text-sm text-muted-foreground">
-        Geen geplande posts in deze periode.
-      </div>
+      <EmptyState
+        icon={<ListChecks className="h-5 w-5" />}
+        title="Niets in deze periode"
+        description="Er staan geen geplande posts in dit tijdvak. Kies een andere periode of plan een nieuwe post."
+      />
     );
   }
   return (
@@ -1659,9 +1670,12 @@ function FeedPreviewPanel({
 
       {open &&
         (posts.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
-            Nog geen posts voor {label}. Plan een post in om de feed te zien.
-          </div>
+          <EmptyState
+            icon={<ImageIcon className="h-5 w-5" />}
+            title={`Nog geen posts voor ${label}`}
+            description="Plan een post in om de feed-preview van dit kanaal te zien."
+            className="py-8"
+          />
         ) : (
           <>
             <div className={cn("grid gap-1 rounded-xl overflow-hidden hairline", cols)}>
