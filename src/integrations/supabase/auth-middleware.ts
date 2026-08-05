@@ -6,8 +6,13 @@ import type { Database } from "./types";
 
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    // Val terug op de VITE_-prefixed namen: op de Render-deploy staan alleen
+    // VITE_SUPABASE_URL/VITE_SUPABASE_PUBLISHABLE_KEY in de omgeving, terwijl de
+    // server hier de niet-prefixed varianten verwacht. Zonder deze fallback
+    // falen alle server-functions (bv. opslag-overzicht) → "Kon niet laden".
+    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY =
+      process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       const missing = [

@@ -100,6 +100,7 @@ function MediaLibrary() {
   const { data: storage, isLoading: storageLoading } = useQuery({
     queryKey: ["storage-usage"],
     queryFn: () => storageUsage(),
+    meta: { silent: true },
   });
 
   const { data: clients } = useQuery({

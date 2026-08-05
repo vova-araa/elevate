@@ -192,6 +192,16 @@
     outline-offset: 2px;
   }
 
+  /* Zacht, soepel scrollen door de hele app — met respect voor toegankelijkheid. */
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   /* Dunne, warme scrollbar — overal */
   * {
     scrollbar-width: thin;
@@ -347,5 +357,88 @@
   }
   .input:focus {
     box-shadow: 0 0 0 2px oklch(0.72 0.13 75 / 40%);
+  }
+
+  /* Soepel scroll-oppervlak voor de portal-content: vloeiend scrollen met
+     ingehouden overscroll (geen "bounce"-doorschuif naar de body). */
+  .scroll-surface {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    scroll-padding-top: 1rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-surface {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* Kaart die subtiel oplicht en optilt bij hover — premium, rustig. */
+  .card-lift {
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.25s ease;
+    will-change: transform;
+  }
+  .card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-gold);
+    border-color: oklch(from var(--gold) l c h / 35%);
+  }
+
+  /* Bewegende gouden gloed als achtergrondaccent bij paginakoppen. */
+  .aurora {
+    position: relative;
+    isolation: isolate;
+  }
+  .aurora::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 240px;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(40% 60% at 20% 0%, oklch(from var(--gold) l c h / 16%), transparent 70%),
+      radial-gradient(35% 55% at 85% 10%, oklch(from var(--gold-deep) l c h / 14%), transparent 70%);
+    filter: blur(6px);
+    animation: aurora-drift 14s ease-in-out infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .aurora::before {
+      animation: none;
+    }
+  }
+
+  /* Zachte page-transition voor portalpagina's. */
+  .page-enter {
+    animation: page-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .page-enter {
+      animation: none;
+    }
+  }
+}
+
+@keyframes aurora-drift {
+  from {
+    transform: translate3d(-2%, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  to {
+    transform: translate3d(3%, 6px, 0) scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

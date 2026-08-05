@@ -118,8 +118,11 @@ function AuthLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar onMenu={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-10">
-          <Outlet />
+        <main className="scroll-surface flex-1 overflow-y-auto p-4 sm:p-6 md:p-10">
+          {/* Zachte page-transition: content faded soepel in bij navigeren. */}
+          <div key={pathname} className="page-enter">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

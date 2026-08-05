@@ -19,3 +19,12 @@ services:
         sync: false
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
         sync: false
+      # Server-only geheim: nodig voor admin-server-functions (opslag-overzicht,
+      # media opruimen, gebruikers aanmaken). Zonder dit falen die schermen met
+      # "Kon niet laden". De code valt voor URL/publishable terug op de VITE_-
+      # varianten, maar de service-role key MOET hier gezet worden.
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # Publieke basis-URL voor OAuth-callbacks (social koppelingen).
+      - key: APP_URL
+        sync: false

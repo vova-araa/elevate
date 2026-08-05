@@ -9,11 +9,16 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     // App-brede foutfeedback: geen enkele mislukte query/actie faalt nog stil.
     queryCache: new QueryCache({
-      onError: () =>
+      // Queries met meta.silent tonen zelf een nette inline-fallback (bv. een
+      // secundaire kaart die "—" laat zien); die overvallen we niet met een
+      // app-brede rode melding.
+      onError: (_err, query) => {
+        if (query.meta?.silent) return;
         toast.error("Kon niet laden", {
           id: "load-error",
           description: "Er ging iets mis bij het ophalen. Probeer het opnieuw.",
-        }),
+        });
+      },
     }),
     mutationCache: new MutationCache({
       onError: () =>

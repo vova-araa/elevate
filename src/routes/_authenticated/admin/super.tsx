@@ -86,6 +86,7 @@ function SuperAdminDashboard() {
     queryKey: ["super-storage-usage"],
     enabled: isSuperAdmin,
     queryFn: () => getUsage(),
+    meta: { silent: true },
   });
 
   if (loading) {
@@ -100,7 +101,7 @@ function SuperAdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="aurora flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.22em] text-gold/80">
             <Shield className="h-3.5 w-3.5" /> Super admin
@@ -256,10 +257,7 @@ function StatTile({
   tone: string;
 }) {
   return (
-    <Link
-      to={to}
-      className="group rounded-xl border border-gold/10 bg-card p-4 transition hover:-translate-y-0.5 hover:border-gold/30 hover:shadow-md"
-    >
+    <Link to={to} className="card-lift group rounded-xl border border-gold/10 bg-card p-4">
       <span className={cn("grid h-9 w-9 place-items-center rounded-lg", tone)}>
         <Icon className="h-5 w-5" />
       </span>

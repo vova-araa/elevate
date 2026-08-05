@@ -1,4 +1,10 @@
-import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -49,6 +55,7 @@ function AdminGate() {
 
 function AdminLayout() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
     <div className="flex min-h-screen bg-luxe">
@@ -60,8 +67,11 @@ function AdminLayout() {
         )}
       >
         <AdminTopbar />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-          <Outlet />
+        <main className="scroll-surface flex-1 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+          {/* Zachte page-transition bij navigeren tussen admin-schermen. */}
+          <div key={pathname} className="page-enter">
+            <Outlet />
+          </div>
         </main>
       </div>
       <MobileBottomNav />
