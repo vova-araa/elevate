@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Plus, LogOut, Check, Moon, Sun } from "lucide-react";
+import { X, Plus, LogOut, Check, Moon, Sun, Shield } from "lucide-react";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,7 @@ export function MobileNavSheet() {
   const setOpen = useUIStore((s) => s.setMobileSheetOpen);
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { activeClientId, setActiveClient } = useClientStore();
-  const { signOut } = useAuth();
+  const { signOut, isSuperAdmin } = useAuth();
   const { theme, toggle: toggleTheme } = useTheme();
 
   // Sluit het menu automatisch bij navigatie.
@@ -182,6 +182,35 @@ export function MobileNavSheet() {
 
         {/* Navigatie */}
         <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3">
+          {/* Super-admin-ingang — alleen voor super admins */}
+          {isSuperAdmin && (
+            <div className="mb-4">
+              <div className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-gold/70">
+                Super admin
+              </div>
+              <Link
+                to="/admin/super"
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm transition-colors",
+                  isActive("/admin/super")
+                    ? "bg-gold/12 font-medium text-gold"
+                    : "text-foreground/80 hover:bg-accent/40 hover:text-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors",
+                    isActive("/admin/super")
+                      ? "bg-gold/15 text-gold"
+                      : "bg-background/60 text-muted-foreground group-hover:text-foreground",
+                  )}
+                >
+                  <Shield className="h-4 w-4" />
+                </span>
+                <span className="flex-1 truncate">Bureau-overzicht</span>
+              </Link>
+            </div>
+          )}
           {ADMIN_NAV.map((section) => (
             <div key={section.label} className="mb-4">
               <div className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
