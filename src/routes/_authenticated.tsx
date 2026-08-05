@@ -62,6 +62,11 @@ function AuthLayout() {
     if (role === "client" && pathname.startsWith("/admin")) {
       navigate({ to: "/dashboard", replace: true });
     }
+    // Admin hoort niet in de klant-weergave: stuur netjes naar het admin-dashboard
+    // (voorkomt dat een admin op een oude /client-pagina blijft hangen).
+    if (role === "admin" && pathname.startsWith("/client")) {
+      navigate({ to: "/admin/dashboard", replace: true });
+    }
   }, [role, loading, pathname, navigate]);
 
   if (loading || !role) {
