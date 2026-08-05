@@ -79,6 +79,44 @@ async function finalize(
   return { userId, tempPassword };
 }
 
+const testAccountSchema = z.object({
+  role: z.enum(["editor", "viewer", "client", "admin"]).default("editor"),
+});
+
+/**
+ * Maakt snel een TEST-account aan zonder dat de admin een e-mailadres hoeft in
+ * te voeren: e-mail én wachtwoord worden gegenereerd en teruggegeven zodat je
+ * er direct mee kunt inloggen. Handig om bijvoorbeeld de editor-rol te testen.
+ */
+export const createTestAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => testAccountSchema.parse(input ?? {}))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+
+    const rand = crypto.randomUUID().slice(0, 8);
+    const email = `test-${data.role}-${rand}@example.com`;
+    const password = "Test-" + crypto.randomUUID().slice(0, 10) + "!9";
+    const label = `Test ${data.role}`;
+
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: label, test_account: true },
+    });
+    if (error || !created.user) throw new Error(error?.message || "Kon test-account niet aanmaken");
+
+    const userId = created.user.id;
+    await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: label, email });
+    // De handle_new_user-trigger zet standaard 'client'; voeg de gevraagde rol toe.
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: userId, role: data.role }, { onConflict: "user_id,role" });
+
+    return { userId, email, password, role: data.role };
+  });
+
 const roleSchema = z.object({
   userId: z.string().uuid(),
   role: z.enum(["admin", "client"]),

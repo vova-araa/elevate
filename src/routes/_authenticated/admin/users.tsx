@@ -4,9 +4,15 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { inviteUser, setUserRole, setClientMembership, deleteUser } from "@/lib/admin.functions";
+import {
+  inviteUser,
+  setUserRole,
+  setClientMembership,
+  deleteUser,
+  createTestAccount,
+} from "@/lib/admin.functions";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
+import { Check, Copy, FlaskConical } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -27,6 +33,7 @@ function UsersAdmin() {
   const toggleRole = useServerFn(setUserRole);
   const toggleMember = useServerFn(setClientMembership);
   const removeUser = useServerFn(deleteUser);
+  const makeTest = useServerFn(createTestAccount);
 
   const { data: users } = useQuery<AppUser[]>({
     queryKey: ["all-users"],
@@ -52,6 +59,24 @@ function UsersAdmin() {
   const [f, setF] = useState({ email: "", fullName: "", clientId: "", makeAdmin: false });
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
+
+  // Test-account zonder e-mailadres: rol + gegenereerde inloggegevens.
+  const [testRole, setTestRole] = useState<"editor" | "viewer" | "client" | "admin">("editor");
+  const [testBusy, setTestBusy] = useState(false);
+  const [testCreds, setTestCreds] = useState<{ email: string; password: string } | null>(null);
+
+  async function createTest() {
+    setTestBusy(true);
+    try {
+      const res = await makeTest({ data: { role: testRole } });
+      setTestCreds({ email: res.email, password: res.password });
+      toast.success(`Test-account (${res.role}) aangemaakt`);
+      qc.invalidateQueries({ queryKey: ["all-users"] });
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+    setTestBusy(false);
+  }
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -185,6 +210,80 @@ function UsersAdmin() {
           {busy ? "Versturen..." : "Account aanmaken & uitnodigen"}
         </button>
       </form>
+
+      {/* Snel test-account zonder e-mailadres */}
+      <div className="rounded-2xl border border-gold/10 bg-card p-6">
+        <div className="flex items-center gap-2">
+          <FlaskConical className="h-4 w-4 text-gold" />
+          <h2 className="font-display text-lg">Test-account (zonder e-mailadres)</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Maakt direct een testaccount aan met gegenereerde inloggegevens — handig om bijvoorbeeld
+          de editor-rol te proberen. Je hoeft geen e-mailadres in te voeren.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <select
+            value={testRole}
+            onChange={(e) =>
+              setTestRole(e.target.value as "editor" | "viewer" | "client" | "admin")
+            }
+            className="rounded-lg bg-input/60 hairline px-4 py-2.5 text-sm"
+            aria-label="Rol voor test-account"
+          >
+            <option value="editor">Editor</option>
+            <option value="viewer">Viewer</option>
+            <option value="client">Klant</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button
+            onClick={createTest}
+            disabled={testBusy}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-gold px-5 py-2.5 text-sm font-medium text-primary-foreground transition hover:brightness-105 disabled:opacity-60"
+          >
+            <FlaskConical className="h-4 w-4" />
+            {testBusy ? "Aanmaken…" : "Test-account aanmaken"}
+          </button>
+        </div>
+
+        {testCreds && (
+          <div className="mt-4 rounded-xl border border-gold/20 bg-gold/5 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-gold/80">Inloggegevens</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Bewaar deze nu — het wachtwoord is hierna niet meer op te vragen.
+            </p>
+            <div className="mt-3 space-y-2">
+              {(
+                [
+                  ["E-mail", testCreds.email],
+                  ["Wachtwoord", testCreds.password],
+                ] as const
+              ).map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-background/60 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {label}
+                    </div>
+                    <div className="truncate font-mono text-sm">{value}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(value);
+                      toast.success(`${label} gekopieerd`);
+                    }}
+                    className="shrink-0 rounded-md border border-gold/20 p-1.5 text-gold hover:bg-gold/10"
+                    aria-label={`${label} kopiëren`}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <input
         placeholder="Zoek op naam of e-mail..."
