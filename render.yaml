@@ -6,6 +6,9 @@ services:
   - type: web
     name: elevate
     runtime: node
+    # Starter (of hoger) blijft altijd aan; het gratis type valt na ~15 min
+    # inactiviteit in slaapstand en toont dan het "Service waking up"-scherm.
+    plan: starter
     buildCommand: npm install && npm run build
     startCommand: node .output/server/index.mjs
     pullRequestPreviewsEnabled: true
