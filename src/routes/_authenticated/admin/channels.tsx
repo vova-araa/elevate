@@ -142,6 +142,12 @@ const PLATFORMS: { id: Platform; label: string; Icon: LucideIcon; tint: string }
   { id: "facebook", label: "Facebook", Icon: Facebook, tint: "from-indigo-500/10 to-blue-500/5" },
 ];
 
+// Voor nu bieden we alleen Instagram, Facebook en TikTok aan als koppeling.
+// LinkedIn/YouTube blijven in de code staan (config + flow), maar worden niet
+// getoond — zet ze hier terug om ze weer te activeren.
+const ENABLED_PLATFORMS: Platform[] = ["instagram", "facebook", "tiktok"];
+const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => ENABLED_PLATFORMS.includes(p.id));
+
 function AdminChannels() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -318,7 +324,7 @@ function AdminChannels() {
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {PLATFORMS.map(({ id, label, Icon, tint }) => {
+        {VISIBLE_PLATFORMS.map(({ id, label, Icon, tint }) => {
           const ch = channelsByPlatform.get(id);
           const connectedActive = !!ch && ch.status === "active";
           const expired = !!ch && ch.status === "expired";

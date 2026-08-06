@@ -110,6 +110,12 @@ const PLATFORMS: {
   },
 ];
 
+// Voor nu tonen we alleen Instagram, Facebook en TikTok. LinkedIn/YouTube
+// blijven in de code, maar worden niet aangeboden — voeg ze hier toe om ze
+// weer te activeren.
+const ENABLED_PLATFORMS: Platform[] = ["instagram", "facebook", "tiktok"];
+const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => ENABLED_PLATFORMS.includes(p.id));
+
 function ChannelsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -206,7 +212,7 @@ function ChannelsPage() {
 
       {isLoading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {PLATFORMS.map(({ id }) => (
+          {VISIBLE_PLATFORMS.map(({ id }) => (
             <Skeleton key={id} className="h-[132px] w-full rounded-2xl" />
           ))}
         </div>
@@ -214,7 +220,7 @@ function ChannelsPage() {
 
       {!isLoading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {PLATFORMS.map(({ id, label, Icon, tint, iconTint }) => {
+          {VISIBLE_PLATFORMS.map(({ id, label, Icon, tint, iconTint }) => {
             const ch = channelsByPlatform.get(id);
             const connectedActive = !!ch && ch.status === "active";
             const expired = !!ch && ch.status === "expired";
