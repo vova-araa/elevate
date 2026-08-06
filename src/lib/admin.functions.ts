@@ -117,6 +117,63 @@ export const createTestAccount = createServerFn({ method: "POST" })
     return { userId, email, password, role: data.role };
   });
 
+const demoClientSchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+});
+
+/**
+ * Maakt in één klik een volledige DEMO-klant + bijbehorende klant-login aan:
+ * een `clients`-record, een auth-gebruiker (rol `client`), en de koppeling in
+ * `client_members`. Bedoeld om Meta/TikTok App Review of een nieuwe tester-klant
+ * meteen te laten koppelen op /client/channels — zonder handmatig klant + login
+ * te moeten aanmaken. E-mail én wachtwoord worden gegenereerd en teruggegeven.
+ */
+export const createDemoClientAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => demoClientSchema.parse(input ?? {}))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+
+    const rand = crypto.randomUUID().slice(0, 8);
+    const clientName = data.name?.trim() || `Demo klant ${rand}`;
+    const email = `demo-${rand}@example.com`;
+    const password = "Demo-" + crypto.randomUUID().slice(0, 10) + "!7";
+    const fullName = `${clientName} (demo)`;
+
+    // 1) Klant-record
+    const { data: client, error: cErr } = await supabaseAdmin
+      .from("clients")
+      .insert({ name: clientName, created_by: context.userId })
+      .select("id, name")
+      .single();
+    if (cErr || !client) throw new Error(cErr?.message || "Kon demo-klant niet aanmaken");
+
+    // 2) Login (auth-gebruiker)
+    const { data: created, error: uErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName, demo_account: true },
+    });
+    if (uErr || !created.user) {
+      // Ruim de zojuist aangemaakte klant weer op zodat er niks halfs blijft staan.
+      await supabaseAdmin.from("clients").delete().eq("id", client.id);
+      throw new Error(uErr?.message || "Kon demo-login niet aanmaken");
+    }
+    const userId = created.user.id;
+
+    // 3) Profiel + rol (client) + koppeling
+    await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: fullName, email });
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: userId, role: "client" }, { onConflict: "user_id,role" });
+    await supabaseAdmin
+      .from("client_members")
+      .upsert({ client_id: client.id, user_id: userId }, { onConflict: "client_id,user_id" });
+
+    return { clientId: client.id, clientName: client.name, email, password };
+  });
+
 const roleSchema = z.object({
   userId: z.string().uuid(),
   role: z.enum(["admin", "client"]),

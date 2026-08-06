@@ -10,9 +10,10 @@ import {
   setClientMembership,
   deleteUser,
   createTestAccount,
+  createDemoClientAccount,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
-import { Check, Copy, FlaskConical } from "lucide-react";
+import { Check, Copy, FlaskConical, Rocket } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -34,6 +35,7 @@ function UsersAdmin() {
   const toggleMember = useServerFn(setClientMembership);
   const removeUser = useServerFn(deleteUser);
   const makeTest = useServerFn(createTestAccount);
+  const makeDemoClient = useServerFn(createDemoClientAccount);
 
   const { data: users } = useQuery<AppUser[]>({
     queryKey: ["all-users"],
@@ -76,6 +78,29 @@ function UsersAdmin() {
       toast.error(errorMessage(e));
     }
     setTestBusy(false);
+  }
+
+  // Demo-klant + login in één klik (voor Meta/TikTok review of een tester-klant).
+  const [demoName, setDemoName] = useState("");
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoCreds, setDemoCreds] = useState<{
+    email: string;
+    password: string;
+    clientName: string;
+  } | null>(null);
+
+  async function createDemo() {
+    setDemoBusy(true);
+    try {
+      const res = await makeDemoClient({ data: { name: demoName.trim() || undefined } });
+      setDemoCreds({ email: res.email, password: res.password, clientName: res.clientName });
+      toast.success(`Demo-klant "${res.clientName}" + login aangemaakt`);
+      qc.invalidateQueries({ queryKey: ["all-users"] });
+      qc.invalidateQueries({ queryKey: ["clients-list"] });
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+    setDemoBusy(false);
   }
 
   async function send(e: React.FormEvent) {
@@ -256,6 +281,76 @@ function UsersAdmin() {
                 [
                   ["E-mail", testCreds.email],
                   ["Wachtwoord", testCreds.password],
+                ] as const
+              ).map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-background/60 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {label}
+                    </div>
+                    <div className="truncate font-mono text-sm">{value}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(value);
+                      toast.success(`${label} gekopieerd`);
+                    }}
+                    className="shrink-0 rounded-md border border-gold/20 p-1.5 text-gold hover:bg-gold/10"
+                    aria-label={`${label} kopiëren`}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Demo-klant + login in één klik (voor Meta/TikTok review of tester-klant) */}
+      <div className="rounded-2xl border border-gold/10 bg-card p-6">
+        <div className="flex items-center gap-2">
+          <Rocket className="h-4 w-4 text-gold" />
+          <h2 className="font-display text-lg">Demo-klant + login (voor App Review / tester)</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Maakt in één klik een volledige klant én een klant-login aan, gekoppeld en wel. Geef de
+          inloggegevens aan de Meta/TikTok-reviewer of aan een tester-klant: ze loggen in en kunnen
+          direct naar <b>Kanalen</b> om te koppelen.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <input
+            value={demoName}
+            onChange={(e) => setDemoName(e.target.value)}
+            placeholder="Naam van de demo-klant (optioneel)"
+            className="min-w-[220px] flex-1 rounded-lg bg-input/60 hairline px-4 py-2.5 text-sm"
+          />
+          <button
+            onClick={createDemo}
+            disabled={demoBusy}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-gold px-5 py-2.5 text-sm font-medium text-primary-foreground transition hover:brightness-105 disabled:opacity-60"
+          >
+            <Rocket className="h-4 w-4" />
+            {demoBusy ? "Aanmaken…" : "Demo-klant aanmaken"}
+          </button>
+        </div>
+
+        {demoCreds && (
+          <div className="mt-4 rounded-xl border border-gold/20 bg-gold/5 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-gold/80">
+              Klant “{demoCreds.clientName}” — inloggegevens
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Bewaar deze nu — het wachtwoord is hierna niet meer op te vragen.
+            </p>
+            <div className="mt-3 space-y-2">
+              {(
+                [
+                  ["E-mail", demoCreds.email],
+                  ["Wachtwoord", demoCreds.password],
                 ] as const
               ).map(([label, value]) => (
                 <div
