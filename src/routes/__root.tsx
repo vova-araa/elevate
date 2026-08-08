@@ -83,6 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Premium brand studio voor ambitieuze merken. Stappenplannen, content en oplevering in één portaal.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "nl_NL" },
       { property: "og:url", content: SITE_URL },
       { property: "og:image", content: OG_IMAGE },
       { property: "og:image:width", content: "1200" },

@@ -3,4 +3,6 @@ Disallow: /admin
 Disallow: /client
 Disallow: /api
 Disallow: /auth
-Allow: /$
+Disallow: /dashboard
+
+Sitemap: https://www.elevatedesign.nl/sitemap.xml

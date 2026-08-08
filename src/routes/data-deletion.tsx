@@ -10,7 +10,9 @@ export const Route = createFileRoute("/data-deletion")({
         content:
           "Hoe je je gegevens en gekoppelde social-accounts bij Elevate Design laat verwijderen.",
       },
+      { property: "og:url", content: "https://www.elevatedesign.nl/data-deletion" },
     ],
+    links: [{ rel: "canonical", href: "https://www.elevatedesign.nl/data-deletion" }],
   }),
   component: DataDeletionPage,
 });

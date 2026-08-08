@@ -29,6 +29,8 @@ import {
 } from "@/components/landing-decor";
 import { useParallax, useReveal } from "@/components/landing-motion";
 
+const SITE_URL = "https://www.elevatedesign.nl";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -39,6 +41,7 @@ export const Route = createFileRoute("/")({
           "Brand & social studio voor merken met karakter. Strategie, content en publicatie — plus een eigen portaal waarin je alles volgt, goedkeurt en meet.",
       },
     ],
+    links: [{ rel: "canonical", href: `${SITE_URL}/` }],
   }),
   component: Landing,
 });

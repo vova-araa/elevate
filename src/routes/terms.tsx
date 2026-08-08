@@ -9,7 +9,9 @@ export const Route = createFileRoute("/terms")({
         name: "description",
         content: "De gebruiksvoorwaarden van het Elevate Design platform.",
       },
+      { property: "og:url", content: "https://www.elevatedesign.nl/terms" },
     ],
+    links: [{ rel: "canonical", href: "https://www.elevatedesign.nl/terms" }],
   }),
   component: TermsPage,
 });

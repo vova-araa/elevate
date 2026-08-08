@@ -9,7 +9,9 @@ export const Route = createFileRoute("/privacy")({
         name: "description",
         content: "Hoe het Elevate Design platform met persoonsgegevens omgaat.",
       },
+      { property: "og:url", content: "https://www.elevatedesign.nl/privacy" },
     ],
+    links: [{ rel: "canonical", href: "https://www.elevatedesign.nl/privacy" }],
   }),
   component: PrivacyPage,
 });
