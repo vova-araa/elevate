@@ -177,6 +177,7 @@ function Tile({ u }: { u: Tables<"uploads"> }) {
         ) : (
           <img
             src={url}
+            loading="lazy"
             alt={u.file_name}
             className="h-full w-full object-cover transition group-hover:scale-105"
           />

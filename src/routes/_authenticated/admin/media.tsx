@@ -44,6 +44,7 @@ import { importMediaFromUrl } from "@/lib/media-import.functions";
 import { getStorageUsage, purgePostedMedia, type StorageUsage } from "@/lib/storage.functions";
 import { EmptyState } from "@/components/empty-state";
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
+import { useSignedUrls } from "@/lib/use-signed-url";
 
 export const Route = createFileRoute("/_authenticated/admin/media")({
   component: MediaLibrary,
@@ -151,6 +152,7 @@ function MediaLibrary() {
 
   const currentFolder = folders?.find((f: MediaFolder) => f.id === folderId);
 
+  // Eén gebundelde signed-URL-aanroep voor de hele grid i.p.v. één per tegel.
   const filtered = (uploads ?? []).filter((u: UploadWithClient) => {
     if (q && !u.file_name?.toLowerCase().includes(q.toLowerCase())) return false;
     if (filter === "image") return u.file_type?.startsWith("image/");
@@ -159,6 +161,11 @@ function MediaLibrary() {
       return !u.file_type?.startsWith("image/") && !u.file_type?.startsWith("video/");
     return true;
   });
+
+  const gridUrls = useSignedUrls(
+    filtered.filter((u: UploadWithClient) => !u.media_purged_at).map((u) => u.file_path),
+  );
+  const pendingUrls = useSignedUrls((pendingUploads ?? []).map((u) => u.file_path));
 
   async function createFolder() {
     if (!clientId) return toast.error("Kies eerst een klant");
@@ -419,6 +426,7 @@ function MediaLibrary() {
                 <PendingTile
                   key={u.id}
                   u={u}
+                  url={pendingUrls.get(u.file_path) ?? ""}
                   onApprove={() => approveUpload(u)}
                   onReject={() => rejectUpload(u)}
                 />
@@ -625,6 +633,7 @@ function MediaLibrary() {
               <Tile
                 key={u.id}
                 u={u}
+                url={gridUrls.get(u.file_path) ?? ""}
                 selected={selectedIds.has(u.id)}
                 onToggleSelect={() => toggleSelect(u.id)}
                 onDelete={() => remove(u)}
@@ -768,28 +777,21 @@ function StorageCard({
 
 function Tile({
   u,
+  url,
   selected,
   onToggleSelect,
   onDelete,
   onMove,
 }: {
   u: UploadWithClient;
+  /** Komt uit één gebundelde signed-URL-aanroep voor de hele grid. */
+  url: string;
   selected: boolean;
   onToggleSelect: () => void;
   onDelete: () => void;
   onMove?: () => void;
 }) {
   const isPurged = !!u.media_purged_at;
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    // Opgeruimde media staat niet meer in de opslag — geen signed URL ophalen
-    // (voorkomt 404-pogingen); we tonen een placeholder-tegel.
-    if (isPurged) return;
-    supabase.storage
-      .from("client-uploads")
-      .createSignedUrl(u.file_path, 3600)
-      .then(({ data }) => setUrl(data?.signedUrl || ""));
-  }, [u.file_path, isPurged]);
   const isImage = u.file_type?.startsWith("image/");
   const isVideo = u.file_type?.startsWith("video/");
 
@@ -836,6 +838,7 @@ function Tile({
       {url && isImage && (
         <img
           src={url}
+          loading="lazy"
           alt={u.file_name}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
@@ -908,20 +911,15 @@ function Tile({
 
 function PendingTile({
   u,
+  url,
   onApprove,
   onReject,
 }: {
   u: UploadWithClient;
+  url: string;
   onApprove: () => void;
   onReject: () => void;
 }) {
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    supabase.storage
-      .from("client-uploads")
-      .createSignedUrl(u.file_path, 3600)
-      .then(({ data }) => setUrl(data?.signedUrl || ""));
-  }, [u.file_path]);
   const isImage = u.file_type?.startsWith("image/");
   const isVideo = u.file_type?.startsWith("video/");
   return (
@@ -929,6 +927,7 @@ function PendingTile({
       {url && isImage && (
         <img
           src={url}
+          loading="lazy"
           alt={u.file_name}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />

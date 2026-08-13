@@ -230,6 +230,7 @@ function Tile({ item }: { item: MediaItem }) {
       {url && item.kind === "image" && (
         <img
           src={url}
+          loading="lazy"
           alt={item.name}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
