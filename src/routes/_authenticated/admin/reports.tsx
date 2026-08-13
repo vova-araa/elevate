@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +80,7 @@ function ReportsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <PageTabs tabs={ANALYSE_TABS} />
       <div>
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Resultaten</p>
         <h1 className="font-display text-4xl sm:text-5xl mt-2">Rapporten</h1>

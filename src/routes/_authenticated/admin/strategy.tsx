@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { PageTabs } from "@/components/page-tabs";
+import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -366,6 +368,7 @@ function StrategyOverview({ strategy }: { strategy: StrategyForm }) {
   const activePlatforms = PLATFORMS.filter((p) => (strategy.cadence[p.id] ?? 0) > 0);
   return (
     <div className="space-y-4">
+      <PageTabs tabs={ANALYSE_TABS} />
       <div className="grid gap-4 md:grid-cols-2">
         <InfoCard title="Positionering" body={strategy.positioning} />
         <InfoCard title="Doelgroep" body={strategy.audience} />

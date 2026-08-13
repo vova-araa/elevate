@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -53,6 +55,7 @@ function ReachPage() {
 
   return (
     <div className="space-y-5 max-w-6xl">
+      <PageTabs tabs={ANALYSE_TABS} />
       <div className="flex flex-wrap gap-2">
         {PERIODS.map((p) => (
           <button

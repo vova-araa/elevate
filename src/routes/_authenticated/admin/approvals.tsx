@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { PLANNER_TABS } from "@/lib/page-tabs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -275,6 +277,7 @@ function ApprovalsPage() {
 
   return (
     <div className="space-y-6">
+      <PageTabs tabs={PLANNER_TABS} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Module 5</div>

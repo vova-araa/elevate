@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
@@ -63,6 +65,7 @@ function EngagementPage() {
 
   return (
     <div className="space-y-5 max-w-6xl">
+      <PageTabs tabs={ANALYSE_TABS} />
       <div className="grid md:grid-cols-2 gap-5">
         <div className="rounded-xl border border-gold/15 bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">

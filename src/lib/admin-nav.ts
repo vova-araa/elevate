@@ -51,26 +51,19 @@ export const ADMIN_NAV: AdminNavItem[] = [
     children: [
       { to: "/admin/queue", label: "Concepten", badgeKey: "drafts", badgeTone: "amber" },
       { to: "/admin/approvals", label: "Goedkeuring", badgeKey: "pending", badgeTone: "red" },
-      { to: "/admin/bulk", label: "Bulk import" },
-      { to: "/admin/besttime", label: "Beste tijd" },
     ],
   },
   {
     to: "/admin/media",
-    label: "Media",
+    label: "Content",
     icon: ImageIcon,
-    children: [{ to: "/admin/editor", label: "Beeld-editor" }],
-  },
-  {
-    to: "/admin/ai",
-    label: "AI Studio",
-    icon: Sparkles,
     children: [
-      { to: "/admin/strategy", label: "Strategie" },
-      { to: "/admin/campaigns", label: "Campagnes" },
-      { to: "/admin/assistant", label: "Assistent" },
+      { to: "/admin/editor", label: "Beeld-editor" },
+      { to: "/admin/besttime", label: "Beste tijden" },
+      { to: "/admin/bulk", label: "Bulk import" },
     ],
   },
+  { to: "/admin/ai", label: "AI Studio", icon: Sparkles },
   {
     to: "/admin/clients",
     label: "Klanten",
@@ -82,11 +75,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
   {
     to: "/admin/reach",
-    label: "Resultaten",
+    label: "Analyse",
     icon: TrendingUp,
     children: [
       { to: "/admin/engagement", label: "Engagement" },
       { to: "/admin/reports", label: "Rapporten" },
+      { to: "/admin/strategy", label: "Strategie" },
+      { to: "/admin/campaigns", label: "Campagnes" },
     ],
   },
   {
@@ -95,7 +90,10 @@ export const ADMIN_NAV: AdminNavItem[] = [
     icon: SettingsIcon,
     badgeKey: "alerts",
     badgeTone: "red",
-    children: [{ to: "/admin/team", label: "Team" }],
+    children: [
+      { to: "/admin/team", label: "Team" },
+      { to: "/admin/assistant", label: "AI Assistent" },
+    ],
   },
 ];
 

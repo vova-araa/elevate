@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { PLANNER_TABS } from "@/lib/page-tabs";
 import { confirmDialog } from "@/components/ui/confirm";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -348,6 +350,7 @@ function PlannerPage() {
 
   return (
     <div className="space-y-6">
+      <PageTabs tabs={PLANNER_TABS} />
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>

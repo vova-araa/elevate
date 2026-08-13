@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { CONTENT_TABS } from "@/lib/page-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -49,6 +51,7 @@ function BestTimePage() {
 
   return (
     <div className="space-y-5 max-w-6xl">
+      <PageTabs tabs={CONTENT_TABS} />
       <div className="flex flex-wrap gap-2">
         {PLATFORMS.map((p) => (
           <button

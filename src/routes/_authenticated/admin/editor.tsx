@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { CONTENT_TABS } from "@/lib/page-tabs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
 import { useQuery } from "@tanstack/react-query";
@@ -65,6 +67,7 @@ function EditorPage() {
 
   return (
     <div className="space-y-6">
+      <PageTabs tabs={CONTENT_TABS} />
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Studio</p>

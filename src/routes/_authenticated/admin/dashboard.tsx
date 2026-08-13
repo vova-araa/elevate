@@ -38,6 +38,7 @@ import { ErrorState } from "@/components/error-state";
 import { HealthRing } from "@/components/admin/health-ring";
 import { PostingBoard } from "@/components/admin/posting-board";
 import { InsightsCard } from "@/components/admin/insights-card";
+import { LiveFeedCard } from "@/components/admin/live-feed-card";
 import { getPostingOverview } from "@/lib/posting-overview.functions";
 import { getInsights } from "@/lib/insights.functions";
 import { z } from "zod";
@@ -484,6 +485,9 @@ function DashboardContent({
 
         <InsightsCard insights={insights} loading={insightsLoading} />
       </div>
+
+      {/* De echte feed van de klant die in de sidebar actief is. */}
+      <LiveFeedCard />
 
       {/* Bereik — brede kaart onderaan */}
       <Card

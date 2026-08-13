@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { CONTENT_TABS } from "@/lib/page-tabs";
 import { confirmDialog } from "@/components/ui/confirm";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -403,6 +405,7 @@ function MediaLibrary() {
 
   return (
     <div className="space-y-6">
+      <PageTabs tabs={CONTENT_TABS} />
       <div className="aurora">
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Bibliotheek</p>
         <h1 className="font-display text-4xl sm:text-5xl mt-2">Media</h1>

@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { PLANNER_TABS } from "@/lib/page-tabs";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { z } from "zod";
@@ -58,6 +60,7 @@ function QueuePage() {
 
   return (
     <div className="space-y-6">
+      <PageTabs tabs={PLANNER_TABS} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Slim plannen</p>

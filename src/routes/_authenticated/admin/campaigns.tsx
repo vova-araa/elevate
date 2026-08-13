@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -153,6 +155,7 @@ function CampaignsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <PageTabs tabs={ANALYSE_TABS} />
       <div>
         <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">AI</div>
         <h1 className="font-display text-3xl sm:text-4xl text-gold mt-1 inline-flex items-center gap-2">

@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PageTabs } from "@/components/page-tabs";
+import { CONTENT_TABS } from "@/lib/page-tabs";
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -343,6 +345,7 @@ function BulkPlannerPage() {
 
   return (
     <div className="space-y-6">
+      <PageTabs tabs={CONTENT_TABS} />
       <header className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-gradient-gold grid place-items-center text-primary-foreground">
           <CalendarClock className="h-5 w-5" />
