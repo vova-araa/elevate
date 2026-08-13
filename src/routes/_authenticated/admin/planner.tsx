@@ -9,6 +9,7 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
 import { publishScheduledPost } from "@/lib/publish.functions";
+import { getPublishedFeed, type PublishedFeedItem } from "@/lib/feed.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -136,20 +137,45 @@ function PlannerPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [feedPlatform, setFeedPlatform] = useState<Platform | "all">("all");
   const [feedOpen, setFeedOpen] = useState(true);
+  // Hoe ver vooruit tonen we de geplande posts in de feed-preview?
+  const [feedDays, setFeedDays] = useState<number>(7);
 
   const { data: feedPosts } = useQuery({
-    queryKey: ["feed-preview", activeId, feedPlatform],
+    queryKey: ["feed-preview", activeId, feedPlatform, feedDays],
     enabled: !!activeId,
     queryFn: async () => {
+      // Alles tot en met de gekozen horizon: al gepubliceerd + wat er de
+      // komende dagen op de planning staat.
+      const until = new Date();
+      until.setDate(until.getDate() + feedDays);
+      until.setHours(23, 59, 59, 999);
       let q = supabase
         .from("scheduled_posts")
         .select("id,platform,caption,media_path,media_type,scheduled_at,status,published_at")
         .eq("client_id", activeId!)
         .is("deleted_at", null)
-        .eq("is_queued", false);
+        .eq("is_queued", false)
+        .lte("scheduled_at", until.toISOString());
       if (feedPlatform !== "all") q = q.eq("platform", feedPlatform);
-      return (await q.order("scheduled_at", { ascending: false }).limit(24)).data ?? [];
+      return (await q.order("scheduled_at", { ascending: false }).limit(36)).data ?? [];
     },
+  });
+
+  // De échte gepubliceerde feed van het gekoppelde account (Instagram/Facebook).
+  const publishedFeedFn = useServerFn(getPublishedFeed);
+  const { data: livePosts } = useQuery({
+    queryKey: ["published-feed", activeId, feedPlatform],
+    enabled: !!activeId && (feedPlatform === "instagram" || feedPlatform === "facebook"),
+    staleTime: 5 * 60_000,
+    meta: { silent: true },
+    queryFn: () =>
+      publishedFeedFn({
+        data: {
+          clientId: activeId!,
+          platform: feedPlatform as "instagram" | "facebook",
+          limit: 24,
+        },
+      }),
   });
 
   const range = useMemo(() => {
@@ -427,6 +453,9 @@ function PlannerPage() {
         platform={feedPlatform}
         setPlatform={setFeedPlatform}
         posts={feedPosts ?? []}
+        livePosts={livePosts ?? []}
+        days={feedDays}
+        setDays={setFeedDays}
         open={feedOpen}
         setOpen={setFeedOpen}
         onOpenPost={(id: string) => openCompose(undefined, id)}
@@ -1629,6 +1658,9 @@ function FeedPreviewPanel({
   platform,
   setPlatform,
   posts,
+  livePosts,
+  days,
+  setDays,
   open,
   setOpen,
   onOpenPost,
@@ -1637,6 +1669,9 @@ function FeedPreviewPanel({
   platform: Platform | "all";
   setPlatform: (p: Platform | "all") => void;
   posts: FeedPost[];
+  livePosts: PublishedFeedItem[];
+  days: number;
+  setDays: (d: number) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
   onOpenPost: (id: string) => void;
@@ -1659,8 +1694,27 @@ function FeedPreviewPanel({
       : "grid-cols-2 md:grid-cols-3";
   const options: Array<{ id: Platform | "all"; label: string; Icon: LucideIcon }> = [
     { id: "all", label: "Alle", Icon: Layers },
-    ...PLATFORMS.map((p) => ({ id: p.id, label: p.label, Icon: p.Icon })),
+    ...VISIBLE_PLATFORMS.map((p) => ({ id: p.id, label: p.label, Icon: p.Icon })),
   ];
+
+  // De echte feed is er alleen per kanaal (Instagram/Facebook). Hebben we die,
+  // dan tonen we onze eigen 'published'-rijen niet nog eens — die staan al in
+  // de live feed. Zo krijg je één doorlopend beeld: bovenaan wat er de komende
+  // dagen bij komt, daaronder wat er nu al op het profiel staat.
+  const hasLive = livePosts.length > 0;
+  const planned = hasLive ? posts.filter((p) => p.status !== "published") : posts;
+  const tiles = [
+    ...planned.map((p) => ({
+      kind: "planned" as const,
+      at: new Date(p.scheduled_at).getTime(),
+      post: p,
+    })),
+    ...livePosts.map((l) => ({
+      kind: "live" as const,
+      at: new Date(l.publishedAt).getTime(),
+      item: l,
+    })),
+  ].sort((a, b) => b.at - a.at);
 
   return (
     <div className="glass-strong rounded-2xl p-4">
@@ -1696,6 +1750,25 @@ function FeedPreviewPanel({
               </button>
             ))}
           </div>
+          {/* Hoe ver vooruit kijken we? Zo zie je hoe de feed er straks uitziet. */}
+          <div className="inline-flex rounded-full glass p-1 text-[11px]">
+            {[7, 14, 30].map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setDays(d)}
+                title={`Toon de planning tot ${d} dagen vooruit`}
+                className={cn(
+                  "rounded-full px-2.5 py-1 transition cursor-pointer",
+                  days === d
+                    ? "bg-gold/15 text-gold"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setOpen(!open)}
             className="rounded-full glass px-3 py-1 text-xs hover:bg-gold/10"
@@ -1706,11 +1779,12 @@ function FeedPreviewPanel({
       </div>
 
       <p className="text-[11px] text-muted-foreground mb-3">
-        Filtert de hele planner (maand, week, dag, agenda) en de preview hieronder.
+        Filtert de hele planner en toont hoe de feed er over {days} dagen uitziet
+        {hasLive ? " — inclusief de posts die nu al live op het profiel staan." : "."}
       </p>
 
       {open &&
-        (posts.length === 0 ? (
+        (tiles.length === 0 ? (
           <EmptyState
             icon={<ImageIcon className="h-5 w-5" />}
             title={`Nog geen posts voor ${label}`}
@@ -1720,16 +1794,72 @@ function FeedPreviewPanel({
         ) : (
           <>
             <div className={cn("grid gap-1 rounded-xl overflow-hidden hairline", cols)}>
-              {posts.map((p) => (
-                <FeedTile key={p.id} post={p} ratio={ratio} onOpen={() => onOpenPost(p.id)} />
-              ))}
+              {tiles.map((t) =>
+                t.kind === "planned" ? (
+                  <FeedTile
+                    key={`p-${t.post.id}`}
+                    post={t.post}
+                    ratio={ratio}
+                    onOpen={() => onOpenPost(t.post.id)}
+                  />
+                ) : (
+                  <LiveFeedTile key={`l-${t.item.id}`} item={t.item} ratio={ratio} />
+                ),
+              )}
             </div>
             <p className="mt-2 text-[10px] text-muted-foreground">
               Nieuwste links · Goudgekaderd = ingepland · Groen vinkje = gepubliceerd · Amber =
               wacht op goedkeuring
+              {hasLive && " · Tegels zonder rand staan al live op het profiel"}
             </p>
           </>
         ))}
+    </div>
+  );
+}
+
+/** Tegel voor een post die al écht op het profiel staat (via de platform-API). */
+function LiveFeedTile({ item, ratio }: { item: PublishedFeedItem; ratio: string }) {
+  const inner = (
+    <>
+      {item.mediaUrl ? (
+        <img src={item.mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+      ) : (
+        <div className="h-full w-full grid place-items-center bg-gradient-to-br from-gold/20 to-gold/5">
+          <ImageIcon className="h-6 w-6 text-gold/60" />
+        </div>
+      )}
+      {item.isVideo && (
+        <div className="absolute top-1 right-1 rounded-full bg-black/70 p-1">
+          <VideoIcon className="h-3 w-3 text-white" />
+        </div>
+      )}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1">
+        <div className="text-[9px] text-white/80">
+          {new Date(item.publishedAt).toLocaleDateString("nl-NL", {
+            day: "numeric",
+            month: "short",
+          })}
+        </div>
+      </div>
+    </>
+  );
+
+  const cls = "relative bg-surface-elevated/60 overflow-hidden group block";
+  return item.permalink ? (
+    <a
+      href={item.permalink}
+      target="_blank"
+      rel="noreferrer"
+      className={cls}
+      style={{ aspectRatio: ratio }}
+      title="Openen op het platform"
+    >
+      {inner}
+    </a>
+  ) : (
+    <div className={cls} style={{ aspectRatio: ratio }}>
+      {inner}
     </div>
   );
 }
