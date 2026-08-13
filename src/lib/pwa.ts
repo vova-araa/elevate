@@ -48,6 +48,8 @@ export interface InstallState {
   promptReady: boolean;
   /** iOS heeft geen prompt-API; daar tonen we een instructie. */
   isIos: boolean;
+  /** Safari op iOS heeft het deel-icoon onderin; andere iOS-browsers in het menu. */
+  isIosSafari: boolean;
   /** Al geïnstalleerd of al weggeklikt. */
   dismissed: boolean;
   install: () => Promise<void>;
@@ -87,16 +89,24 @@ export function useInstallPrompt(): InstallState {
     };
   }, []);
 
+  // Elk iOS-browsermerk (Safari, Chrome, Firefox, Edge) draait op WebKit en kent
+  // géén installatie-API — Apple staat alleen Deel → "Zet op beginscherm" toe.
+  // Eerder sloten we CriOS/FxiOS uit, waardoor die browsers de Android-uitleg
+  // kregen. iPadOS meldt zich als "Macintosh" met touch, dus die vangen we apart.
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   const isIos =
-    typeof navigator !== "undefined" &&
-    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-    !/crios|fxios/i.test(navigator.userAgent);
+    /iphone|ipad|ipod/i.test(ua) ||
+    (/macintosh/i.test(ua) && typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
+
+  // Safari is de enige iOS-browser zonder CriOS/FxiOS/EdgiOS in de UA.
+  const isIosSafari = isIos && !/crios|fxios|edgios|opt\//i.test(ua);
 
   return {
     canInstall: !installed && !dismissed && (!!deferred || isIos),
     installed,
     promptReady: !!deferred,
     isIos,
+    isIosSafari,
     dismissed: installed || dismissed,
     install: async () => {
       if (!deferred) return;

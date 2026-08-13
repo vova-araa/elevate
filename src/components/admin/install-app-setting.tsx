@@ -11,7 +11,7 @@ import { useInstallPrompt } from "@/lib/pwa";
  * het browsermenu vindt.
  */
 export function InstallAppSetting() {
-  const { installed, promptReady, isIos, install } = useInstallPrompt();
+  const { installed, promptReady, isIos, isIosSafari, install } = useInstallPrompt();
   const [done, setDone] = useState(false);
 
   return (
@@ -57,14 +57,21 @@ export function InstallAppSetting() {
         <div className="mt-4 rounded-lg bg-surface-elevated/50 p-4 text-sm">
           {isIos ? (
             <>
-              <div className="mb-2 font-medium">Op iPhone of iPad (Safari)</div>
+              <div className="mb-2 font-medium">Op iPhone of iPad</div>
               <ol className="space-y-1.5 text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <Share className="h-4 w-4 shrink-0 text-gold" /> Tik onderin op het deel-icoon.
+                  <Share className="h-4 w-4 shrink-0 text-gold" />
+                  {isIosSafari
+                    ? "Tik onderin op het deel-icoon."
+                    : "Tik op het menu (⋯ of ⋮) en kies Delen."}
                 </li>
                 <li>Kies &quot;Zet op beginscherm&quot;.</li>
                 <li>Tik rechtsboven op &quot;Voeg toe&quot;.</li>
               </ol>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Apple staat niet toe dat een website het installeren zelf start; op iPhone is dit de
+                enige manier. Op Android gaat het wél met één knop.
+              </p>
             </>
           ) : (
             <>

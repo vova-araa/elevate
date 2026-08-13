@@ -7,7 +7,7 @@ import { useInstallPrompt } from "@/lib/pwa";
  * geïnstalleerd. Zodra hij geïnstalleerd is (of weggeklikt) verdwijnt hij.
  */
 export function PwaInstall() {
-  const { canInstall, isIos, install, dismiss } = useInstallPrompt();
+  const { canInstall, isIos, isIosSafari, install, dismiss } = useInstallPrompt();
   const [showIosHelp, setShowIosHelp] = useState(false);
 
   if (!canInstall) return null;
@@ -54,11 +54,16 @@ export function PwaInstall() {
             <ol className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <Share className="h-4 w-4 shrink-0 text-gold" />
-                Tik onderin op het deel-icoon.
+                {isIosSafari
+                  ? "Tik onderin op het deel-icoon."
+                  : "Tik op het menu (⋯ of ⋮) en kies Delen."}
               </li>
               <li>Kies &quot;Zet op beginscherm&quot;.</li>
               <li>Tik rechtsboven op &quot;Voeg toe&quot;.</li>
             </ol>
+            <p className="text-xs text-muted-foreground">
+              Apple staat niet toe dat een website dit zelf start — dit is op iPhone de enige weg.
+            </p>
             <button
               onClick={() => {
                 setShowIosHelp(false);
