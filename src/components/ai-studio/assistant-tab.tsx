@@ -100,13 +100,18 @@ export function AssistantTab() {
 
   const scheduleWithMedia = () => {
     if (media.length === 0) return;
-    sessionStorage.setItem(
-      "compose-pending-media",
-      JSON.stringify({
-        media,
-        caption: messages.filter((m) => m.role === "assistant").slice(-1)[0]?.content ?? "",
-      }),
-    );
+    // Alleen een écht geschreven antwoord meenemen als caption. Anders belandde
+    // de begroeting van de assistent ("Hoi! Ik ben je AI-assistent…") in de
+    // caption zodra je een foto sleepte en meteen op inplannen drukte.
+    const firstUser = messages.findIndex((m) => m.role === "user");
+    const caption =
+      firstUser === -1
+        ? ""
+        : (messages
+            .slice(firstUser)
+            .filter((m) => m.role === "assistant")
+            .slice(-1)[0]?.content ?? "");
+    sessionStorage.setItem("compose-pending-media", JSON.stringify({ media, caption }));
     navigate({ to: "/admin/compose" });
   };
 

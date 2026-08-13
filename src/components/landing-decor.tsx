@@ -50,8 +50,14 @@ export function CountUp({
   const [current, setCurrent] = useState(0);
   const done = useRef(false);
 
+  // `match` is elke render een nieuw object. Stond het in de dependencies, dan
+  // draaide dit effect bij iedere render opnieuw — en omdat `done` dan al true
+  // was, deed de opruiming wél zijn werk (cancelAnimationFrame) en de start
+  // niet. Het cijfer bleef zo op 0 of 1 hangen. Vandaar een stabiele boolean.
+  const hasMatch = !!match;
+
   useEffect(() => {
-    if (!match || !inView || done.current) return;
+    if (!hasMatch || !inView || done.current) return;
     done.current = true;
     if (prefersReducedMotion()) {
       setCurrent(target);
@@ -68,7 +74,7 @@ export function CountUp({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, match, target, duration]);
+  }, [inView, hasMatch, target, duration]);
 
   if (!match) {
     return (

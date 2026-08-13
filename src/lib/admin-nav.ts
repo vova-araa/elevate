@@ -51,11 +51,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     children: [
       { to: "/admin/queue", label: "Concepten", badgeKey: "drafts", badgeTone: "amber" },
       { to: "/admin/approvals", label: "Goedkeuring", badgeKey: "pending", badgeTone: "red" },
+      { to: "/admin/tasks", label: "Taken" },
     ],
   },
   {
     to: "/admin/media",
-    label: "Content",
+    label: "Media",
     icon: ImageIcon,
     children: [
       { to: "/admin/editor", label: "Beeld-editor" },

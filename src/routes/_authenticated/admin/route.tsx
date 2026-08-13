@@ -19,20 +19,47 @@ import { MobileFab } from "@/components/mobile-fab";
 import { PwaInstall } from "@/components/pwa-install";
 import { useUIStore } from "@/lib/stores/ui-store";
 
+/**
+ * Uitkomst van de rolcheck, per gebruiker onthouden.
+ *
+ * Zonder dit deed élke klik in het menu opnieuw een netwerkronde naar Supabase
+ * (bovenop die van de ouder-route). Dat is niet alleen traag; het maakte het
+ * openen van een scherm ook afhankelijk van een geslaagd verzoek, en één
+ * hapering zette het hele scherm op de foutpagina.
+ */
+let cachedAdmin: { userId: string; isAdmin: boolean } | null = null;
+
 export const Route = createFileRoute("/_authenticated/admin")({
-  beforeLoad: async () => {
-    // De ouder-route heeft de gebruiker al vastgesteld; hier alleen nog de
-    // rolcheck. AdminGate hieronder vangt het geval dat de rol later verandert.
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
+  beforeLoad: async ({ context }) => {
+    // De ouder-route (/_authenticated) heeft de gebruiker al vastgesteld en
+    // geeft hem door in de context — die halen we hier niet nóg een keer op.
+    const userId = (context as { user?: { id?: string } }).user?.id;
     if (!userId) throw redirect({ to: "/auth" });
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!data) throw redirect({ to: "/dashboard" });
+
+    if (cachedAdmin?.userId === userId) {
+      if (!cachedAdmin.isAdmin) throw redirect({ to: "/dashboard" });
+      return;
+    }
+
+    let isAdmin: boolean;
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (error) throw error;
+      isAdmin = !!data;
+    } catch {
+      // Netwerkhapering: niet doorsturen en zeker niet crashen. AdminGate
+      // hieronder kijkt alsnog naar de rol uit de auth-context, en RLS bewaakt
+      // de data server-side. Liever een scherm dat laadt dan een foutpagina.
+      return;
+    }
+
+    cachedAdmin = { userId, isAdmin };
+    if (!isAdmin) throw redirect({ to: "/dashboard" });
   },
   component: AdminGate,
 });

@@ -131,11 +131,16 @@ const PORTAL_POINTS = [
   "Overzichtelijke maandrapportage per merk en kanaal",
 ];
 
+/**
+ * Vier cijfers die iets zeggen. "1 portaal voor alles" en "3 gekoppelde
+ * kanalen" riepen vooral de vraag op waar het over ging — dit benoemt wat je
+ * er concreet aan hebt.
+ */
 const STATS: [string, string][] = [
-  ["1", "portaal voor alles"],
-  ["3", "gekoppelde kanalen"],
-  ["AI", "strategie & planning"],
-  ["100%", "op jouw merk"],
+  ["3", "kanalen: Instagram, Facebook en TikTok"],
+  ["1", "plek voor plannen, goedkeuren en rapporteren"],
+  ["AI", "voor strategie, captions en hashtags"],
+  ["100%", "in jouw eigen huisstijl"],
 ];
 
 function Landing() {

@@ -14,8 +14,10 @@ import {
   MessageCircle,
   Repeat2,
   AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import { checkRsm, findRsmLabel, prependRsmLabel } from "@/lib/rsm";
+import { suggestPostCopy, type PostCopyAdvice } from "@/lib/compose-ai.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import { useClientStore } from "@/lib/stores/client-store";
@@ -25,6 +27,11 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
 type PostType = { id: string; label: string };
+
+/** Datum + tijd zoals een `datetime-local`-veld het wil: lokale tijd, geen UTC. */
+function localDateTimeValue(d: Date): string {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
 
 const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }[] = [
   {
@@ -94,7 +101,10 @@ function ComposePage() {
   const [postTypes, setPostTypes] = useState<Record<string, string>>({ instagram: "feed" });
   const [mode, setMode] = useState<"schedule" | "now" | "draft">("schedule");
   const [scheduleAt, setScheduleAt] = useState<string>(
-    search.at ?? new Date(Date.now() + 60 * 60000).toISOString().slice(0, 16),
+    // Let op: een datetime-local-veld verwacht lokale tijd. toISOString() geeft
+    // UTC, waardoor het voorstel in de zomer twee uur te vroeg stond. Eerst het
+    // tijdzoneverschil eraf, dan pas afkappen.
+    search.at ?? localDateTimeValue(new Date(Date.now() + 60 * 60000)),
   );
   const [mediaPath, setMediaPath] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<string | null>(null);
@@ -107,6 +117,26 @@ function ComposePage() {
     caption: content,
     isAd,
     isVideo: (mediaType ?? "").startsWith("video"),
+  });
+
+  // AI-advies voor deze post: caption, hashtags en aanscherpingen.
+  const [briefing, setBriefing] = useState("");
+  const [advice, setAdvice] = useState<PostCopyAdvice | null>(null);
+  const suggestCopy = useServerFn(suggestPostCopy);
+  const adviceMut = useMutation({
+    mutationFn: () =>
+      suggestCopy({
+        data: {
+          clientId: activeClient?.id ?? null,
+          platform: previewPlatform,
+          briefing,
+          currentCaption: content,
+          hasMedia: !!mediaPath,
+          mediaType,
+        },
+      }),
+    onSuccess: setAdvice,
+    onError: (e: Error) => toast.error(e.message || "Advies ophalen mislukt"),
   });
 
   useEffect(() => {
@@ -338,6 +368,80 @@ function ComposePage() {
             placeholder="Schrijf je post..."
             className="w-full min-h-[160px] rounded-lg bg-transparent border border-border p-3 text-sm outline-none focus:border-gold/50"
           />
+
+          {/* AI-advies voor precies deze post — caption, hashtags en
+              aanscherpingen, zonder naar de AI Studio te hoeven. */}
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => adviceMut.mutate()}
+                disabled={adviceMut.isPending}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-gold/40 px-3.5 text-xs text-gold hover:bg-gold/10 disabled:opacity-50"
+              >
+                {adviceMut.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {content.trim() ? "Scherp deze caption aan" : "Laat AI meedenken"}
+              </button>
+              {!content.trim() && (
+                <input
+                  value={briefing}
+                  onChange={(e) => setBriefing(e.target.value)}
+                  placeholder="Waar gaat de post over?"
+                  className="h-9 flex-1 min-w-[180px] rounded-full border border-border bg-transparent px-3.5 text-xs outline-none focus:border-gold/50"
+                />
+              )}
+            </div>
+
+            {advice && (
+              <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 p-3.5">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-gold/90">Voorstel</div>
+                <p className="mt-1.5 whitespace-pre-wrap text-sm">{advice.caption}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setContent(advice.caption)}
+                    className="rounded-full bg-gold px-3 h-7 text-xs font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    Gebruik deze caption
+                  </button>
+                  {advice.hashtags.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setContent((c) =>
+                          `${c.trimEnd()}\n\n${advice.hashtags.join(" ")}`.trimStart(),
+                        )
+                      }
+                      className="rounded-full border border-gold/40 px-3 h-7 text-xs text-gold hover:bg-gold/10"
+                    >
+                      Hashtags toevoegen
+                    </button>
+                  )}
+                </div>
+
+                {advice.hashtags.length > 0 && (
+                  <p className="mt-2.5 text-xs text-muted-foreground">
+                    {advice.hashtags.join(" ")}
+                  </p>
+                )}
+
+                {advice.tips.length > 0 && (
+                  <ul className="mt-2.5 space-y-1 text-xs text-muted-foreground">
+                    {advice.tips.map((t, i) => (
+                      <li key={i} className="flex gap-1.5">
+                        <span className="text-gold">·</span>
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Reclamecode Social Media: verplicht zodra er betaald wordt. */}
           <label className="mt-3 flex items-start gap-2.5 text-sm cursor-pointer">
