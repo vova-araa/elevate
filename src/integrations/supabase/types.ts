@@ -701,6 +701,59 @@ export type Database = {
           },
         ];
       };
+      delivery_requests: {
+        Row: {
+          client_id: string;
+          completed_at: string | null;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          due_date: string | null;
+          id: string;
+          kind: string;
+          quantity_needed: number;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          client_id: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          kind?: string;
+          quantity_needed?: number;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          client_id?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          kind?: string;
+          quantity_needed?: number;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "delivery_requests_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       data_deletion_requests: {
         Row: {
           completed_at: string | null;
@@ -1769,6 +1822,7 @@ export type Database = {
           caption: string | null;
           client_id: string;
           created_at: string;
+          delivery_request_id: string | null;
           file_name: string;
           file_path: string;
           file_size: number | null;
@@ -1786,6 +1840,7 @@ export type Database = {
           caption?: string | null;
           client_id: string;
           created_at?: string;
+          delivery_request_id?: string | null;
           file_name: string;
           file_path: string;
           file_size?: number | null;
@@ -1803,6 +1858,7 @@ export type Database = {
           caption?: string | null;
           client_id?: string;
           created_at?: string;
+          delivery_request_id?: string | null;
           file_name?: string;
           file_path?: string;
           file_size?: number | null;

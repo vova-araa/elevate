@@ -37,6 +37,7 @@ import {
   MapPin,
   Users,
   Target,
+  PackageCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { Tables, TablesUpdate, Enums } from "@/integrations/supabase/types";
@@ -44,6 +45,7 @@ import { exportReportPdfLazy, exportAllReportsPdfLazy } from "@/lib/report-data"
 import { MessagesThread } from "@/components/messages-thread";
 import { ClientTimeline } from "@/components/client-timeline";
 import { InstagramScheduler } from "@/components/instagram-scheduler";
+import { DeliveryRequestsPanel } from "@/components/admin/delivery-requests-panel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$id")({
@@ -61,6 +63,7 @@ type TabKey =
   | "calendar"
   | "uploads"
   | "tasks"
+  | "deliverables"
   | "socials";
 
 type TabItem = { k: TabKey; label: string; icon: LucideIcon };
@@ -97,6 +100,7 @@ const TAB_GROUPS: { group: string; items: TabItem[] }[] = [
     items: [
       { k: "tasks", label: "Taken", icon: ListChecks },
       { k: "uploads", label: "Uploads", icon: Upload },
+      { k: "deliverables", label: "Aanleverlijst", icon: PackageCheck },
     ],
   },
 ];
@@ -204,6 +208,7 @@ function ClientDetail() {
       {tab === "calendar" && <CalendarAdmin clientId={id} />}
       {tab === "uploads" && <UploadsView clientId={id} />}
       {tab === "tasks" && <TasksView clientId={id} admin />}
+      {tab === "deliverables" && <DeliveryRequestsPanel clientId={id} />}
       {tab === "socials" && <SocialsPanel client={client} />}
     </div>
   );

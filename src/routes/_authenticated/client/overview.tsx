@@ -37,6 +37,7 @@ import { useAuth } from "@/lib/auth-context";
 import { listClientChannels } from "@/lib/channels.functions";
 import { EmptyState } from "@/components/empty-state";
 import { ReportCard } from "@/components/client-portal/report-card";
+import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -304,6 +305,10 @@ function ClientOverview() {
           value={loadingTasks ? null : (openTasks ?? 0).toLocaleString("nl-NL")}
         />
       </div>
+
+      {/* Wat er nog van de klant nodig is — bovenaan, want dit is het enige
+          blok waar de klant zelf actie op moet ondernemen. */}
+      {clientId && <DeliveryChecklist clientId={clientId} compact />}
 
       {/* Volgersgroei — echte metingen uit snapshots */}
       <FollowerGrowthCard series={followerGrowth ?? []} loading={loadingGrowth} />
