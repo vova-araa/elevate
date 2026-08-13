@@ -37,7 +37,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { HealthRing } from "@/components/admin/health-ring";
 import { PostingBoard } from "@/components/admin/posting-board";
+import { InsightsCard } from "@/components/admin/insights-card";
 import { getPostingOverview } from "@/lib/posting-overview.functions";
+import { getInsights } from "@/lib/insights.functions";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -238,6 +240,14 @@ function DashboardContent({
   const { data: posting, isLoading: postingLoading } = useQuery({
     queryKey: ["posting-overview", clientId ?? "all", postingDays],
     queryFn: () => postingFn({ data: { days: postingDays, ...(clientId ? { clientId } : {}) } }),
+  });
+
+  // Aanscherpingen op basis van de eigen cijfers.
+  const insightsFn = useServerFn(getInsights);
+  const { data: insights, isLoading: insightsLoading } = useQuery({
+    queryKey: ["insights", clientId ?? "all"],
+    staleTime: 5 * 60_000,
+    queryFn: () => insightsFn({ data: clientId ? { clientId } : {} }),
   });
 
   // Kerncijfers voor de ticker-regel in de masthead
@@ -452,7 +462,7 @@ function DashboardContent({
 
       {/* Focus nu — wat vraagt vandaag actie. De cijfers, de agenda en het
           klantoverzicht staan in het postbord hierboven. */}
-      <div className="grid gap-6">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card title="Focus nu" icon={Sparkles}>
           {focusLoading ? (
             <ListSkeleton rows={3} />
@@ -469,6 +479,8 @@ function DashboardContent({
             </ul>
           )}
         </Card>
+
+        <InsightsCard insights={insights} loading={insightsLoading} />
       </div>
 
       {/* Bereik — brede kaart onderaan */}
