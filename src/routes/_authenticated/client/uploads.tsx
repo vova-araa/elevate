@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Plus, Upload as UploadIcon, Loader2, Play } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
+import { DriveImportCard } from "@/components/drive-import-card";
 import type { Tables } from "@/integrations/supabase/types";
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
 
@@ -162,6 +163,8 @@ function ClientUploads() {
           </select>
         </label>
       )}
+
+      {clientId && <DriveImportCard clientId={clientId} deliveryRequestId={requestId || null} />}
 
       <label className="glass-strong block rounded-2xl border-2 border-dashed border-gold/30 p-6 sm:p-10 text-center cursor-pointer hover:border-gold/60">
         <Plus className="h-6 w-6 mx-auto text-gold" />

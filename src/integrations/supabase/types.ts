@@ -1830,6 +1830,7 @@ export type Database = {
           folder_id: string | null;
           id: string;
           media_purged_at: string | null;
+          source_ref: string | null;
           status: string;
           uploader_id: string | null;
         };
@@ -1848,6 +1849,7 @@ export type Database = {
           folder_id?: string | null;
           id?: string;
           media_purged_at?: string | null;
+          source_ref?: string | null;
           status?: string;
           uploader_id?: string | null;
         };
@@ -1866,6 +1868,7 @@ export type Database = {
           folder_id?: string | null;
           id?: string;
           media_purged_at?: string | null;
+          source_ref?: string | null;
           status?: string;
           uploader_id?: string | null;
         };

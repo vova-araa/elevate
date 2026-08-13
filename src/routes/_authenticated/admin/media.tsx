@@ -43,6 +43,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { importMediaFromUrl } from "@/lib/media-import.functions";
+import { DriveImportCard } from "@/components/drive-import-card";
 import { getStorageUsage, purgePostedMedia, type StorageUsage } from "@/lib/storage.functions";
 import { EmptyState } from "@/components/empty-state";
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
@@ -518,7 +519,7 @@ function MediaLibrary() {
               onClick={() => setImportOpen(true)}
               className="flex items-center gap-1.5 rounded-lg bg-input/60 hairline px-3 py-2 text-sm hover:bg-accent/40"
             >
-              <Link2 className="h-4 w-4" /> Importeer van Google Drive/link
+              <Link2 className="h-4 w-4" /> Importeer uit Google Drive
             </button>
           </>
         )}
@@ -663,36 +664,53 @@ function MediaLibrary() {
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display text-gold">
-              Importeer van Google Drive/link
-            </DialogTitle>
+            <DialogTitle className="font-display text-gold">Media importeren</DialogTitle>
             <DialogDescription>
-              Plak een Google Drive-deellink of een directe bestands-URL. Zorg dat de Drive-link op
-              &quot;Iedereen met de link&quot; staat, anders kan het bestand niet worden opgehaald.
+              Plak een Drive-map en we halen alles op, ook uit submappen. Zorg dat de map op
+              &quot;Iedereen met de link&quot; staat.
             </DialogDescription>
           </DialogHeader>
-          <input
-            value={importUrl}
-            onChange={(e) => setImportUrl(e.target.value)}
-            placeholder="https://drive.google.com/file/d/…/view"
-            className="rounded-lg bg-input/60 hairline px-3 py-2 text-sm w-full"
-            disabled={importing}
-          />
+
+          {clientId && (
+            <DriveImportCard
+              clientId={clientId}
+              folderId={folderId}
+              onImported={() => setImportOpen(false)}
+            />
+          )}
+
+          {/* Losse link van buiten Drive (bv. WeTransfer, eigen server). */}
+          <div className="rounded-xl border border-gold/10 bg-card p-4">
+            <h3 className="font-display text-lg">Andere directe link</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Eén bestand van een andere plek — de URL moet direct naar het bestand wijzen.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder="https://…/foto.jpg"
+                className="min-h-11 flex-1 rounded-lg bg-input/60 hairline px-4 text-sm"
+                disabled={importing}
+              />
+              <button
+                onClick={handleImport}
+                disabled={importing || !importUrl.trim()}
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-gradient-gold text-black font-medium px-4 text-sm hover:opacity-90 disabled:opacity-60"
+              >
+                {importing && <Loader2 className="h-4 w-4 animate-spin" />}
+                Importeren
+              </button>
+            </div>
+          </div>
+
           <DialogFooter>
             <button
               onClick={() => setImportOpen(false)}
               disabled={importing}
               className="rounded-lg bg-input/60 hairline px-4 py-2 text-sm hover:bg-accent/40 disabled:opacity-60"
             >
-              Annuleren
-            </button>
-            <button
-              onClick={handleImport}
-              disabled={importing}
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-gold text-black font-medium px-4 py-2 text-sm hover:opacity-90 disabled:opacity-60"
-            >
-              {importing && <Loader2 className="h-4 w-4 animate-spin" />}
-              Importeren
+              Sluiten
             </button>
           </DialogFooter>
         </DialogContent>
