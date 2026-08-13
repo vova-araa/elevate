@@ -101,6 +101,8 @@ function AdminDashboard() {
 
   const { data: clients } = useQuery({
     queryKey: ["clients-all-mini"],
+    // Klantenlijst wijzigt zelden — langer cachen scheelt herhaalde queries.
+    staleTime: 10 * 60_000,
     queryFn: async () =>
       (await supabase.from("clients").select("id,name,brand_color,industry,logo_url").order("name"))
         .data ?? [],

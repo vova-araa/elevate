@@ -168,7 +168,8 @@ export function CommandPalette() {
       return data ?? [];
     },
     enabled: open,
-    staleTime: 60_000,
+    // Klantenlijst wijzigt zelden — langer cachen scheelt herhaalde queries.
+    staleTime: 10 * 60_000,
   });
 
   const run = useMemo(

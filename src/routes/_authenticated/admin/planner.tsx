@@ -111,6 +111,8 @@ function PlannerPage() {
 
   const { data: clients } = useQuery({
     queryKey: ["planner-clients"],
+    // Klantenlijst wijzigt zelden — langer cachen scheelt herhaalde queries.
+    staleTime: 10 * 60_000,
     queryFn: async () =>
       (await supabase.from("clients").select("id,name,brand_color,industry").order("name")).data ??
       [],

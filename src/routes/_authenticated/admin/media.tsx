@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { confirmDialog } from "@/components/ui/confirm";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,6 +77,13 @@ function MediaLibrary() {
   const [clientId, setClientId] = useState<string>("");
   const [folderId, setFolderId] = useState<string | null>(null); // null = root van klant
   const [q, setQ] = useState("");
+  // Zoeken debouncen: zonder dit filtert én rerendert de hele grid (max 500
+  // tegels) bij élke toetsaanslag.
+  const [debouncedQ, setDebouncedQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 200);
+    return () => clearTimeout(t);
+  }, [q]);
   const [filter, setFilter] = useState<"all" | "image" | "video" | "other">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -105,6 +112,8 @@ function MediaLibrary() {
 
   const { data: clients } = useQuery({
     queryKey: ["admin-clients-list"],
+    // Klantenlijst wijzigt zelden — langer cachen scheelt herhaalde queries.
+    staleTime: 10 * 60_000,
     queryFn: async () =>
       (await supabase.from("clients").select("id,name").order("name")).data ?? [],
   });
@@ -152,15 +161,19 @@ function MediaLibrary() {
 
   const currentFolder = folders?.find((f: MediaFolder) => f.id === folderId);
 
-  // Eén gebundelde signed-URL-aanroep voor de hele grid i.p.v. één per tegel.
-  const filtered = (uploads ?? []).filter((u: UploadWithClient) => {
-    if (q && !u.file_name?.toLowerCase().includes(q.toLowerCase())) return false;
-    if (filter === "image") return u.file_type?.startsWith("image/");
-    if (filter === "video") return u.file_type?.startsWith("video/");
-    if (filter === "other")
-      return !u.file_type?.startsWith("image/") && !u.file_type?.startsWith("video/");
-    return true;
-  });
+  // Gememoïseerd: dit draaide eerder over max. 500 rijen bij élke toetsaanslag
+  // in het zoekveld, en rerenderde daarmee ook alle tegels.
+  const filtered = useMemo(() => {
+    const needle = debouncedQ.toLowerCase();
+    return (uploads ?? []).filter((u: UploadWithClient) => {
+      if (needle && !u.file_name?.toLowerCase().includes(needle)) return false;
+      if (filter === "image") return u.file_type?.startsWith("image/");
+      if (filter === "video") return u.file_type?.startsWith("video/");
+      if (filter === "other")
+        return !u.file_type?.startsWith("image/") && !u.file_type?.startsWith("video/");
+      return true;
+    });
+  }, [uploads, debouncedQ, filter]);
 
   const gridUrls = useSignedUrls(
     filtered.filter((u: UploadWithClient) => !u.media_purged_at).map((u) => u.file_path),
@@ -775,7 +788,7 @@ function StorageCard({
   );
 }
 
-function Tile({
+const Tile = memo(function Tile({
   u,
   url,
   selected,
@@ -907,7 +920,7 @@ function Tile({
       </div>
     </div>
   );
-}
+});
 
 function PendingTile({
   u,

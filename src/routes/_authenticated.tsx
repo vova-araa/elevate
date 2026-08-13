@@ -39,9 +39,12 @@ export const Route = createFileRoute("/_authenticated")({
   // Privé-portaal: niet indexeren door zoekmachines.
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+    // getSession() leest de JWT lokaal (geen netwerkronde), getUser() doet een
+    // call naar /auth/v1/user. Dit is puur een UX-guard: de échte autorisatie
+    // gebeurt server-side via RLS en de assertAdmin/assertClientAccess-checks.
+    const { data } = await supabase.auth.getSession();
+    if (!data.session?.user) throw redirect({ to: "/auth" });
+    return { user: data.session.user };
   },
   component: AuthLayout,
 });
