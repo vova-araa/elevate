@@ -1,5 +1,9 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { refreshAccessToken, type SocialPlatform } from "@/lib/social-oauth.server";
+import {
+  refreshAccessToken,
+  tiktokCanPublishDirectly,
+  type SocialPlatform,
+} from "@/lib/social-oauth.server";
 
 /**
  * Direct publiceren naar de platforms via de eigen OAuth-koppelingen
@@ -189,13 +193,24 @@ async function publishTikTok(clientId: string, input: PublishInput): Promise<Pub
   if (!input.mediaUrl || !isVideo(input))
     throw new Error("TikTok vereist een video — voeg een video toe aan de post");
 
-  const res = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+  // Zonder goedgekeurde video.publish-scope mag er niet direct openbaar worden
+  // gepost; de video gaat dan als concept naar de TikTok-inbox van de klant,
+  // die 'm in de app afmaakt. Na de audit schakelt dit automatisch om.
+  const direct = tiktokCanPublishDirectly();
+  const endpoint = direct
+    ? "https://open.tiktokapis.com/v2/post/publish/video/init/"
+    : "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/";
+  const body = direct
+    ? {
+        post_info: { title: input.caption.slice(0, 2200), privacy_level: "PUBLIC_TO_EVERYONE" },
+        source_info: { source: "PULL_FROM_URL", video_url: input.mediaUrl },
+      }
+    : { source_info: { source: "PULL_FROM_URL", video_url: input.mediaUrl } };
+
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      post_info: { title: input.caption.slice(0, 2200), privacy_level: "PUBLIC_TO_EVERYONE" },
-      source_info: { source: "PULL_FROM_URL", video_url: input.mediaUrl },
-    }),
+    body: JSON.stringify(body),
   });
   const json = (await res.json().catch(() => ({}))) as {
     data?: { publish_id?: string };

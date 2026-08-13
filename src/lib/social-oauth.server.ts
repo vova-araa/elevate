@@ -76,15 +76,31 @@ function credentialsFor(platform: SocialPlatform): { id: string; secret: string 
   }
 }
 
+/**
+ * TikTok weigert de hele autorisatie ("scope"-fout) zodra er één scope bij zit
+ * die nog niet is goedgekeurd. `video.publish` (direct openbaar posten) en
+ * `user.info.stats` vereisen de volledige audit; `user.info.basic` en
+ * `video.upload` (als concept naar de inbox) zijn standaard beschikbaar.
+ * Daarom is de set instelbaar via TIKTOK_SCOPES — zodra de audit rond is zet
+ * je daar de volledige lijst in, zonder code-wijziging:
+ *   TIKTOK_SCOPES="user.info.basic,user.info.stats,video.publish,video.upload"
+ */
+const TIKTOK_SCOPES = process.env.TIKTOK_SCOPES ?? "user.info.basic,video.upload";
+
 const SCOPES: Record<SocialPlatform, string> = {
   facebook: "pages_show_list,pages_manage_posts,pages_read_engagement",
   instagram:
     "pages_show_list,pages_manage_posts,instagram_basic,instagram_content_publish,business_management",
-  tiktok: "user.info.basic,user.info.stats,video.publish,video.upload",
+  tiktok: TIKTOK_SCOPES,
   linkedin: "openid profile w_member_social",
   youtube:
     "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly",
 };
+
+/** Is directe TikTok-publicatie toegestaan (audit rond), of alleen concept-upload? */
+export function tiktokCanPublishDirectly(): boolean {
+  return TIKTOK_SCOPES.includes("video.publish");
+}
 
 // ── State (HMAC-getekend, voorkomt CSRF en koppelt callback aan klant) ───────
 
@@ -423,8 +439,13 @@ export async function fetchProfile(
       };
     }
     case "tiktok": {
+      // follower_count valt onder user.info.stats; vraag dat veld alleen op als
+      // die scope is toegekend, anders weigert TikTok het hele verzoek.
+      const fields = TIKTOK_SCOPES.includes("user.info.stats")
+        ? "open_id,display_name,follower_count"
+        : "open_id,display_name";
       const json = await getJson(
-        "https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,follower_count",
+        `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
         tokens.accessToken,
       );
       const user = ((json.data as { user?: Record<string, unknown> })?.user ?? {}) as {
