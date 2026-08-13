@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { registerServiceWorker } from "@/lib/pwa";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -146,6 +147,12 @@ function ThemedToaster() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  // Service worker registreren: nodig om de app installeerbaar te maken (en
+  // om offline nog een shell te tonen).
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange(() => {

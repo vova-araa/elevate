@@ -1,0 +1,108 @@
+import { useEffect, useState } from "react";
+
+/**
+ * PWA-installatie: service worker registreren en het installatiemoment
+ * beschikbaar maken.
+ *
+ * Chrome/Edge geven een `beforeinstallprompt`-event dat je moet bewaren om het
+ * later zelf te kunnen tonen. Safari op iOS kent dat event niet — daar moet de
+ * gebruiker via Deel → "Zet op beginscherm", dus daar tonen we een uitleg.
+ */
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+export function registerServiceWorker() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+  const register = () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Registratie mislukt (bv. onbeveiligde context) — de app werkt gewoon door.
+    });
+  };
+
+  // React hydrateert doorgaans ná het load-event; dan zou een load-listener
+  // nooit meer afgaan en registreerde de worker zich dus niet.
+  if (document.readyState === "complete") register();
+  else window.addEventListener("load", register, { once: true });
+}
+
+/** Draait de app als geïnstalleerde app (standalone) i.p.v. in een tab? */
+export function isStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    // iOS Safari gebruikt een eigen vlag.
+    (window.navigator as { standalone?: boolean }).standalone === true
+  );
+}
+
+export interface InstallState {
+  /** Kan de installatie nu getoond worden? */
+  canInstall: boolean;
+  /** iOS heeft geen prompt-API; daar tonen we een instructie. */
+  isIos: boolean;
+  /** Al geïnstalleerd of al weggeklikt. */
+  dismissed: boolean;
+  install: () => Promise<void>;
+  dismiss: () => void;
+}
+
+const DISMISS_KEY = "elevate-pwa-dismissed";
+
+export function useInstallPrompt(): InstallState {
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    setInstalled(isStandalone());
+    try {
+      setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
+    } catch {
+      /* localStorage geblokkeerd — dan tonen we de knop gewoon */
+    }
+
+    const onPrompt = (e: Event) => {
+      // Voorkom de standaardbalk van de browser; we tonen onze eigen knop.
+      e.preventDefault();
+      setDeferred(e as BeforeInstallPromptEvent);
+    };
+    const onInstalled = () => setInstalled(true);
+
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  const isIos =
+    typeof navigator !== "undefined" &&
+    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+    !/crios|fxios/i.test(navigator.userAgent);
+
+  return {
+    canInstall: !installed && !dismissed && (!!deferred || isIos),
+    isIos,
+    dismissed: installed || dismissed,
+    install: async () => {
+      if (!deferred) return;
+      await deferred.prompt();
+      const choice = await deferred.userChoice;
+      if (choice.outcome === "accepted") setInstalled(true);
+      setDeferred(null);
+    },
+    dismiss: () => {
+      setDismissed(true);
+      try {
+        localStorage.setItem(DISMISS_KEY, "1");
+      } catch {
+        /* niets te bewaren — knop komt volgende sessie terug */
+      }
+    },
+  };
+}

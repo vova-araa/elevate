@@ -195,6 +195,14 @@
   /* Zacht, soepel scrollen door de hele app — met respect voor toegankelijkheid. */
   html {
     scroll-behavior: smooth;
+    /* Geen "rubber band" aan begin/eind van de pagina: het scherm blijft strak
+       staan in plaats van mee te veren voorbij de content. */
+    overscroll-behavior-y: none;
+  }
+  body {
+    overscroll-behavior-y: none;
+    /* Voorkomt dat iOS de hele pagina laat meeveren achter vaste elementen. */
+    -webkit-overflow-scrolling: touch;
   }
   @media (prefers-reduced-motion: reduce) {
     html {
@@ -363,8 +371,12 @@
      ingehouden overscroll (geen "bounce"-doorschuif naar de body). */
   .scroll-surface {
     scroll-behavior: smooth;
-    overscroll-behavior: contain;
+    /* `none` i.p.v. `contain`: ook binnen dit vlak geen doorveren aan de randen. */
+    overscroll-behavior: none;
     scroll-padding-top: 1rem;
+    /* Houdt de scrollpositie stabiel wanneer er content bóven het zichtbare
+       deel bijkomt (bv. een kaart die inlaadt) — anders springt de pagina. */
+    overflow-anchor: auto;
   }
   @media (prefers-reduced-motion: reduce) {
     .scroll-surface {

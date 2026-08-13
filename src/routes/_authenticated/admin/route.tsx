@@ -16,6 +16,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileNavSheet } from "@/components/mobile-nav-sheet";
 import { MobileFab } from "@/components/mobile-fab";
+import { PwaInstall } from "@/components/pwa-install";
 import { useUIStore } from "@/lib/stores/ui-store";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -79,6 +80,7 @@ function AdminLayout() {
       <MobileBottomNav />
       <MobileNavSheet />
       <MobileFab />
+      <PwaInstall />
       <CommandPalette />
     </div>
   );

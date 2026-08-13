@@ -25,5 +25,23 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "id": "/",
+  "scope": "/",
+  "description": "Plan, keur goed en publiceer social content — alles in één portaal.",
+  "orientation": "portrait-primary",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "Planner",
+      "url": "/admin/planner"
+    },
+    {
+      "name": "Concepten",
+      "url": "/admin/queue"
+    }
   ]
 }
