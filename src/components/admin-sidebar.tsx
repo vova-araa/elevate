@@ -20,7 +20,7 @@ import {
   ADMIN_NAV,
   badgeClasses,
   initials,
-  type AdminNavSection,
+  type AdminNavItem,
   type SidebarCounts,
 } from "@/lib/admin-nav";
 
@@ -259,10 +259,10 @@ export function AdminSidebar() {
             </Link>
           </div>
         )}
-        {ADMIN_NAV.map((section) => (
-          <NavSection
-            key={section.label}
-            section={section}
+        {ADMIN_NAV.map((item) => (
+          <NavEntry
+            key={item.to}
+            item={item}
             collapsed={collapsed}
             counts={counts}
             isActive={isActive}
@@ -274,93 +274,120 @@ export function AdminSidebar() {
 }
 
 /**
- * Eén menugroep. Secundaire items zitten achter "Meer" zodat het menu rustig
- * blijft; staat er een actief item tussen, dan klapt de groep vanzelf open.
+ * Eén hoofdingang met zijn onderdelen. De subitems staan ingeklapt; ze klappen
+ * uit bij een klik op de chevron, en automatisch wanneer je op een van die
+ * pagina's bent.
  */
-function NavSection({
-  section,
+function NavEntry({
+  item,
   collapsed,
   counts,
   isActive,
 }: {
-  section: AdminNavSection;
+  item: AdminNavItem;
   collapsed: boolean;
   counts?: SidebarCounts;
   isActive: (to: string) => boolean;
 }) {
-  const secondary = section.items.filter((i) => i.secondary);
-  const hasActiveSecondary = secondary.some((i) => isActive(i.to));
-  const [showAll, setShowAll] = useState(false);
-  const expanded = showAll || hasActiveSecondary;
-  const visible = expanded ? section.items : section.items.filter((i) => !i.secondary);
+  const children = item.children ?? [];
+  const childActive = children.some((c) => isActive(c.to));
+  const [open, setOpen] = useState(false);
+  const expanded = open || childActive;
+  const active = isActive(item.to);
+  const badgeValue = item.badgeKey ? (counts?.[item.badgeKey] ?? 0) : 0;
+
+  // Tel de badges van ingeklapte kinderen op bij de ouder, zodat je niets mist
+  // wanneer de groep dicht staat.
+  const hiddenBadges = expanded
+    ? 0
+    : children.reduce((sum, c) => sum + (c.badgeKey ? (counts?.[c.badgeKey] ?? 0) : 0), 0);
 
   return (
-    <div key={section.label} className="mb-3 px-2">
-      {!collapsed && (
-        <div className="mb-1 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
-          {section.label}
-        </div>
-      )}
-      <div className="space-y-0.5">
-        {visible.map((item) => {
-          const active = isActive(item.to);
-          const badgeValue = item.badgeKey ? (counts?.[item.badgeKey] ?? 0) : 0;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "group relative flex items-center rounded-xl text-sm transition-colors duration-150 active:scale-[0.99]",
-                collapsed ? "mx-auto h-10 w-10 justify-center" : "gap-3 px-2 py-2",
-                active
-                  ? "bg-gold/12 font-medium text-gold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-gold"
-                  : "text-foreground/75 hover:bg-accent/40 hover:text-foreground",
-              )}
-              title={collapsed ? item.label : undefined}
-            >
-              <span
-                className={cn(
-                  "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-150",
-                  active
-                    ? "bg-gold/15 text-gold"
-                    : "bg-background/50 text-muted-foreground group-hover:text-foreground",
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-              </span>
-              {!collapsed && (
-                <>
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {badgeValue > 0 && (
-                    <span
-                      className={cn(
-                        "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
-                        badgeClasses[item.badgeTone ?? "default"],
-                      )}
-                    >
-                      {badgeValue}
-                    </span>
-                  )}
-                </>
-              )}
-            </Link>
-          );
-        })}
-        {/* "Meer" alleen tonen als er echt iets verborgen is. */}
-        {!collapsed && secondary.length > 0 && !hasActiveSecondary && (
-          <button
-            onClick={() => setShowAll((v) => !v)}
-            className="flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-xs text-muted-foreground/80 transition hover:bg-accent/30 hover:text-foreground"
+    <div className="px-2">
+      <div className="flex items-center">
+        <Link
+          to={item.to}
+          className={cn(
+            "group relative flex flex-1 items-center rounded-xl text-sm transition-colors duration-150 active:scale-[0.99]",
+            collapsed ? "mx-auto h-10 w-10 justify-center" : "gap-3 px-2 py-2",
+            active || childActive
+              ? "bg-gold/12 font-medium text-gold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-gold"
+              : "text-foreground/75 hover:bg-accent/40 hover:text-foreground",
+          )}
+          title={collapsed ? item.label : undefined}
+        >
+          <span
+            className={cn(
+              "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-150",
+              active || childActive
+                ? "bg-gold/15 text-gold"
+                : "bg-background/50 text-muted-foreground group-hover:text-foreground",
+            )}
           >
-            <span className="grid h-8 w-8 shrink-0 place-items-center">
-              <ChevronDown
-                className={cn("h-3.5 w-3.5 transition-transform", showAll && "rotate-180")}
-              />
-            </span>
-            <span>{showAll ? "Minder" : `Meer (${secondary.length})`}</span>
+            <item.icon className="h-4 w-4" />
+          </span>
+          {!collapsed && (
+            <>
+              <span className="flex-1 truncate">{item.label}</span>
+              {badgeValue + hiddenBadges > 0 && (
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                    badgeClasses[item.badgeTone ?? "default"],
+                  )}
+                >
+                  {badgeValue + hiddenBadges}
+                </span>
+              )}
+            </>
+          )}
+        </Link>
+        {!collapsed && children.length > 0 && (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={`${item.label} ${expanded ? "inklappen" : "uitklappen"}`}
+            className="grid h-8 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground/70 transition hover:bg-accent/40 hover:text-foreground"
+          >
+            <ChevronDown
+              className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")}
+            />
           </button>
         )}
       </div>
+
+      {!collapsed && expanded && children.length > 0 && (
+        <div className="mb-1 ml-[26px] space-y-0.5 border-l border-gold/15 pl-3">
+          {children.map((c) => {
+            const cActive = isActive(c.to);
+            const cBadge = c.badgeKey ? (counts?.[c.badgeKey] ?? 0) : 0;
+            return (
+              <Link
+                key={c.to}
+                to={c.to}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] transition-colors",
+                  cActive
+                    ? "bg-gold/10 font-medium text-gold"
+                    : "text-foreground/65 hover:bg-accent/40 hover:text-foreground",
+                )}
+              >
+                <span className="flex-1 truncate">{c.label}</span>
+                {cBadge > 0 && (
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                      badgeClasses[c.badgeTone ?? "default"],
+                    )}
+                  >
+                    {cBadge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

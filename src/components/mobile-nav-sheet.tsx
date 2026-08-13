@@ -214,86 +214,107 @@ export function MobileNavSheet() {
               </Link>
             </div>
           )}
-          {ADMIN_NAV.map((section) => (
-            <div key={section.label} className="mb-4">
-              <div className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
-                {section.label}
-              </div>
-              <div className="space-y-0.5">
-                {/* Op mobiel tonen we standaard alleen de hoofditems; de rest
-                    zit achter "Meer" zodat de lijst kort en scrolbaar blijft.
-                    Staat de actieve pagina ertussen, dan klapt de groep open. */}
-                {(expandedSections.has(section.label) ||
-                section.items.some((i) => i.secondary && isActive(i.to))
-                  ? section.items
-                  : section.items.filter((i) => !i.secondary)
-                ).map((item) => {
-                  const active = isActive(item.to);
-                  const badgeValue = item.badgeKey ? (counts?.[item.badgeKey] ?? 0) : 0;
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
+          {ADMIN_NAV.map((item) => {
+            const children = item.children ?? [];
+            const childActive = children.some((c) => isActive(c.to));
+            const expanded = expandedSections.has(item.to) || childActive;
+            const active = isActive(item.to);
+            const badgeValue = item.badgeKey ? (counts?.[item.badgeKey] ?? 0) : 0;
+            const hiddenBadges = expanded
+              ? 0
+              : children.reduce(
+                  (sum, c) => sum + (c.badgeKey ? (counts?.[c.badgeKey] ?? 0) : 0),
+                  0,
+                );
+            return (
+              <div key={item.to} className="mb-1">
+                <div className="flex items-center">
+                  <Link
+                    to={item.to}
+                    className={cn(
+                      "group flex flex-1 items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm transition-colors",
+                      active || childActive
+                        ? "bg-gold/12 font-medium text-gold"
+                        : "text-foreground/80 hover:bg-accent/40 hover:text-foreground",
+                    )}
+                  >
+                    <span
                       className={cn(
-                        "group flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm transition-colors",
-                        active
-                          ? "bg-gold/12 font-medium text-gold"
-                          : "text-foreground/80 hover:bg-accent/40 hover:text-foreground",
+                        "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors",
+                        active || childActive
+                          ? "bg-gold/15 text-gold"
+                          : "bg-background/60 text-muted-foreground group-hover:text-foreground",
                       )}
                     >
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {badgeValue + hiddenBadges > 0 && (
                       <span
                         className={cn(
-                          "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors",
-                          active
-                            ? "bg-gold/15 text-gold"
-                            : "bg-background/60 text-muted-foreground group-hover:text-foreground",
+                          "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                          badgeClasses[item.badgeTone ?? "default"],
                         )}
                       >
-                        <item.icon className="h-4 w-4" />
+                        {badgeValue + hiddenBadges}
                       </span>
-                      <span className="flex-1 truncate">{item.label}</span>
-                      {badgeValue > 0 && (
-                        <span
-                          className={cn(
-                            "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
-                            badgeClasses[item.badgeTone ?? "default"],
-                          )}
-                        >
-                          {badgeValue}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-                {(() => {
-                  const hidden = section.items.filter((i) => i.secondary);
-                  const forced = hidden.some((i) => isActive(i.to));
-                  if (hidden.length === 0 || forced) return null;
-                  const open = expandedSections.has(section.label);
-                  return (
+                    )}
+                  </Link>
+                  {children.length > 0 && (
                     <button
                       onClick={() =>
                         setExpandedSections((prev) => {
                           const next = new Set(prev);
-                          if (next.has(section.label)) next.delete(section.label);
-                          else next.add(section.label);
+                          if (next.has(item.to)) next.delete(item.to);
+                          else next.add(item.to);
                           return next;
                         })
                       }
-                      className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-xs text-muted-foreground/80 transition-colors hover:bg-accent/30 hover:text-foreground"
+                      aria-expanded={expanded}
+                      aria-label={`${item.label} ${expanded ? "inklappen" : "uitklappen"}`}
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-muted-foreground/70 transition hover:bg-accent/40 hover:text-foreground"
                     >
-                      <span className="grid h-8 w-8 shrink-0 place-items-center">
-                        <ChevronDown
-                          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
-                        />
-                      </span>
-                      {open ? "Minder" : `Meer (${hidden.length})`}
+                      <ChevronDown
+                        className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")}
+                      />
                     </button>
-                  );
-                })()}
+                  )}
+                </div>
+                {expanded && children.length > 0 && (
+                  <div className="ml-[26px] mt-0.5 space-y-0.5 border-l border-gold/15 pl-3">
+                    {children.map((c) => {
+                      const cActive = isActive(c.to);
+                      const cBadge = c.badgeKey ? (counts?.[c.badgeKey] ?? 0) : 0;
+                      return (
+                        <Link
+                          key={c.to}
+                          to={c.to}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-sm transition-colors",
+                            cActive
+                              ? "bg-gold/10 font-medium text-gold"
+                              : "text-foreground/70 hover:bg-accent/40 hover:text-foreground",
+                          )}
+                        >
+                          <span className="flex-1 truncate">{c.label}</span>
+                          {cBadge > 0 && (
+                            <span
+                              className={cn(
+                                "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                                badgeClasses[c.badgeTone ?? "default"],
+                              )}
+                            >
+                              {cBadge}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
         {/* Voettekst */}

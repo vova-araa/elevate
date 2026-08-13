@@ -4,23 +4,10 @@
 import {
   LayoutDashboard,
   CalendarDays,
-  FileText,
   Image as ImageIcon,
-  Crop,
-  Upload,
   Sparkles,
-  Target,
-  Wand2,
-  Bot,
-  Clock,
   TrendingUp,
-  Heart,
-  FileBarChart,
-  CheckSquare,
-  MessageSquare,
   Building2,
-  Plug,
-  Users,
   Settings as SettingsIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -28,98 +15,87 @@ import {
 export type BadgeKey = "scheduled" | "drafts" | "pending" | "unread" | "alerts";
 export type BadgeTone = "default" | "amber" | "red" | "green";
 
+export interface AdminNavChild {
+  to: string;
+  label: string;
+  badgeKey?: BadgeKey;
+  badgeTone?: BadgeTone;
+}
+
+/**
+ * Eén hoofditem in het menu. Onderliggende pagina's hangen als `children`
+ * eronder en zijn standaard ingeklapt — zo zie je zeven regels in plaats van
+ * twintig, en staat alles wat bij elkaar hoort ook bij elkaar.
+ */
 export interface AdminNavItem {
   to: string;
   label: string;
   icon: LucideIcon;
   badgeKey?: BadgeKey;
   badgeTone?: BadgeTone;
-  /**
-   * Minder gebruikte pagina's staan standaard ingeklapt achter "Meer", zodat
-   * het menu rustig blijft en de dagelijkse flow (posten) bovenaan staat.
-   */
-  secondary?: boolean;
-}
-
-export interface AdminNavSection {
-  label: string;
-  items: AdminNavItem[];
+  children?: AdminNavChild[];
 }
 
 /**
- * Menu-indeling volgt de dagelijkse werkstroom: eerst posten, dan het maken van
- * content, dan de klant, dan resultaten, dan beheer. Alles wat bij elkaar hoort
- * staat bij elkaar; wat je zelden nodig hebt zit achter "Meer".
+ * Zeven hoofdingangen, elk met zijn eigen onderdelen eronder. Alles wat met
+ * plannen te maken heeft hangt onder Planner, alles met beeld onder Media,
+ * enzovoort — zo blijft het menu kort en weet je meteen waar je moet zijn.
  */
-export const ADMIN_NAV: AdminNavSection[] = [
+export const ADMIN_NAV: AdminNavItem[] = [
+  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   {
-    label: "Posten",
-    items: [
-      { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/admin/planner", label: "Planner", icon: CalendarDays, badgeKey: "scheduled" },
-      {
-        to: "/admin/queue",
-        label: "Concepten",
-        icon: FileText,
-        badgeKey: "drafts",
-        badgeTone: "amber",
-      },
-      {
-        to: "/admin/approvals",
-        label: "Goedkeuring",
-        icon: CheckSquare,
-        badgeKey: "pending",
-        badgeTone: "red",
-      },
+    to: "/admin/planner",
+    label: "Planner",
+    icon: CalendarDays,
+    badgeKey: "scheduled",
+    children: [
+      { to: "/admin/queue", label: "Concepten", badgeKey: "drafts", badgeTone: "amber" },
+      { to: "/admin/approvals", label: "Goedkeuring", badgeKey: "pending", badgeTone: "red" },
+      { to: "/admin/bulk", label: "Bulk import" },
+      { to: "/admin/besttime", label: "Beste tijd" },
     ],
   },
   {
-    label: "Content & AI",
-    items: [
-      { to: "/admin/media", label: "Media", icon: ImageIcon },
-      { to: "/admin/ai", label: "AI Studio", icon: Sparkles },
-      { to: "/admin/strategy", label: "Strategie", icon: Target },
-      { to: "/admin/campaigns", label: "Campagnes", icon: Wand2, secondary: true },
-      { to: "/admin/editor", label: "Beeld-editor", icon: Crop, secondary: true },
-      { to: "/admin/bulk", label: "Bulk import", icon: Upload, secondary: true },
-      { to: "/admin/assistant", label: "AI Assistent", icon: Bot, secondary: true },
-      { to: "/admin/besttime", label: "Beste tijd", icon: Clock, secondary: true },
+    to: "/admin/media",
+    label: "Media",
+    icon: ImageIcon,
+    children: [{ to: "/admin/editor", label: "Beeld-editor" }],
+  },
+  {
+    to: "/admin/ai",
+    label: "AI Studio",
+    icon: Sparkles,
+    children: [
+      { to: "/admin/strategy", label: "Strategie" },
+      { to: "/admin/campaigns", label: "Campagnes" },
+      { to: "/admin/assistant", label: "Assistent" },
     ],
   },
   {
+    to: "/admin/clients",
     label: "Klanten",
-    items: [
-      { to: "/admin/clients", label: "Klanten", icon: Building2 },
-      { to: "/admin/channels", label: "Kanalen", icon: Plug },
-      {
-        to: "/admin/messages",
-        label: "Berichten",
-        icon: MessageSquare,
-        badgeKey: "unread",
-        badgeTone: "red",
-      },
+    icon: Building2,
+    children: [
+      { to: "/admin/channels", label: "Kanalen" },
+      { to: "/admin/messages", label: "Berichten", badgeKey: "unread", badgeTone: "red" },
     ],
   },
   {
+    to: "/admin/reach",
     label: "Resultaten",
-    items: [
-      { to: "/admin/reach", label: "Bereik & groei", icon: TrendingUp },
-      { to: "/admin/reports", label: "Rapporten", icon: FileBarChart },
-      { to: "/admin/engagement", label: "Engagement", icon: Heart, secondary: true },
+    icon: TrendingUp,
+    children: [
+      { to: "/admin/engagement", label: "Engagement" },
+      { to: "/admin/reports", label: "Rapporten" },
     ],
   },
   {
-    label: "Beheer",
-    items: [
-      { to: "/admin/team", label: "Team", icon: Users },
-      {
-        to: "/admin/settings",
-        label: "Instellingen",
-        icon: SettingsIcon,
-        badgeKey: "alerts",
-        badgeTone: "red",
-      },
-    ],
+    to: "/admin/settings",
+    label: "Instellingen",
+    icon: SettingsIcon,
+    badgeKey: "alerts",
+    badgeTone: "red",
+    children: [{ to: "/admin/team", label: "Team" }],
   },
 ];
 
