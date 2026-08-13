@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Plus, LogOut, Check, Moon, Sun, Shield } from "lucide-react";
+import { X, Plus, LogOut, Check, Moon, Sun, Shield, ChevronDown } from "lucide-react";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +84,9 @@ export function MobileNavSheet() {
       return data ?? [];
     },
   });
+
+  // Welke groepen zijn uitgeklapt (secundaire items zichtbaar).
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const isActive = (to: string) => {
     if (to === "/admin/clients") return currentPath.startsWith("/admin/clients");
@@ -217,7 +220,14 @@ export function MobileNavSheet() {
                 {section.label}
               </div>
               <div className="space-y-0.5">
-                {section.items.map((item) => {
+                {/* Op mobiel tonen we standaard alleen de hoofditems; de rest
+                    zit achter "Meer" zodat de lijst kort en scrolbaar blijft.
+                    Staat de actieve pagina ertussen, dan klapt de groep open. */}
+                {(expandedSections.has(section.label) ||
+                section.items.some((i) => i.secondary && isActive(i.to))
+                  ? section.items
+                  : section.items.filter((i) => !i.secondary)
+                ).map((item) => {
                   const active = isActive(item.to);
                   const badgeValue = item.badgeKey ? (counts?.[item.badgeKey] ?? 0) : 0;
                   return (
@@ -255,6 +265,32 @@ export function MobileNavSheet() {
                     </Link>
                   );
                 })}
+                {(() => {
+                  const hidden = section.items.filter((i) => i.secondary);
+                  const forced = hidden.some((i) => isActive(i.to));
+                  if (hidden.length === 0 || forced) return null;
+                  const open = expandedSections.has(section.label);
+                  return (
+                    <button
+                      onClick={() =>
+                        setExpandedSections((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(section.label)) next.delete(section.label);
+                          else next.add(section.label);
+                          return next;
+                        })
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-xs text-muted-foreground/80 transition-colors hover:bg-accent/30 hover:text-foreground"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center">
+                        <ChevronDown
+                          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
+                        />
+                      </span>
+                      {open ? "Minder" : `Meer (${hidden.length})`}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           ))}

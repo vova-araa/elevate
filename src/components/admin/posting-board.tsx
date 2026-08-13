@@ -142,13 +142,15 @@ export function PostingBoard({
               </span>
               Wat gaat er live
             </h2>
-            <div className="inline-flex rounded-full glass p-1 text-[11px]">
+            <div className="inline-flex rounded-full glass p-1 text-xs">
               {[3, 7, 14].map((d) => (
                 <button
                   key={d}
                   onClick={() => setDays(d)}
+                  aria-pressed={days === d}
+                  // Ruim tikdoel op mobiel (min. 44px), compacter op desktop.
                   className={cn(
-                    "rounded-full px-2.5 py-1 transition",
+                    "min-h-11 rounded-full px-4 transition sm:min-h-0 sm:px-2.5 sm:py-1",
                     days === d
                       ? "bg-gold/15 text-gold"
                       : "text-muted-foreground hover:text-foreground",

@@ -1736,7 +1736,9 @@ function FeedPreviewPanel({
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Wrapt op smalle schermen: kanaalkeuze + horizon + toggle passen
+            samen niet op één telefoonregel. */}
+        <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full glass p-1 text-[11px]">
             {options.map((pl) => (
               <button
