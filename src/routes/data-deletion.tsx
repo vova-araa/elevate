@@ -54,6 +54,18 @@ function DataDeletionPage() {
         </p>
       </LegalSection>
 
+      <LegalSection title="Verzoek via Facebook of Instagram">
+        <p>
+          Verwijder je Elevate Design rechtstreeks in je Meta-instellingen, dan krijg je van Meta
+          een <b>bevestigingscode</b>. We verwijderen dan direct de bewaarde toegangssleutel en
+          accountgegevens van die koppeling. De status van dat verzoek kun je opvragen op{" "}
+          <a href="/data-deletion-status" className="text-gold hover:underline">
+            de statuspagina
+          </a>
+          .
+        </p>
+      </LegalSection>
+
       <LegalSection title="English summary">
         <p>
           To disconnect a linked social account, open <b>Kanalen</b> (Channels) in the portal and

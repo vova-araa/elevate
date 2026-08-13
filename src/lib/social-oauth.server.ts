@@ -407,6 +407,23 @@ async function firstFacebookPage(accessToken: string): Promise<FbPage> {
   return pages[0];
 }
 
+/**
+ * App-scoped user id van de persoon die koppelt. Meta stuurt precies dit id mee
+ * in de data-deletion-callback; zonder dat we het opslaan kunnen we een
+ * verwijderverzoek niet aan een koppeling koppelen. Faalt dit, dan is dat geen
+ * reden om de hele koppeling te laten mislukken.
+ */
+async function metaUserId(accessToken: string): Promise<string | null> {
+  try {
+    const json = await getJson(
+      `${GRAPH}/me?fields=id&access_token=${encodeURIComponent(accessToken)}`,
+    );
+    return json.id ? String(json.id) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchProfile(
   platform: SocialPlatform,
   tokens: TokenSet,
@@ -418,7 +435,11 @@ export async function fetchProfile(
         accountId: page.id,
         handle: page.name,
         followers: null,
-        meta: { pageId: page.id, pageToken: page.access_token },
+        meta: {
+          pageId: page.id,
+          pageToken: page.access_token,
+          metaUserId: await metaUserId(tokens.accessToken),
+        },
       };
     }
     case "instagram": {
@@ -435,7 +456,12 @@ export async function fetchProfile(
         accountId: igId,
         handle: `@${String(ig.username ?? "instagram")}`,
         followers: typeof ig.followers_count === "number" ? ig.followers_count : null,
-        meta: { igUserId: igId, pageId: page.id, pageToken: page.access_token },
+        meta: {
+          igUserId: igId,
+          pageId: page.id,
+          pageToken: page.access_token,
+          metaUserId: await metaUserId(tokens.accessToken),
+        },
       };
     }
     case "tiktok": {

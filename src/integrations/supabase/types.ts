@@ -701,6 +701,39 @@ export type Database = {
           },
         ];
       };
+      data_deletion_requests: {
+        Row: {
+          completed_at: string | null;
+          confirmation_code: string;
+          created_at: string;
+          details: Json;
+          id: string;
+          platform: string;
+          platform_user_id: string;
+          status: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          confirmation_code: string;
+          created_at?: string;
+          details?: Json;
+          id?: string;
+          platform?: string;
+          platform_user_id: string;
+          status?: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          confirmation_code?: string;
+          created_at?: string;
+          details?: Json;
+          id?: string;
+          platform?: string;
+          platform_user_id?: string;
+          status?: string;
+        };
+        Relationships: [];
+      };
       clients: {
         Row: {
           brand_color: string | null;
@@ -1447,10 +1480,12 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
+          error_kind: string | null;
           error_message: string | null;
           id: string;
           is_queued: boolean;
           media_path: string | null;
+          last_attempt_at: string | null;
           media_purged_at: string | null;
           media_type: string | null;
           notes: string | null;
@@ -1460,6 +1495,7 @@ export type Database = {
           platform_post_id: string | null;
           published_at: string | null;
           recurring_rule: Json | null;
+          retry_count: number;
           scheduled_at: string;
           status: Database["public"]["Enums"]["scheduled_post_status"];
           updated_at: string;
@@ -1470,10 +1506,12 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
+          error_kind?: string | null;
           error_message?: string | null;
           id?: string;
           is_queued?: boolean;
           media_path?: string | null;
+          last_attempt_at?: string | null;
           media_purged_at?: string | null;
           media_type?: string | null;
           notes?: string | null;
@@ -1483,6 +1521,7 @@ export type Database = {
           platform_post_id?: string | null;
           published_at?: string | null;
           recurring_rule?: Json | null;
+          retry_count?: number;
           scheduled_at: string;
           status?: Database["public"]["Enums"]["scheduled_post_status"];
           updated_at?: string;
@@ -1493,10 +1532,12 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
+          error_kind?: string | null;
           error_message?: string | null;
           id?: string;
           is_queued?: boolean;
           media_path?: string | null;
+          last_attempt_at?: string | null;
           media_purged_at?: string | null;
           media_type?: string | null;
           notes?: string | null;
@@ -1506,6 +1547,7 @@ export type Database = {
           platform_post_id?: string | null;
           published_at?: string | null;
           recurring_rule?: Json | null;
+          retry_count?: number;
           scheduled_at?: string;
           status?: Database["public"]["Enums"]["scheduled_post_status"];
           updated_at?: string;

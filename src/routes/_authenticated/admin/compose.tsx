@@ -13,7 +13,9 @@ import {
   Heart,
   MessageCircle,
   Repeat2,
+  AlertTriangle,
 } from "lucide-react";
+import { checkRsm, findRsmLabel, prependRsmLabel } from "@/lib/rsm";
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import { useClientStore } from "@/lib/stores/client-store";
@@ -97,6 +99,15 @@ function ComposePage() {
   const [mediaPath, setMediaPath] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [previewPlatform, setPreviewPlatform] = useState<string>("instagram");
+  // Reclamecode: de maker weet of er een betaalde relatie is, wij niet. Zodra
+  // dat vinkje aanstaat controleren we de caption op een geldige aanduiding.
+  const [isAd, setIsAd] = useState(false);
+
+  const rsmIssues = checkRsm({
+    caption: content,
+    isAd,
+    isVideo: (mediaType ?? "").startsWith("video"),
+  });
 
   useEffect(() => {
     const raw = sessionStorage.getItem("compose-pending-media");
@@ -327,6 +338,52 @@ function ComposePage() {
             placeholder="Schrijf je post..."
             className="w-full min-h-[160px] rounded-lg bg-transparent border border-border p-3 text-sm outline-none focus:border-gold/50"
           />
+
+          {/* Reclamecode Social Media: verplicht zodra er betaald wordt. */}
+          <label className="mt-3 flex items-start gap-2.5 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isAd}
+              onChange={(e) => setIsAd(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[var(--gold)]"
+            />
+            <span>
+              Betaalde samenwerking of advertentie
+              <span className="block text-xs text-muted-foreground">
+                Verplicht te vermelden volgens de Reclamecode Social Media.
+              </span>
+            </span>
+          </label>
+
+          {rsmIssues.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {rsmIssues.map((issue, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex items-start gap-2 rounded-lg border p-2.5 text-xs",
+                    issue.severity === "error"
+                      ? "border-destructive/40 bg-destructive/5 text-destructive"
+                      : issue.severity === "warning"
+                        ? "border-gold/40 bg-gold/5 text-gold"
+                        : "border-border bg-muted/30 text-muted-foreground",
+                  )}
+                >
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="leading-relaxed">{issue.message}</span>
+                </div>
+              ))}
+              {!findRsmLabel(content) && (
+                <button
+                  type="button"
+                  onClick={() => setContent((c) => prependRsmLabel(c))}
+                  className="rounded-full border border-gold/40 px-3 h-7 text-xs text-gold hover:bg-gold/10"
+                >
+                  #advertentie vooraan toevoegen
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Media */}

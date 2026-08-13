@@ -3,8 +3,14 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { publishToPlatform } from "@/lib/social-publish.server";
-import type { SocialPlatform } from "@/lib/social-oauth.server";
+import { refreshAccessToken, type SocialPlatform } from "@/lib/social-oauth.server";
 import { assertSafeExternalUrl } from "@/lib/ssrf-guard.server";
+import {
+  classifyPublishError,
+  humanReason,
+  retryDelayMinutes,
+  MAX_PUBLISH_RETRIES,
+} from "@/lib/publish-errors";
 
 type WebhookEndpoint = Tables<"webhook_endpoints">;
 type AutomationRule = Tables<"automation_rules">;
@@ -49,6 +55,29 @@ async function hmac(secret: string, body: string): Promise<string> {
   return Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+/**
+ * Melding naar alle admins. Gebruikt de service-role client, want de
+ * enqueue_notification-RPC is bewust niet meer voor gewone gebruikers
+ * aanroepbaar (die kon eerder misbruikt worden voor phishing-meldingen).
+ */
+async function notifyAdmins(
+  sb: ReturnType<typeof admin>,
+  title: string,
+  body: string,
+  link: string | null,
+) {
+  const { data: admins } = await sb.from("user_roles").select("user_id").eq("role", "admin");
+  for (const a of admins ?? []) {
+    await sb.rpc("enqueue_notification", {
+      _user_id: a.user_id,
+      _type: "system",
+      _title: title,
+      _body: body,
+      _link: link,
+    });
+  }
 }
 
 export async function dispatchEvent(
@@ -212,7 +241,7 @@ function isDue(rule: AutomationRule, now: Date): boolean {
 export async function runTick() {
   const sb = admin();
   const now = new Date();
-  const summary = { published: 0, rules_run: 0, errors: 0, purged: 0 };
+  const summary = { published: 0, rules_run: 0, errors: 0, purged: 0, retried: 0, warnings: 0 };
 
   // 0) Verweesde posts herstellen: als een vorige tick crashte tussen "claimen"
   // (→ publishing) en de eind-update, blijft een post op "publishing" hangen.
@@ -235,6 +264,18 @@ export async function runTick() {
     .is("deleted_at", null)
     .lte("scheduled_at", now.toISOString())
     .limit(50);
+
+  // Klantnamen in één keer ophalen: een melding met "Instagram voor Uprising
+  // Studio" is bruikbaar, een melding met een uuid niet.
+  const clientNames = new Map<string, string>();
+  const dueClientIds = [...new Set((due ?? []).map((p) => p.client_id).filter(Boolean))];
+  if (dueClientIds.length) {
+    const { data: clientRows } = await sb
+      .from("clients")
+      .select("id, name")
+      .in("id", dueClientIds as string[]);
+    for (const c of clientRows ?? []) clientNames.set(c.id, c.name);
+  }
 
   for (const p of due ?? []) {
     // Atomair claimen: alleen doorgaan als deze tick de post daadwerkelijk van
@@ -283,12 +324,47 @@ export async function runTick() {
       await dispatchEvent("post.published", { post: p }, p.client_id);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Publiceren mislukt";
-      await sb
-        .from("scheduled_posts")
-        .update({ status: "failed", error_message: message })
-        .eq("id", p.id);
-      summary.errors++;
-      await dispatchEvent("post.failed", { post: p, error: message }, p.client_id);
+      const kind = classifyPublishError(message);
+      const attempt = (p.retry_count ?? 0) + 1;
+      const canRetry = kind === "transient" && attempt <= MAX_PUBLISH_RETRIES;
+
+      if (canRetry) {
+        // Terug in de wachtrij met oplopende wachttijd. De post blijft
+        // 'scheduled', dus een volgende tick pakt hem vanzelf weer op.
+        const next = new Date(Date.now() + retryDelayMinutes(attempt) * 60_000);
+        await sb
+          .from("scheduled_posts")
+          .update({
+            status: "scheduled",
+            scheduled_at: next.toISOString(),
+            error_message: message,
+            error_kind: kind,
+            retry_count: attempt,
+            last_attempt_at: new Date().toISOString(),
+          })
+          .eq("id", p.id);
+        summary.retried++;
+      } else {
+        await sb
+          .from("scheduled_posts")
+          .update({
+            status: "failed",
+            error_message: message,
+            error_kind: kind,
+            retry_count: attempt,
+            last_attempt_at: new Date().toISOString(),
+          })
+          .eq("id", p.id);
+        summary.errors++;
+        // Stil mislukken is de kern van de klacht: waarschuw actief.
+        await notifyAdmins(
+          sb,
+          "Publicatie mislukt",
+          `${p.platform} voor ${clientNames.get(p.client_id) ?? "een klant"}: ${humanReason(message, kind)}`,
+          "/admin/planner",
+        );
+      }
+      await dispatchEvent("post.failed", { post: p, error: message, kind }, p.client_id);
     }
   }
 
@@ -318,6 +394,82 @@ export async function runTick() {
     }
     await sb.from("scheduled_posts").update({ media_purged_at: now.toISOString() }).eq("id", p.id);
     summary.purged++;
+  }
+
+  // 1c) Tokenbewaking. TikTok-tokens leven 24 uur, Meta long-lived tokens 60
+  // dagen. Zonder bewaking sterft een koppeling stil en merk je het pas als een
+  // publicatie mislukt — precies te laat. Daarom hier: op tijd verversen waar
+  // dat kan, en waarschuwen waar opnieuw koppelen nodig is.
+  const WARN_WINDOW_DAYS = 5;
+  const warnCutoff = new Date(now.getTime() + WARN_WINDOW_DAYS * 86400000).toISOString();
+  const { data: expiring } = await sb
+    .from("social_connections")
+    .select("id, client_id, platform, refresh_token, token_expires_at, status, meta")
+    .eq("status", "active")
+    .not("token_expires_at", "is", null)
+    .lt("token_expires_at", warnCutoff)
+    .limit(100);
+
+  if (expiring?.length) {
+    const tokenClientIds = [...new Set(expiring.map((c) => c.client_id))];
+    for (const id of tokenClientIds) {
+      if (!clientNames.has(id)) {
+        const { data: c } = await sb.from("clients").select("name").eq("id", id).maybeSingle();
+        if (c) clientNames.set(id, c.name);
+      }
+    }
+
+    for (const conn of expiring) {
+      const meta =
+        conn.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
+          ? (conn.meta as Record<string, unknown>)
+          : {};
+
+      // Eerst proberen te verversen. Lukt dat, dan merkt niemand er iets van.
+      if (conn.refresh_token) {
+        const fresh = await refreshAccessToken(
+          conn.platform as SocialPlatform,
+          conn.refresh_token,
+        ).catch(() => null);
+        if (fresh) {
+          await sb
+            .from("social_connections")
+            .update({
+              access_token: fresh.accessToken,
+              refresh_token: fresh.refreshToken,
+              token_expires_at: fresh.expiresAt,
+              meta: { ...meta, expiry_warned_at: null },
+            })
+            .eq("id", conn.id);
+          continue;
+        }
+      }
+
+      const expired = new Date(conn.token_expires_at!).getTime() <= now.getTime();
+      if (expired) {
+        await sb.from("social_connections").update({ status: "expired" }).eq("id", conn.id);
+      }
+
+      // Hooguit één waarschuwing per etmaal per koppeling, anders loopt het
+      // meldingencentrum vol bij een tick die elke paar minuten draait.
+      const lastWarn = typeof meta.expiry_warned_at === "string" ? meta.expiry_warned_at : null;
+      if (lastWarn && now.getTime() - new Date(lastWarn).getTime() < 86400000) continue;
+
+      const who = clientNames.get(conn.client_id) ?? "een klant";
+      await notifyAdmins(
+        sb,
+        expired ? "Koppeling verlopen" : "Koppeling verloopt binnenkort",
+        expired
+          ? `De ${conn.platform}-koppeling van ${who} is verlopen. Koppel opnieuw om te blijven publiceren.`
+          : `De ${conn.platform}-koppeling van ${who} verloopt binnen ${WARN_WINDOW_DAYS} dagen en kan niet automatisch worden ververst.`,
+        "/admin/kanalen",
+      );
+      await sb
+        .from("social_connections")
+        .update({ meta: { ...meta, expiry_warned_at: now.toISOString() } })
+        .eq("id", conn.id);
+      summary.warnings++;
+    }
   }
 
   // 2) Schedule-triggered rules
