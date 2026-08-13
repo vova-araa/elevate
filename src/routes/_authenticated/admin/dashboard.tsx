@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -36,6 +36,8 @@ import { useAuth } from "@/lib/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { HealthRing } from "@/components/admin/health-ring";
+import { PostingBoard } from "@/components/admin/posting-board";
+import { getPostingOverview } from "@/lib/posting-overview.functions";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -229,6 +231,15 @@ function DashboardContent({
   selected: ClientMini | null;
   clientId: string | null;
 }) {
+  // Postbord: één server-aanroep die alles voor de komende dagen samenstelt
+  // (voorheen ~11 losse queries in twee golven).
+  const [postingDays, setPostingDays] = useState(7);
+  const postingFn = useServerFn(getPostingOverview);
+  const { data: posting, isLoading: postingLoading } = useQuery({
+    queryKey: ["posting-overview", clientId ?? "all", postingDays],
+    queryFn: () => postingFn({ data: { days: postingDays, ...(clientId ? { clientId } : {}) } }),
+  });
+
   // Kerncijfers voor de ticker-regel in de masthead
   const { data: ticker, isLoading: tickerLoading } = useQuery({
     queryKey: ["dashboard-ticker", clientId ?? "all"],
@@ -430,37 +441,18 @@ function DashboardContent({
         tickerLoading={tickerLoading}
       />
 
-      <StatBand
-        scheduledThisWeek={ticker?.scheduledThisWeek ?? null}
-        waitingApproval={ticker?.waitingApproval ?? null}
-        followersTotal={reachAnalytics?.followersTotal ?? null}
-        followerGrowth={reachAnalytics?.followerGrowth ?? null}
-        series={reachSeries}
-        loading={tickerLoading || reachLoading}
+      {/* Postbord: wat gaat er de komende dagen live, en bij welke klant staat
+          de motor stil. Dit is de kernvraag van een social-bureau. */}
+      <PostingBoard
+        data={posting}
+        loading={postingLoading}
+        days={postingDays}
+        setDays={setPostingDays}
       />
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr]">
-        {/* Vandaag & morgen */}
-        <Card
-          title="Vandaag & morgen"
-          icon={CalendarClock}
-          link={{ to: "/admin/planner", label: "Open planner" }}
-        >
-          {agendaError ? (
-            <ErrorState onRetry={() => agendaRefetch()} />
-          ) : agendaLoading ? (
-            <ListSkeleton rows={4} />
-          ) : (agenda ?? []).length === 0 ? (
-            <Empty body="Geen posts gepland voor vandaag of morgen." />
-          ) : (
-            <div className="space-y-6">
-              <TimelineDay label="Vandaag" items={todayItems} />
-              <TimelineDay label="Morgen" items={tomorrowItems} />
-            </div>
-          )}
-        </Card>
-
-        {/* Focus nu */}
+      {/* Focus nu — wat vraagt vandaag actie. De cijfers, de agenda en het
+          klantoverzicht staan in het postbord hierboven. */}
+      <div className="grid gap-6">
         <Card title="Focus nu" icon={Sparkles}>
           {focusLoading ? (
             <ListSkeleton rows={3} />
@@ -473,54 +465,6 @@ function DashboardContent({
             <ul className="space-y-2.5">
               {focusItems.map((item) => (
                 <FocusRow key={item.id} item={item} />
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        {/* Klanten */}
-        <Card title="Klanten" icon={Users}>
-          {healthError ? (
-            <ErrorState onRetry={() => healthRefetch()} />
-          ) : healthLoading || !health ? (
-            <ListSkeleton rows={4} />
-          ) : healthRows.length === 0 ? (
-            <Empty body="Nog geen klanten." />
-          ) : (
-            <ul className="space-y-1">
-              {healthRows.map(({ client, score, status }) => (
-                <li key={client.id}>
-                  <Link
-                    to="/admin/clients/$id"
-                    params={{ id: client.id }}
-                    className="flex items-center gap-3 rounded-lg p-2 -mx-2 transition hover:bg-accent/40"
-                  >
-                    <HealthRing score={score} />
-                    {client.logo_url ? (
-                      <img
-                        src={client.logo_url}
-                        alt=""
-                        className="h-8 w-8 shrink-0 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <span
-                        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-semibold text-white"
-                        style={{ background: client.brand_color || "var(--gold)" }}
-                      >
-                        {client.name
-                          .split(" ")
-                          .slice(0, 2)
-                          .map((w) => w[0])
-                          .join("")
-                          .toUpperCase()}
-                      </span>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{client.name}</div>
-                      <div className="text-[11px] text-muted-foreground truncate">{status}</div>
-                    </div>
-                  </Link>
-                </li>
               ))}
             </ul>
           )}
