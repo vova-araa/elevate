@@ -39,8 +39,10 @@ import { HealthRing } from "@/components/admin/health-ring";
 import { PostingBoard } from "@/components/admin/posting-board";
 import { InsightsCard } from "@/components/admin/insights-card";
 import { LiveFeedCard } from "@/components/admin/live-feed-card";
+import { MomentumCard } from "@/components/admin/momentum-card";
 import { getPostingOverview } from "@/lib/posting-overview.functions";
 import { getInsights } from "@/lib/insights.functions";
+import { getMomentum } from "@/lib/momentum.functions";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -251,6 +253,14 @@ function DashboardContent({
     queryKey: ["insights", clientId ?? "all"],
     staleTime: 5 * 60_000,
     queryFn: () => insightsFn({ data: clientId ? { clientId } : {} }),
+  });
+
+  // Motoriek: draait de machine, en wat moet er nog gebeuren.
+  const momentumFn = useServerFn(getMomentum);
+  const { data: momentum, isLoading: momentumLoading } = useQuery({
+    queryKey: ["momentum", clientId ?? "all"],
+    staleTime: 60_000,
+    queryFn: () => momentumFn({ data: clientId ? { clientId } : {} }),
   });
 
   // Kerncijfers voor de ticker-regel in de masthead
@@ -486,8 +496,11 @@ function DashboardContent({
         <InsightsCard insights={insights} loading={insightsLoading} />
       </div>
 
-      {/* De echte feed van de klant die in de sidebar actief is. */}
-      <LiveFeedCard />
+      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <MomentumCard data={momentum} loading={momentumLoading} />
+        {/* De echte feed van de klant die in de sidebar actief is. */}
+        <LiveFeedCard />
+      </div>
 
       {/* Bereik — brede kaart onderaan */}
       <Card
