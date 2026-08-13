@@ -40,8 +40,12 @@ export function isStandalone(): boolean {
 }
 
 export interface InstallState {
-  /** Kan de installatie nu getoond worden? */
+  /** Kan de installatiebalk nu getoond worden? */
   canInstall: boolean;
+  /** Draait de app al als geïnstalleerde app? */
+  installed: boolean;
+  /** Heeft de browser een installatie-prompt klaarstaan? */
+  promptReady: boolean;
   /** iOS heeft geen prompt-API; daar tonen we een instructie. */
   isIos: boolean;
   /** Al geïnstalleerd of al weggeklikt. */
@@ -50,7 +54,9 @@ export interface InstallState {
   dismiss: () => void;
 }
 
-const DISMISS_KEY = "elevate-pwa-dismissed";
+const DISMISS_KEY = "elevate-pwa-dismissed-until";
+/** Wegklikken verbergt de balk tijdelijk, niet voorgoed. */
+const DISMISS_DAYS = 7;
 
 export function useInstallPrompt(): InstallState {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
@@ -60,7 +66,8 @@ export function useInstallPrompt(): InstallState {
   useEffect(() => {
     setInstalled(isStandalone());
     try {
-      setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
+      const until = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
+      setDismissed(Number.isFinite(until) && until > Date.now());
     } catch {
       /* localStorage geblokkeerd — dan tonen we de knop gewoon */
     }
@@ -87,6 +94,8 @@ export function useInstallPrompt(): InstallState {
 
   return {
     canInstall: !installed && !dismissed && (!!deferred || isIos),
+    installed,
+    promptReady: !!deferred,
     isIos,
     dismissed: installed || dismissed,
     install: async () => {
@@ -99,7 +108,7 @@ export function useInstallPrompt(): InstallState {
     dismiss: () => {
       setDismissed(true);
       try {
-        localStorage.setItem(DISMISS_KEY, "1");
+        localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_DAYS * 86400000));
       } catch {
         /* niets te bewaren — knop komt volgende sessie terug */
       }

@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { InstallAppSetting } from "@/components/admin/install-app-setting";
 import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,6 +105,9 @@ function SettingsPage() {
           ))}
         </select>
       </div>
+
+      {/* Altijd bereikbaar, ook als de balk onderin is weggeklikt. */}
+      <InstallAppSetting />
 
       <div className="flex flex-wrap items-center gap-1 border-b border-gold/10">
         {tabs.map((t) => (
