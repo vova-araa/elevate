@@ -34,6 +34,11 @@ export interface AdminNavItem {
   icon: LucideIcon;
   badgeKey?: BadgeKey;
   badgeTone?: BadgeTone;
+  /**
+   * Minder gebruikte pagina's staan standaard ingeklapt achter "Meer", zodat
+   * het menu rustig blijft en de dagelijkse flow (posten) bovenaan staat.
+   */
+  secondary?: boolean;
 }
 
 export interface AdminNavSection {
@@ -41,9 +46,14 @@ export interface AdminNavSection {
   items: AdminNavItem[];
 }
 
+/**
+ * Menu-indeling volgt de dagelijkse werkstroom: eerst posten, dan het maken van
+ * content, dan de klant, dan resultaten, dan beheer. Alles wat bij elkaar hoort
+ * staat bij elkaar; wat je zelden nodig hebt zit achter "Meer".
+ */
 export const ADMIN_NAV: AdminNavSection[] = [
   {
-    label: "Werkruimte",
+    label: "Posten",
     items: [
       { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/admin/planner", label: "Planner", icon: CalendarDays, badgeKey: "scheduled" },
@@ -54,32 +64,6 @@ export const ADMIN_NAV: AdminNavSection[] = [
         badgeKey: "drafts",
         badgeTone: "amber",
       },
-      { to: "/admin/media", label: "Media", icon: ImageIcon },
-      { to: "/admin/editor", label: "Beeld-editor", icon: Crop },
-      { to: "/admin/bulk", label: "Bulk import", icon: Upload },
-    ],
-  },
-  {
-    label: "AI tools",
-    items: [
-      { to: "/admin/ai", label: "AI Studio", icon: Sparkles },
-      { to: "/admin/strategy", label: "Strategie", icon: Target },
-      { to: "/admin/campaigns", label: "Campagnes", icon: Wand2 },
-      { to: "/admin/assistant", label: "AI Assistent", icon: Bot },
-      { to: "/admin/besttime", label: "Beste tijd", icon: Clock },
-    ],
-  },
-  {
-    label: "Analyse",
-    items: [
-      { to: "/admin/reach", label: "Bereik & groei", icon: TrendingUp },
-      { to: "/admin/engagement", label: "Engagement", icon: Heart },
-      { to: "/admin/reports", label: "Rapporten", icon: FileBarChart },
-    ],
-  },
-  {
-    label: "Beheer",
-    items: [
       {
         to: "/admin/approvals",
         label: "Goedkeuring",
@@ -87,6 +71,26 @@ export const ADMIN_NAV: AdminNavSection[] = [
         badgeKey: "pending",
         badgeTone: "red",
       },
+    ],
+  },
+  {
+    label: "Content & AI",
+    items: [
+      { to: "/admin/media", label: "Media", icon: ImageIcon },
+      { to: "/admin/ai", label: "AI Studio", icon: Sparkles },
+      { to: "/admin/strategy", label: "Strategie", icon: Target },
+      { to: "/admin/campaigns", label: "Campagnes", icon: Wand2, secondary: true },
+      { to: "/admin/editor", label: "Beeld-editor", icon: Crop, secondary: true },
+      { to: "/admin/bulk", label: "Bulk import", icon: Upload, secondary: true },
+      { to: "/admin/assistant", label: "AI Assistent", icon: Bot, secondary: true },
+      { to: "/admin/besttime", label: "Beste tijd", icon: Clock, secondary: true },
+    ],
+  },
+  {
+    label: "Klanten",
+    items: [
+      { to: "/admin/clients", label: "Klanten", icon: Building2 },
+      { to: "/admin/channels", label: "Kanalen", icon: Plug },
       {
         to: "/admin/messages",
         label: "Berichten",
@@ -94,8 +98,19 @@ export const ADMIN_NAV: AdminNavSection[] = [
         badgeKey: "unread",
         badgeTone: "red",
       },
-      { to: "/admin/clients", label: "Klanten", icon: Building2 },
-      { to: "/admin/channels", label: "Kanalen", icon: Plug },
+    ],
+  },
+  {
+    label: "Resultaten",
+    items: [
+      { to: "/admin/reach", label: "Bereik & groei", icon: TrendingUp },
+      { to: "/admin/reports", label: "Rapporten", icon: FileBarChart },
+      { to: "/admin/engagement", label: "Engagement", icon: Heart, secondary: true },
+    ],
+  },
+  {
+    label: "Beheer",
+    items: [
       { to: "/admin/team", label: "Team", icon: Users },
       {
         to: "/admin/settings",

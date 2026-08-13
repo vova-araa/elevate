@@ -42,6 +42,10 @@ import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/client/overview")({
+  // Admins kunnen dit scherm openen namens een klant ("bekijk als klant").
+  validateSearch: (s: Record<string, unknown>): { asClient?: string } => ({
+    asClient: typeof s.asClient === "string" ? s.asClient : undefined,
+  }),
   component: ClientOverview,
 });
 
@@ -58,13 +62,25 @@ const PLATFORM_META: Record<Platform, { label: string; Icon: LucideIcon; tint: s
 const PLATFORM_ORDER: Platform[] = ["instagram", "tiktok", "linkedin", "youtube", "facebook"];
 
 function ClientOverview() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const { asClient } = Route.useSearch();
   const listChannels = useServerFn(listClientChannels);
+  // Alleen een admin mag een andere klant bekijken; RLS bewaakt dit alsnog
+  // server-side, dit voorkomt slechts een zinloze query voor gewone klanten.
+  const previewId = role === "admin" ? asClient : undefined;
 
   const { data: membership, isLoading: loadingMembership } = useQuery({
-    queryKey: ["my-client", user?.id],
+    queryKey: ["my-client", user?.id, previewId],
     enabled: !!user,
     queryFn: async () => {
+      if (previewId) {
+        const { data } = await supabase
+          .from("clients")
+          .select("id, name")
+          .eq("id", previewId)
+          .maybeSingle();
+        return data ? { client_id: data.id, clients: { name: data.name } } : null;
+      }
       const { data } = await supabase
         .from("client_members")
         .select("client_id, clients(name)")
@@ -84,7 +100,9 @@ function ClientOverview() {
   const { data: channelData, isLoading: loadingChannels } = useQuery({
     queryKey: ["overview-channels", clientId],
     enabled: !!clientId,
-    queryFn: () => listChannels({ data: {} }),
+    // In admin-preview expliciet de bekeken klant meegeven; de server
+    // controleert die toegang alsnog via user_has_client_access.
+    queryFn: () => listChannels({ data: previewId ? { clientId: previewId } : {} }),
   });
 
   // Volgersgroei: echte metingen uit social_metrics_snapshots (klant mag zijn

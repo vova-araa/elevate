@@ -1,14 +1,28 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, ChevronsUpDown, Check, Shield } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  ChevronsUpDown,
+  Check,
+  Shield,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useEffect, useState } from "react";
-import { ADMIN_NAV, badgeClasses, initials, type SidebarCounts } from "@/lib/admin-nav";
+import {
+  ADMIN_NAV,
+  badgeClasses,
+  initials,
+  type AdminNavSection,
+  type SidebarCounts,
+} from "@/lib/admin-nav";
 
 export function AdminSidebar() {
   const { sidebarCollapsed: collapsed, toggleSidebar } = useUIStore();
@@ -246,61 +260,107 @@ export function AdminSidebar() {
           </div>
         )}
         {ADMIN_NAV.map((section) => (
-          <div key={section.label} className="mb-3 px-2">
-            {!collapsed && (
-              <div className="mb-1 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
-                {section.label}
-              </div>
-            )}
-            <div className="space-y-0.5">
-              {section.items.map((item) => {
-                const active = isActive(item.to);
-                const badgeValue = item.badgeKey ? (counts?.[item.badgeKey] ?? 0) : 0;
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={cn(
-                      "group relative flex items-center rounded-xl text-sm transition-colors duration-150 active:scale-[0.99]",
-                      collapsed ? "mx-auto h-10 w-10 justify-center" : "gap-3 px-2 py-2",
-                      active
-                        ? "bg-gold/12 font-medium text-gold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-gold"
-                        : "text-foreground/75 hover:bg-accent/40 hover:text-foreground",
-                    )}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <span
-                      className={cn(
-                        "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-150",
-                        active
-                          ? "bg-gold/15 text-gold"
-                          : "bg-background/50 text-muted-foreground group-hover:text-foreground",
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                    </span>
-                    {!collapsed && (
-                      <>
-                        <span className="flex-1 truncate">{item.label}</span>
-                        {badgeValue > 0 && (
-                          <span
-                            className={cn(
-                              "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
-                              badgeClasses[item.badgeTone ?? "default"],
-                            )}
-                          >
-                            {badgeValue}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
+          <NavSection
+            key={section.label}
+            section={section}
+            collapsed={collapsed}
+            counts={counts}
+            isActive={isActive}
+          />
         ))}
       </nav>
     </aside>
+  );
+}
+
+/**
+ * Eén menugroep. Secundaire items zitten achter "Meer" zodat het menu rustig
+ * blijft; staat er een actief item tussen, dan klapt de groep vanzelf open.
+ */
+function NavSection({
+  section,
+  collapsed,
+  counts,
+  isActive,
+}: {
+  section: AdminNavSection;
+  collapsed: boolean;
+  counts?: SidebarCounts;
+  isActive: (to: string) => boolean;
+}) {
+  const secondary = section.items.filter((i) => i.secondary);
+  const hasActiveSecondary = secondary.some((i) => isActive(i.to));
+  const [showAll, setShowAll] = useState(false);
+  const expanded = showAll || hasActiveSecondary;
+  const visible = expanded ? section.items : section.items.filter((i) => !i.secondary);
+
+  return (
+    <div key={section.label} className="mb-3 px-2">
+      {!collapsed && (
+        <div className="mb-1 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
+          {section.label}
+        </div>
+      )}
+      <div className="space-y-0.5">
+        {visible.map((item) => {
+          const active = isActive(item.to);
+          const badgeValue = item.badgeKey ? (counts?.[item.badgeKey] ?? 0) : 0;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                "group relative flex items-center rounded-xl text-sm transition-colors duration-150 active:scale-[0.99]",
+                collapsed ? "mx-auto h-10 w-10 justify-center" : "gap-3 px-2 py-2",
+                active
+                  ? "bg-gold/12 font-medium text-gold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-gold"
+                  : "text-foreground/75 hover:bg-accent/40 hover:text-foreground",
+              )}
+              title={collapsed ? item.label : undefined}
+            >
+              <span
+                className={cn(
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-150",
+                  active
+                    ? "bg-gold/15 text-gold"
+                    : "bg-background/50 text-muted-foreground group-hover:text-foreground",
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+              </span>
+              {!collapsed && (
+                <>
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {badgeValue > 0 && (
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                        badgeClasses[item.badgeTone ?? "default"],
+                      )}
+                    >
+                      {badgeValue}
+                    </span>
+                  )}
+                </>
+              )}
+            </Link>
+          );
+        })}
+        {/* "Meer" alleen tonen als er echt iets verborgen is. */}
+        {!collapsed && secondary.length > 0 && !hasActiveSecondary && (
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-xs text-muted-foreground/80 transition hover:bg-accent/30 hover:text-foreground"
+          >
+            <span className="grid h-8 w-8 shrink-0 place-items-center">
+              <ChevronDown
+                className={cn("h-3.5 w-3.5 transition-transform", showAll && "rotate-180")}
+              />
+            </span>
+            <span>{showAll ? "Minder" : `Meer (${secondary.length})`}</span>
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

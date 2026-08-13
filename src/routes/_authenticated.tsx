@@ -28,6 +28,7 @@ import {
   Loader2,
   Image as ImageIcon,
   Share2,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
@@ -50,6 +51,11 @@ function AuthLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Admins mogen het klantportaal bekijken zolang ze expliciet een klant
+  // meegeven (?asClient=…) — dat is de "bekijk als klant"-preview.
+  const previewingClient = useRouterState({
+    select: (s) => !!(s.location.search as { asClient?: string })?.asClient,
+  });
 
   useEffect(() => {
     setMobileOpen(false);
@@ -62,12 +68,12 @@ function AuthLayout() {
     if (role === "client" && pathname.startsWith("/admin")) {
       navigate({ to: "/dashboard", replace: true });
     }
-    // Admin hoort niet in de klant-weergave: stuur netjes naar het admin-dashboard
-    // (voorkomt dat een admin op een oude /client-pagina blijft hangen).
-    if (role === "admin" && pathname.startsWith("/client")) {
+    // Admin hoort niet in de klant-weergave — tenzij hij bewust meekijkt via
+    // de "bekijk als klant"-preview (?asClient=…).
+    if (role === "admin" && pathname.startsWith("/client") && !previewingClient) {
       navigate({ to: "/admin/dashboard", replace: true });
     }
-  }, [role, loading, pathname, navigate]);
+  }, [role, loading, pathname, navigate, previewingClient]);
 
   if (loading || !role) {
     return (
@@ -118,6 +124,7 @@ function AuthLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar onMenu={() => setMobileOpen(true)} />
+        {role === "admin" && previewingClient && <ClientPreviewBanner />}
         <main className="scroll-surface flex-1 overflow-y-auto p-4 sm:p-6 md:p-10">
           {/* Zachte page-transition: content faded soepel in bij navigeren. */}
           <div key={pathname} className="page-enter">
@@ -125,6 +132,28 @@ function AuthLayout() {
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Duidelijke markering dat een admin meekijkt in het klantportaal — zodat je
+ * nooit per ongeluk denkt dat je je eigen omgeving ziet.
+ */
+function ClientPreviewBanner() {
+  const navigate = useNavigate();
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-gold/25 bg-gold/10 px-4 py-2 sm:px-6">
+      <div className="flex items-center gap-2 text-xs text-gold">
+        <Eye className="h-3.5 w-3.5 shrink-0" />
+        <span>Je bekijkt het klantportaal zoals de klant het ziet (alleen-lezen preview).</span>
+      </div>
+      <button
+        onClick={() => navigate({ to: "/admin/clients" })}
+        className="shrink-0 rounded-full border border-gold/30 px-3 py-1 text-xs text-gold transition hover:bg-gold/15"
+      >
+        Terug naar admin
+      </button>
     </div>
   );
 }

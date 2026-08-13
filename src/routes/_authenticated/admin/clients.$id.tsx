@@ -23,6 +23,7 @@ import {
   Download,
   Activity,
   Pencil,
+  Eye,
   Instagram,
   Music2,
   Linkedin,
@@ -163,6 +164,14 @@ function ClientDetail() {
           className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm text-gold hover:bg-gold/10"
         >
           <Pencil className="h-4 w-4" /> Bewerken
+        </Link>
+        {/* Meekijken in het portaal zoals de klant het ziet. */}
+        <Link
+          to="/client/overview"
+          search={{ asClient: id }}
+          className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm text-gold hover:bg-gold/10"
+        >
+          <Eye className="h-4 w-4" /> Bekijk als klant
         </Link>
       </div>
 
