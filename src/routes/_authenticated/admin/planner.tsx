@@ -1105,7 +1105,9 @@ function ComposeModal({
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() ?? "bin";
-      const path = `planner/${clientId}/${Date.now()}.${ext}`;
+      // Binnen de klantmap houden: alle storage-policies isoleren op het
+      // eerste pad-segment (client-id).
+      const path = `${clientId}/planner/${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("client-uploads")
         .upload(path, file, { upsert: false, contentType: file.type });

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { assertSafeExternalUrl } from "@/lib/ssrf-guard.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -97,7 +98,7 @@ export const testWebhook = createServerFn({ method: "POST" })
   .inputValidator(z.object({ url: z.string().url(), secret: z.string().optional() }))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    assertSafeWebhookUrl(data.url);
+    await assertSafeExternalUrl(data.url);
     const body = JSON.stringify({
       event: "test.ping",
       timestamp: new Date().toISOString(),

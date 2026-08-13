@@ -55,11 +55,26 @@ async function assertClientAccess(
  */
 export const getSocialSetupStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    return {
-      platforms: platformEnvStatus(),
-      appUrlConfigured: !!process.env.APP_URL,
-    };
+  .handler(async ({ context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const isAdmin = !!roles?.some((r) => r.role === "admin");
+    const status = platformEnvStatus();
+
+    // Klanten hebben alleen nodig te weten óf een platform beschikbaar is.
+    // De namen van ontbrekende omgevingsvariabelen (en of APP_URL gezet is)
+    // zijn interne setup-details en blijven admin-only.
+    if (!isAdmin) {
+      const safe = {} as typeof status;
+      (Object.keys(status) as Array<keyof typeof status>).forEach((p) => {
+        safe[p] = { configured: status[p].configured, missing: [] };
+      });
+      return { platforms: safe, appUrlConfigured: true };
+    }
+
+    return { platforms: status, appUrlConfigured: !!process.env.APP_URL };
   });
 
 /** Start de OAuth-flow: geeft de authorize-URL terug om te openen. */

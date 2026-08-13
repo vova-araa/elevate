@@ -1,7 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { generateJson } from "@/lib/ai-provider.server";
+
+/**
+ * AI-aanroepen kosten geld op de sleutel van het bureau, dus ze zijn
+ * admin-only — net als de andere AI-endpoints (captions/ai/ai-studio).
+ */
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
+  const { data: roles } = await ctx.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", ctx.userId);
+  if (!roles?.some((r) => r.role === "admin")) {
+    throw new Error("Alleen admins mogen AI-content genereren");
+  }
+}
 
 const platformSchema = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
 
@@ -15,7 +31,9 @@ const generateCaptionInput = z.object({
 export const generateCaption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => generateCaptionInput.parse(i))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+
     const platformGuide: Record<string, string> = {
       instagram: "Max 2200 tekens, hook eerste regel, 5-10 relevante hashtags onderaan.",
       tiktok: "Korte hook, max 150 tekens caption, 3-5 hashtags, trending taal.",
@@ -63,7 +81,9 @@ const ideaInput = z.object({
 export const generateContentIdeas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => ideaInput.parse(i))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+
     const system = `Je bent een senior social media strateeg. Genereer ${data.count} concrete contentideeën in het Nederlands voor het merk "${data.brand}"${data.industry ? ` (${data.industry})` : ""}.
 Per idee: kies het beste platform uit [${data.platforms.join(", ")}], format (reel, carousel, static, story, short, long-video, text-post), een korte hook (max 90 tekens), en 1-2 zinnen omschrijving van de uitvoering.
 
@@ -127,7 +147,9 @@ const hooksInput = z.object({
 export const generateHooks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => hooksInput.parse(i))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+
     const result = await generateJson<{ hooks: string[] }>({
       system: `Genereer ${data.count} korte, scroll-stoppende hooks in het Nederlands voor ${data.platform}. Variatie in stijl: vraag, statement, controversieel, lijst, before/after. Max 90 tekens elk.`,
       user: data.topic,
@@ -151,7 +173,9 @@ const hashtagsInput = z.object({
 export const generateHashtags = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => hashtagsInput.parse(i))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+
     const result = await generateJson<{ big: string[]; medium: string[]; niche: string[] }>({
       system: `Genereer een gemixte set hashtags voor ${data.platform}${data.niche ? ` in de niche: ${data.niche}` : ""}. Mix groot (volume), middel (relevant) en niche (specifiek). Geen #-tekens missen. Geen duplicaten.`,
       user: data.topic,

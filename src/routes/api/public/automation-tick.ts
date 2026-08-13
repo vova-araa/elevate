@@ -13,11 +13,12 @@ function safeEqual(a: string, b: string): boolean {
 function authorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false; // fail closed if secret not configured
+  // Bewust géén ?secret=… meer: dit endpoint publiceert posts en ruimt media
+  // op, en een secret in de query belandt in access-logs, proxies en
+  // browsergeschiedenis — waarna elke replay een publicatieronde afvuurt.
   const header = request.headers.get("x-cron-secret") ?? "";
-  const url = new URL(request.url);
-  const query = url.searchParams.get("secret") ?? "";
   const bearer = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  return safeEqual(header, secret) || safeEqual(query, secret) || safeEqual(bearer, secret);
+  return safeEqual(header, secret) || safeEqual(bearer, secret);
 }
 
 export const Route = createFileRoute("/api/public/automation-tick")({

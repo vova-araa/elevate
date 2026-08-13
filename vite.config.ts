@@ -27,6 +27,22 @@ export default defineConfig({
             "Referrer-Policy": "strict-origin-when-cross-origin",
             "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
             "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+            // CSP als tweede verdedigingslaag. 'unsafe-inline' voor scripts is
+            // nodig voor de thema-bootstrap in __root.tsx; media/img staan ruim
+            // omdat we signed URLs van Supabase Storage en platform-CDN's tonen.
+            "Content-Security-Policy": [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com data:",
+              "img-src 'self' data: blob: https:",
+              "media-src 'self' blob: https:",
+              "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "object-src 'none'",
+            ].join("; "),
           },
         },
       },

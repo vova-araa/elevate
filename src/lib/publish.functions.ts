@@ -24,8 +24,14 @@ async function assertClientAccess(
   if (error || !data) throw new Error("Geen toegang tot deze klant");
 }
 
-async function mediaSignedUrl(mediaPath: string | null): Promise<string | null> {
+async function mediaSignedUrl(mediaPath: string | null, clientId: string): Promise<string | null> {
   if (!mediaPath) return null;
+  // Tenant-isolatie: media_path is door de klant bewerkbaar, dus we tekenen
+  // uitsluitend paden binnen de map van diezelfde klant. Zonder deze check kan
+  // een klant een pad van een ándere klant invullen en dat laten publiceren.
+  if (!mediaPath.startsWith(`${clientId}/`)) {
+    throw new Error("Media hoort niet bij deze klant");
+  }
   // Bucket is privé: geef een kortlevende ondertekende URL (1 uur) zodat het
   // platform de media binnen dat venster kan ophalen bij het publiceren.
   const { data, error } = await supabaseAdmin.storage
@@ -65,7 +71,7 @@ export const publishScheduledPost = createServerFn({ method: "POST" })
 
     // Bucket is privé: bij media een kortlevende ondertekende URL. Faalt dat
     // terwijl er wél media is, dan is dat een echte fout (geen stille tekst-only).
-    const mediaUrl = post.media_path ? await mediaSignedUrl(post.media_path) : null;
+    const mediaUrl = post.media_path ? await mediaSignedUrl(post.media_path, post.client_id) : null;
     if (post.media_path && !mediaUrl) {
       await supabaseAdmin
         .from("scheduled_posts")

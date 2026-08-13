@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { publishToPlatform } from "@/lib/social-publish.server";
 import type { SocialPlatform } from "@/lib/social-oauth.server";
+import { assertSafeExternalUrl } from "@/lib/ssrf-guard.server";
 
 type WebhookEndpoint = Tables<"webhook_endpoints">;
 type AutomationRule = Tables<"automation_rules">;
@@ -76,6 +77,9 @@ export async function dispatchEvent(
       };
       if (ep.secret) headers["X-Elevate-Signature"] = await hmac(ep.secret, body);
       try {
+        // Webhook-URL's zijn door admins in te voeren en kunnen naar interne
+        // adressen wijzen; valideer vlak voor het versturen.
+        await assertSafeExternalUrl(ep.url);
         const res = await fetch(ep.url, { method: "POST", headers, body });
         const text = await res.text().catch(() => "");
         await sb.from("webhook_deliveries").insert({
@@ -146,6 +150,7 @@ async function executeAction(rule: AutomationRule, context: Record<string, unkno
           timestamp: new Date().toISOString(),
           context,
         });
+        await assertSafeExternalUrl(cfg.url);
         await fetch(cfg.url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -249,6 +254,11 @@ export async function runTick() {
       // de status omzetten.
       // Bucket is privé: kortlevende ondertekende URL (1 uur) zodat het platform
       // de media kan ophalen tijdens het publiceren.
+      // Tenant-isolatie: media_path is door de klant bewerkbaar, dus alleen
+      // paden binnen de eigen klantmap mogen worden ondertekend.
+      if (p.media_path && !p.media_path.startsWith(`${p.client_id}/`)) {
+        throw new Error("Media hoort niet bij deze klant");
+      }
       const mediaUrl = p.media_path
         ? ((await sb.storage.from("client-uploads").createSignedUrl(p.media_path, 3600)).data
             ?.signedUrl ?? null)

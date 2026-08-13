@@ -40,6 +40,9 @@ type SearchUploadRow = Pick<
 function SearchPage() {
   const [q, setQ] = useState("");
   const [scope, setScope] = useState<"all" | "posts" | "uploads">("all");
+  // PostgREST-filters worden als string opgebouwd; komma's/haakjes/punten in de
+  // zoekterm zouden extra filterclausules injecteren. Strip die tekens.
+  const safeQ = q.replace(/[,.()\\%*]/g, " ").trim();
 
   const { data: posts, isLoading: lp } = useQuery({
     queryKey: ["search-posts", q],
@@ -49,7 +52,7 @@ function SearchPage() {
         .from("scheduled_posts")
         .select("id, client_id, platform, caption, scheduled_at, status, notes, clients(name)")
         .is("deleted_at", null)
-        .or(`caption.ilike.%${q}%,notes.ilike.%${q}%`)
+        .or(`caption.ilike.%${safeQ}%,notes.ilike.%${safeQ}%`)
         .order("scheduled_at", { ascending: false })
         .limit(50);
       return data ?? [];

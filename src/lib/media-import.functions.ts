@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { assertSafeExternalUrl } from "@/lib/ssrf-guard.server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -122,7 +123,7 @@ export const importMediaFromUrl = createServerFn({ method: "POST" })
     await assertAdmin(context);
 
     const directUrl = toDirectDownloadUrl(data.url);
-    assertSafeImportUrl(directUrl);
+    await assertSafeExternalUrl(directUrl, { allowHttp: true });
 
     const FETCH_FAILED = new Error(
       'Kon het bestand niet ophalen — is de Drive-link openbaar gedeeld ("iedereen met de link")?',
@@ -146,7 +147,7 @@ export const importMediaFromUrl = createServerFn({ method: "POST" })
         const location = response.headers.get("location");
         if (!location || hop >= MAX_REDIRECTS) throw FETCH_FAILED;
         const nextUrl = new URL(location, currentUrl).toString();
-        currentUrl = assertSafeImportUrl(nextUrl).toString();
+        currentUrl = (await assertSafeExternalUrl(nextUrl, { allowHttp: true })).toString();
         continue;
       }
       break;

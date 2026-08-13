@@ -54,10 +54,15 @@ export const setUserRole = createServerFn({ method: "POST" })
       throw new Error("Je kunt je eigen admin-rol niet intrekken");
     }
 
+    // Alleen de rollen die dit scherm beheert vervangen. Zonder deze `in(...)`
+    // wist een gewone admin ook de super_admin-rol — waarmee de regel "alleen
+    // super admins beheren super admins" te omzeilen was (en het bureau zich
+    // buiten kon sluiten).
     const { error: deleteError } = await supabaseAdmin
       .from("user_roles")
       .delete()
-      .eq("user_id", data.userId);
+      .eq("user_id", data.userId)
+      .in("role", ["admin", "editor", "viewer", "client"]);
     if (deleteError) throw new Error(deleteError.message);
 
     const { error: insertError } = await supabaseAdmin
