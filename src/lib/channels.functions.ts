@@ -121,14 +121,22 @@ export const listClientChannels = createServerFn({ method: "POST" })
     // client — anders krijgt een klant altijd een lege lijst terug.
     const { data: channels } = await supabaseAdmin
       .from("social_connections")
-      .select("platform, account_username, follower_count, status, connected_at, token_expires_at")
+      .select(
+        "platform, account_username, follower_count, status, connected_at, token_expires_at, refresh_token",
+      )
       .eq("client_id", clientId);
 
+    // Het refresh-token zelf blijft server-side; we geven alleen door of de
+    // koppeling zichzelf kan vernieuwen. TikTok-tokens verlopen elke 24 uur,
+    // maar worden automatisch ververst — dan is een waarschuwing misleidend.
     return {
       clientId,
       clientName: client?.name ?? null,
       provisioned: !!client,
-      channels: channels ?? [],
+      channels: (channels ?? []).map(({ refresh_token, ...c }) => ({
+        ...c,
+        autoRefresh: !!refresh_token,
+      })),
     };
   });
 

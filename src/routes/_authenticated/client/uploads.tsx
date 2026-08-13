@@ -6,15 +6,13 @@ import { toast } from "sonner";
 import { Plus, Upload as UploadIcon, Loader2, Play } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import type { Tables } from "@/integrations/supabase/types";
+import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
 
 type ClientMember = { client_id: string; clients: { id: string; name: string } | null };
 
 export const Route = createFileRoute("/_authenticated/client/uploads")({
   component: ClientUploads,
 });
-
-// Supabase-standaard per-bestand limiet op Free; verhoog na plan-upgrade.
-const MAX_UPLOAD_MB = 50;
 
 function ClientUploads() {
   const qc = useQueryClient();
@@ -48,10 +46,8 @@ function ClientUploads() {
     for (const file of files) {
       // Bestanden groter dan de per-bestand limiet overslaan (geen compressie —
       // originelen blijven vol kwaliteit).
-      if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
-        toast.error(
-          `Bestand ${file.name} is te groot (>${MAX_UPLOAD_MB} MB). Verklein de video of upgrade het opslagplan.`,
-        );
+      if (file.size > MAX_UPLOAD_BYTES) {
+        toast.error(tooLargeMessage(file.name));
         continue;
       }
       // Sanitize bestandsnaam zodat er nooit buiten de map van deze klant geschreven kan worden.

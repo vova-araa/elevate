@@ -13,7 +13,8 @@ import {
   createDemoClientAccount,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
-import { Check, Copy, FlaskConical, Rocket } from "lucide-react";
+import { Check, Copy, FlaskConical, Rocket, Shield } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -30,6 +31,7 @@ function errorMessage(e: unknown): string {
 
 function UsersAdmin() {
   const qc = useQueryClient();
+  const { isSuperAdmin } = useAuth();
   const invite = useServerFn(inviteUser);
   const toggleRole = useServerFn(setUserRole);
   const toggleMember = useServerFn(setClientMembership);
@@ -138,13 +140,30 @@ function UsersAdmin() {
     setBusy(false);
   }
 
-  async function handleRole(userId: string, role: "admin" | "client", enabled: boolean) {
+  async function handleRole(
+    userId: string,
+    role: "admin" | "client" | "super_admin",
+    enabled: boolean,
+  ) {
     if (
       role === "admin" &&
       enabled &&
       !(await confirmDialog(
         "Weet je zeker dat je deze gebruiker tot admin wil promoten? Admins hebben volledige toegang tot alle klanten en instellingen.",
       ))
+    ) {
+      return;
+    }
+    if (
+      role === "super_admin" &&
+      enabled &&
+      !(await confirmDialog({
+        title: "Super admin toekennen?",
+        description:
+          "Een super admin heeft alle admin-rechten plus het bureau-overzicht en mag zelf super admins aanwijzen. Geef dit alleen aan mensen die je volledig vertrouwt.",
+        confirmLabel: "Super admin maken",
+        destructive: true,
+      }))
     ) {
       return;
     }
@@ -391,6 +410,7 @@ function UsersAdmin() {
         {filtered.map((u) => {
           const isAdmin = u.roles?.includes("admin");
           const isClient = u.roles?.includes("client");
+          const isSuper = u.roles?.includes("super_admin");
           return (
             <div key={u.id} className="glass rounded-xl p-5 space-y-4">
               <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -423,6 +443,16 @@ function UsersAdmin() {
                 >
                   {isClient ? "Client-rol intrekken" : "Geef client-rol"}
                 </button>
+                {/* Alleen super admins kunnen de super-admin-rol uitdelen. */}
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => handleRole(u.id, "super_admin", !isSuper)}
+                    className={`rounded-full px-3 py-1.5 hairline transition inline-flex items-center gap-1.5 ${isSuper ? "bg-gold/20 text-gold" : "bg-input/40 text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    {isSuper ? "Super admin intrekken" : "Maak super admin"}
+                  </button>
+                )}
                 <button
                   onClick={() => handleDelete(u.id, u.email || u.full_name || u.id)}
                   className="rounded-full px-3 py-1.5 hairline bg-destructive/15 text-destructive hover:bg-destructive/25 ml-auto"

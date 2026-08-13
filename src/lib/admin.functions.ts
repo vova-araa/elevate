@@ -176,17 +176,31 @@ export const createDemoClientAccount = createServerFn({ method: "POST" })
 
 const roleSchema = z.object({
   userId: z.string().uuid(),
-  role: z.enum(["admin", "client"]),
+  role: z.enum(["admin", "client", "super_admin"]),
   enabled: z.boolean(),
 });
+
+/** Alleen super admins mogen de super-admin-rol uitdelen of intrekken. */
+async function assertSuperAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
+  const { data: roles } = await ctx.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", ctx.userId);
+  if (!roles?.some((r) => r.role === "super_admin")) {
+    throw new Error("Alleen super admins mogen de super-admin-rol beheren");
+  }
+}
 
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => roleSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    if (data.userId === context.userId && data.role === "admin" && !data.enabled) {
-      throw new Error("Je kunt je eigen admin-rol niet intrekken");
+    // De super-admin-rol is de hoogste rechten in het systeem: uitsluitend een
+    // bestaande super admin mag die toekennen of intrekken.
+    if (data.role === "super_admin") await assertSuperAdmin(context);
+    if (data.userId === context.userId && !data.enabled && data.role !== "client") {
+      throw new Error("Je kunt je eigen admin-rechten niet intrekken");
     }
     if (data.enabled) {
       const { error } = await supabaseAdmin

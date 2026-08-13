@@ -47,6 +47,13 @@ export const PLATFORMS: {
   },
 ];
 
+/**
+ * Platforms die we op dit moment aanbieden. LinkedIn/YouTube blijven in de
+ * code staan maar worden niet getoond (zie ook de kanalen-schermen).
+ */
+export const ENABLED_PLATFORMS: Platform[] = ["instagram", "facebook", "tiktok"];
+export const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => ENABLED_PLATFORMS.includes(p.id));
+
 export const STATUS_META: Record<PostStatus, { label: string; cls: string; dot: string }> = {
   draft: {
     label: "Wacht op goedkeuring",

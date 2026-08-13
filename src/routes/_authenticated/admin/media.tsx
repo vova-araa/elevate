@@ -43,6 +43,7 @@ import {
 import { importMediaFromUrl } from "@/lib/media-import.functions";
 import { getStorageUsage, purgePostedMedia, type StorageUsage } from "@/lib/storage.functions";
 import { EmptyState } from "@/components/empty-state";
+import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
 
 export const Route = createFileRoute("/_authenticated/admin/media")({
   component: MediaLibrary,
@@ -50,8 +51,6 @@ export const Route = createFileRoute("/_authenticated/admin/media")({
 
 // Supabase Free = 1 GB; upgrade naar Pro = 100 GB — pas deze waarde aan je plan aan.
 const STORAGE_LIMIT_GB = 1;
-// Supabase-standaard per-bestand limiet op Free; verhoog na plan-upgrade.
-const MAX_UPLOAD_MB = 50;
 
 // Bytes → leesbaar (GB/MB). Gebruikt 1024-basis (binair), zoals opslagplannen.
 function formatBytes(bytes: number): string {
@@ -302,10 +301,8 @@ function MediaLibrary() {
     // Bestanden groter dan de per-bestand limiet overslaan (geen compressie —
     // originelen blijven vol kwaliteit).
     const uploadable = files.filter((file) => {
-      if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
-        toast.error(
-          `Bestand ${file.name} is te groot (>${MAX_UPLOAD_MB} MB). Verklein de video of upgrade het opslagplan.`,
-        );
+      if (file.size > MAX_UPLOAD_BYTES) {
+        toast.error(tooLargeMessage(file.name));
         return false;
       }
       return true;

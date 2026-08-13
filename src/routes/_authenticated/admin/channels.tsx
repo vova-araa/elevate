@@ -116,7 +116,11 @@ type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
  */
 function tokenExpiryWarning(
   tokenExpiresAt: string | null | undefined,
+  autoRefresh?: boolean,
 ): { expired: boolean; message: string } | null {
+  // Ververst de koppeling zichzelf (refresh-token, zoals TikTok's 24-uurs
+  // tokens)? Dan is een vervalwaarschuwing misleidend.
+  if (autoRefresh) return null;
   if (!tokenExpiresAt) return null;
   const expires = new Date(tokenExpiresAt);
   if (Number.isNaN(expires.getTime())) return null;
@@ -328,7 +332,7 @@ function AdminChannels() {
           const ch = channelsByPlatform.get(id);
           const connectedActive = !!ch && ch.status === "active";
           const expired = !!ch && ch.status === "expired";
-          const warn = tokenExpiryWarning(ch?.token_expires_at);
+          const warn = tokenExpiryWarning(ch?.token_expires_at, ch?.autoRefresh);
           return (
             <div
               key={id}

@@ -50,7 +50,12 @@ type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
  */
 function tokenExpiryWarning(
   tokenExpiresAt: string | null | undefined,
+  autoRefresh?: boolean,
 ): { expired: boolean; message: string } | null {
+  // Kan de koppeling zichzelf vernieuwen (refresh-token aanwezig, zoals bij
+  // TikTok met 24-uurs tokens)? Dan is een vervalwaarschuwing misleidend —
+  // de app ververst automatisch bij het publiceren.
+  if (autoRefresh) return null;
   if (!tokenExpiresAt) return null;
   const expires = new Date(tokenExpiresAt);
   if (Number.isNaN(expires.getTime())) return null;
@@ -224,7 +229,7 @@ function ChannelsPage() {
             const ch = channelsByPlatform.get(id);
             const connectedActive = !!ch && ch.status === "active";
             const expired = !!ch && ch.status === "expired";
-            const warn = tokenExpiryWarning(ch?.token_expires_at);
+            const warn = tokenExpiryWarning(ch?.token_expires_at, ch?.autoRefresh);
             // Alleen tonen als "Koppelen" wanneer het platform in de omgeving is
             // ingesteld. Zonder setup-status (nog aan het laden) niet blokkeren.
             const available = !setup || !!setup.platforms[id]?.configured;

@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import {
   PLATFORMS,
+  VISIBLE_PLATFORMS,
   STATUS_META,
   GOLD_FALLBACK,
   toKey,
@@ -998,6 +999,31 @@ function ComposeModal({
 
   const mediaUrl = useSignedUrl(mediaPath);
 
+  // Welke kanalen zijn daadwerkelijk gekoppeld voor deze klant? Alleen daar
+  // kun je naartoe plannen; de rest tonen we uitgeschakeld met uitleg.
+  const { data: connectedPlatforms } = useQuery({
+    queryKey: ["composer-connected-platforms", clientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("social_connections")
+        .select("platform")
+        .eq("client_id", clientId)
+        .eq("status", "active");
+      return (data ?? []).map((c) => c.platform as Platform);
+    },
+  });
+  const isConnected = (p: Platform) => (connectedPlatforms ?? []).includes(p);
+
+  // Nieuwe post: als de standaardkeuze (Instagram) niet gekoppeld is, val terug
+  // op het eerste kanaal dat wél gekoppeld is — anders staat er een platform
+  // voorgeselecteerd waar je niet naartoe kunt publiceren.
+  useEffect(() => {
+    if (editId || !connectedPlatforms?.length) return;
+    setPlatforms((prev) =>
+      prev.some((p) => connectedPlatforms.includes(p)) ? prev : [connectedPlatforms[0]],
+    );
+  }, [connectedPlatforms, editId]);
+
   // Best-time suggestions for the primary platform
   const { data: bestTimes } = useQuery({
     queryKey: ["best-times", primary],
@@ -1236,26 +1262,41 @@ function ComposeModal({
                 Platforms {editId && "(niet wijzigbaar)"}
               </div>
               <div className="flex flex-wrap gap-2">
-                {PLATFORMS.map((p) => {
+                {VISIBLE_PLATFORMS.map((p) => {
                   const active = platforms.includes(p.id);
+                  // Nog niet gekoppeld → niet aanklikbaar (je kunt er niet
+                  // naartoe publiceren). Bij bewerken blijft alles vast.
+                  const connected = isConnected(p.id);
+                  const disabled = !!editId || !connected;
                   return (
                     <button
                       key={p.id}
                       onClick={() => togglePlatform(p.id)}
-                      disabled={!!editId}
+                      disabled={disabled}
+                      title={
+                        connected
+                          ? undefined
+                          : `${p.label} is nog niet gekoppeld voor deze klant — koppel het eerst via Kanalen`
+                      }
                       className={cn(
                         "rounded-full border px-3 py-1.5 text-sm inline-flex items-center gap-1.5 transition",
                         active
                           ? "bg-gold/15 text-gold border-gold/40"
                           : "border-border/40 text-muted-foreground hover:text-foreground",
-                        editId && "opacity-60 cursor-not-allowed",
+                        disabled && "opacity-40 cursor-not-allowed",
                       )}
                     >
                       <p.Icon className="h-3.5 w-3.5" /> {p.label}
+                      {!connected && <span className="text-[10px]">· niet gekoppeld</span>}
                     </button>
                   );
                 })}
               </div>
+              {connectedPlatforms && connectedPlatforms.length === 0 && (
+                <p className="mt-2 text-xs text-amber-500">
+                  Nog geen kanalen gekoppeld voor deze klant. Koppel ze eerst via Kanalen.
+                </p>
+              )}
             </div>
 
             {/* Media */}
