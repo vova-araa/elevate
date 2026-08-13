@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { IntakeDocumentCard } from "@/components/admin/intake-document-card";
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -147,6 +148,15 @@ function IntakeQuestionnairePage() {
         </div>
       ) : (
         <form className="space-y-5" onSubmit={form.handleSubmit(onCompleteAndGenerate)}>
+          {/* Documenten laten uitlezen — vult de velden hieronder voor. */}
+          <IntakeDocumentCard
+            clientId={id}
+            existingAnswers={form.getValues()}
+            onApply={(field, value) =>
+              form.setValue(field as keyof IntakeAnswers, value as never, { shouldDirty: true })
+            }
+          />
+
           <Section title="Merk & positionering">
             <Field label="Positionering" hint="Hoe wil het merk gezien worden?">
               <Textarea rows={3} {...form.register("positioning")} />

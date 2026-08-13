@@ -74,6 +74,39 @@ export interface GenerateJsonOptions {
   schema: Record<string, unknown>;
   maxTokens?: number;
   effort?: Effort;
+  /**
+   * Optionele bijlagen die het model meeleest. PDF's gaan als document-blok
+   * (Claude leest die zelf uit, inclusief lay-out); platte tekst wordt als
+   * tekstblok meegestuurd.
+   */
+  documents?: Array<{ mediaType: string; base64: string; name?: string }>;
+}
+
+/**
+ * Bouwt de user-content: de prompt plus eventuele bijlagen. PDF's gaan als
+ * document-blok zodat Claude ze zelf uitleest; tekstbestanden worden gewoon
+ * meegestuurd als tekst.
+ */
+function buildUserContent(opts: GenerateJsonOptions): Anthropic.ContentBlockParam[] | string {
+  if (!opts.documents?.length) return opts.user;
+  const blocks: Anthropic.ContentBlockParam[] = [];
+  for (const doc of opts.documents) {
+    if (doc.mediaType === "application/pdf") {
+      blocks.push({
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: doc.base64 },
+        ...(doc.name ? { title: doc.name } : {}),
+      });
+    } else {
+      const text = Buffer.from(doc.base64, "base64").toString("utf8").slice(0, 200_000);
+      blocks.push({
+        type: "text",
+        text: `--- Bestand: ${doc.name ?? "bijlage"} ---\n${text}`,
+      });
+    }
+  }
+  blocks.push({ type: "text", text: opts.user });
+  return blocks;
 }
 
 /** Gestructureerde JSON-generatie via output_config.format (gegarandeerd schema-valide). */
@@ -89,7 +122,7 @@ export async function generateJson<T>(opts: GenerateJsonOptions): Promise<T> {
         format: { type: "json_schema", schema: opts.schema },
       },
       system: opts.system,
-      messages: [{ role: "user", content: opts.user }],
+      messages: [{ role: "user", content: buildUserContent(opts) }],
     });
     if (response.stop_reason === "refusal") {
       throw new Error("De AI heeft dit verzoek geweigerd. Pas de briefing aan en probeer opnieuw.");
