@@ -20,11 +20,18 @@ import { useUIStore } from "@/lib/stores/ui-store";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
-    // Alleen de goedkope sessiecheck hier; de rol is al bekend in AuthProvider
-    // en AdminGate hieronder stuurt niet-admins door. Zo vervallen een extra
-    // netwerkronde (getUser) én een user_roles-query vóór elke admin-pagina.
-    const { data } = await supabase.auth.getSession();
-    if (!data.session?.user) throw redirect({ to: "/auth" });
+    // De ouder-route heeft de gebruiker al vastgesteld; hier alleen nog de
+    // rolcheck. AdminGate hieronder vangt het geval dat de rol later verandert.
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw redirect({ to: "/auth" });
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!data) throw redirect({ to: "/dashboard" });
   },
   component: AdminGate,
 });

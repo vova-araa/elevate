@@ -39,12 +39,12 @@ export const Route = createFileRoute("/_authenticated")({
   // Privé-portaal: niet indexeren door zoekmachines.
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   beforeLoad: async () => {
-    // getSession() leest de JWT lokaal (geen netwerkronde), getUser() doet een
-    // call naar /auth/v1/user. Dit is puur een UX-guard: de échte autorisatie
-    // gebeurt server-side via RLS en de assertAdmin/assertClientAccess-checks.
-    const { data } = await supabase.auth.getSession();
-    if (!data.session?.user) throw redirect({ to: "/auth" });
-    return { user: data.session.user };
+    // Bewust getUser(): dat wacht tot de sessie echt is vastgesteld. Met
+    // getSession() kan er op een harde paginalading nog geen sessie hersteld
+    // zijn, waarna je onterecht naar /auth werd gestuurd.
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) throw redirect({ to: "/auth" });
+    return { user: data.user };
   },
   component: AuthLayout,
 });

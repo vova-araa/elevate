@@ -42,10 +42,8 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    // Laadt de route-chunk (en data) zodra je een link aanwijst — navigeren
-    // voelt daardoor direct. Zonder defaultPreload deed defaultPreloadStaleTime
-    // niets.
-    defaultPreload: "intent",
+    // Geen defaultPreload: bij hover draaide dan ook de beforeLoad-auth van
+    // beveiligde routes, wat tot ongewenste redirects leidde.
     defaultPreloadStaleTime: 0,
     defaultNotFoundComponent: NotFound,
     defaultErrorComponent: RouteError,
