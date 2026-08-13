@@ -28,8 +28,12 @@ export function appUrl(fallbackOrigin?: string): string {
   return url.replace(/\/$/, "");
 }
 
-export function oauthRedirectUri(origin?: string): string {
-  return `${appUrl(origin)}/api/public/oauth/callback`;
+export function oauthRedirectUri(origin?: string, platform?: SocialPlatform): string {
+  let base = appUrl(origin);
+  // TikTok verifieert het domein zónder www; de redirect_uri moet exact matchen
+  // met wat daar geregistreerd staat. Meta gebruikt de www-variant (APP_URL).
+  if (platform === "tiktok") base = base.replace("://www.", "://");
+  return `${base}/api/public/oauth/callback`;
 }
 
 /** Welke platforms zijn geconfigureerd (env-keys aanwezig)? Alleen booleans — nooit waarden. */
@@ -128,7 +132,7 @@ export function buildAuthorizeUrl(
   origin?: string,
 ): string {
   const { id } = credentialsFor(platform);
-  const redirect = oauthRedirectUri(origin);
+  const redirect = oauthRedirectUri(origin, platform);
   const scope = SCOPES[platform];
   switch (platform) {
     case "facebook":
@@ -213,7 +217,7 @@ export async function exchangeCode(
   origin?: string,
 ): Promise<TokenSet> {
   const { id, secret } = credentialsFor(platform);
-  const redirect = oauthRedirectUri(origin);
+  const redirect = oauthRedirectUri(origin, platform);
 
   switch (platform) {
     case "facebook":
