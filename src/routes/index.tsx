@@ -12,8 +12,6 @@ import {
   Quote,
   Instagram,
   Music2,
-  Linkedin,
-  Youtube,
   Facebook,
   type LucideIcon,
 } from "lucide-react";
@@ -46,7 +44,9 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-const SOCIALS = [Instagram, Music2, Linkedin, Youtube, Facebook];
+// Alleen de kanalen waar klanten daadwerkelijk mee kunnen koppelen — anders
+// belooft de landing iets wat de app (nog) niet levert.
+const SOCIALS = [Instagram, Music2, Facebook];
 
 // Officiële Elevate Design-accounts — gekoppeld in de footer ("Volg ons").
 const SOCIAL_LINKS = [
@@ -133,7 +133,7 @@ const PORTAL_POINTS = [
 
 const STATS: [string, string][] = [
   ["1", "portaal voor alles"],
-  ["5", "gekoppelde kanalen"],
+  ["3", "gekoppelde kanalen"],
   ["AI", "strategie & planning"],
   ["100%", "op jouw merk"],
 ];
@@ -688,7 +688,7 @@ function PortalPreview() {
         </div>
         {/* Rijtjes */}
         <div className="mt-3 space-y-2">
-          {[Instagram, Music2, Linkedin].map((Icon, i) => (
+          {[Instagram, Music2, Facebook].map((Icon, i) => (
             <div
               key={i}
               className="flex items-center gap-2.5 rounded-lg border border-gold/10 bg-card/70 px-3 py-2"
