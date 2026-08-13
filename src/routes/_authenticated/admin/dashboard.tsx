@@ -104,11 +104,11 @@ function AdminDashboard() {
 
   const selected = clientId ? (clients?.find((c) => c.id === clientId) ?? null) : null;
 
-  if (!clients) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
-
+  // Niet wachten op de klantenlijst voordat er iets in beeld komt: de kaarten
+  // tonen hun eigen skeletons en laden parallel.
   return (
     <div className="space-y-8">
-      <DashboardContent clients={clients} selected={selected} clientId={clientId ?? null} />
+      <DashboardContent clients={clients ?? []} selected={selected} clientId={clientId ?? null} />
     </div>
   );
 }

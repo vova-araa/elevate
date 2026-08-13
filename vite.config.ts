@@ -16,6 +16,8 @@ export default defineConfig({
     }),
     nitro({
       preset: process.env.NITRO_PRESET ?? "node-server",
+      // Statische assets vooraf comprimeren (~15-20% kleiner dan gzip-on-the-fly).
+      compressPublicAssets: { gzip: true, brotli: true },
       // Security-headers op elke response (clickjacking/MIME-sniffing/referrer).
       routeRules: {
         "/**": {

@@ -10,12 +10,12 @@ import {
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import {
-  generateReportPdf,
+  generateReportPdfLazy,
   extractPlatformBreakdown,
   extractPostDetails,
   reportStatusLabel,
   type ReportRow,
-} from "@/lib/report-pdf";
+} from "@/lib/report-data";
 import { cn } from "@/lib/utils";
 
 /** Vertaal veelvoorkomende metric-keys naar Nederlandse labels. */
@@ -75,7 +75,7 @@ function downloadReportPdf(report: Tables<"reports">) {
     created_at: report.created_at,
     metrics: report.metrics,
   };
-  generateReportPdf(row, { fileName: `${report.title.replace(/\s+/g, "_")}.pdf` });
+  void generateReportPdfLazy(row, { fileName: `${report.title.replace(/\s+/g, "_")}.pdf` });
 }
 
 export function ReportCard({ report }: { report: Tables<"reports"> }) {

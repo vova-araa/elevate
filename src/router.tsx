@@ -42,6 +42,10 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Laadt de route-chunk (en data) zodra je een link aanwijst — navigeren
+    // voelt daardoor direct. Zonder defaultPreload deed defaultPreloadStaleTime
+    // niets.
+    defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
     defaultNotFoundComponent: NotFound,
     defaultErrorComponent: RouteError,

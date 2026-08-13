@@ -9,12 +9,12 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { createReportFromAnalytics } from "@/lib/report-generate.functions";
 import {
-  generateReportPdf,
+  generateReportPdfLazy,
   extractPlatformBreakdown,
   extractPostDetails,
   reportStatusLabel,
   type ReportRow,
-} from "@/lib/report-pdf";
+} from "@/lib/report-data";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -69,7 +69,7 @@ function ReportsPage() {
       created_at: r.created_at,
       metrics: r.metrics,
     };
-    generateReportPdf(row, {
+    void generateReportPdfLazy(row, {
       clientName: activeClient?.name,
       brandColor: activeClient?.color ?? undefined,
       fileName: `${r.title.replace(/\s+/g, "_")}.pdf`,

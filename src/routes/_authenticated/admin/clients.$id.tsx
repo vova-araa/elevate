@@ -40,7 +40,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Tables, TablesUpdate, Enums } from "@/integrations/supabase/types";
-import { exportReportPdf, exportAllReportsPdf } from "@/lib/report-pdf";
+import { exportReportPdfLazy, exportAllReportsPdfLazy } from "@/lib/report-data";
 import { MessagesThread } from "@/components/messages-thread";
 import { ClientTimeline } from "@/components/client-timeline";
 import { InstagramScheduler } from "@/components/instagram-scheduler";
@@ -694,12 +694,12 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
     qc.invalidateQueries({ queryKey: ["reports", clientId] });
   }
   function exportOne(r: Tables<"reports">) {
-    exportReportPdf(clientName, r);
+    void exportReportPdfLazy(clientName, r);
     toast.success("PDF gedownload");
   }
   function exportAll() {
     if (!data?.length) return;
-    exportAllReportsPdf(clientName, data);
+    void exportAllReportsPdfLazy(clientName, data);
     toast.success("PDF met alle rapportages gedownload");
   }
   return (
