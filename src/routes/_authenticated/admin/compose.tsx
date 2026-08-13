@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -98,6 +98,8 @@ function ComposePage() {
 
   const [content, setContent] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["instagram"]);
+  /** Heeft de gebruiker zelf platforms aan- of uitgezet? Dan niets meer voor hem kiezen. */
+  const [touchedPlatforms, setTouchedPlatforms] = useState(false);
   const [postTypes, setPostTypes] = useState<Record<string, string>>({ instagram: "feed" });
   const [mode, setMode] = useState<"schedule" | "now" | "draft">("schedule");
   const [scheduleAt, setScheduleAt] = useState<string>(
@@ -109,6 +111,16 @@ function ComposePage() {
   const [mediaPath, setMediaPath] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [previewPlatform, setPreviewPlatform] = useState<string>("instagram");
+  /**
+   * Het voorbeeld volgt je selectie. Alleen als je meerdere platforms hebt
+   * aangevinkt mag je zelf kiezen wélke je bekijkt; kies je iets wat niet meer
+   * geselecteerd is, dan valt hij terug op het eerste. Voorheen bleef hij op
+   * Instagram staan terwijl je TikTok had aangevinkt — dan zie je een voorbeeld
+   * van een post die je niet aan het maken bent.
+   */
+  const shownPlatform = selectedPlatforms.includes(previewPlatform)
+    ? previewPlatform
+    : (selectedPlatforms[0] ?? "instagram");
   // Reclamecode: de maker weet of er een betaalde relatie is, wij niet. Zodra
   // dat vinkje aanstaat controleren we de caption op een geldige aanduiding.
   const [isAd, setIsAd] = useState(false);
@@ -128,7 +140,7 @@ function ComposePage() {
       suggestCopy({
         data: {
           clientId: activeClient?.id ?? null,
-          platform: previewPlatform,
+          platform: shownPlatform,
           briefing,
           currentCaption: content,
           hasMedia: !!mediaPath,
@@ -179,6 +191,30 @@ function ComposePage() {
   const missingForClient = activeClient
     ? selectedPlatforms.filter((p) => !clientConnected.has(p))
     : [];
+
+  /**
+   * Beginselectie afstemmen op de klant. Instagram stond standaard aan, ook bij
+   * een klant die alleen TikTok gekoppeld heeft — dan begin je met een
+   * waarschuwing en een voorbeeld van een kanaal waar je niet naartoe kunt
+   * posten. Dit gebeurt één keer per klant en alleen zolang je zelf nog niets
+   * hebt aangeraakt; daarna blijft je eigen keuze staan.
+   */
+  const autoPickedFor = useRef<string | null>(null);
+  useEffect(() => {
+    const clientId = activeClient?.id;
+    if (!clientId || !clientChannels || touchedPlatforms) return;
+    if (autoPickedFor.current === clientId) return;
+    autoPickedFor.current = clientId;
+
+    const connected = PLATFORMS.filter((p) => clientConnected.has(p.id)).map((p) => p.id);
+    if (connected.length === 0 || connected.includes(selectedPlatforms[0])) return;
+    const first = connected[0];
+    setSelectedPlatforms([first]);
+    setPostTypes({ [first]: PLATFORMS.find((p) => p.id === first)!.types[0].id });
+    setPreviewPlatform(first);
+    // clientConnected is elke render een nieuwe Set; clientChannels is de bron.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient?.id, clientChannels, touchedPlatforms]);
 
   const mediaUrl = useSignedUrl(mediaPath);
 
@@ -250,6 +286,7 @@ function ComposePage() {
   );
 
   const togglePlatform = (id: string) => {
+    setTouchedPlatforms(true);
     setSelectedPlatforms((prev) => {
       const on = prev.includes(id);
       const next = on ? prev.filter((x) => x !== id) : [...prev, id];
@@ -591,7 +628,7 @@ function ComposePage() {
             </div>
             {selectedPlatforms.length > 1 && (
               <select
-                value={previewPlatform}
+                value={shownPlatform}
                 onChange={(e) => setPreviewPlatform(e.target.value)}
                 className="text-[11px] bg-transparent border border-border/60 rounded px-2 h-6"
               >
@@ -607,8 +644,8 @@ function ComposePage() {
             )}
           </div>
           <PlatformPreview
-            platform={previewPlatform}
-            type={postTypes[previewPlatform]}
+            platform={shownPlatform}
+            type={postTypes[shownPlatform]}
             content={content}
             mediaUrl={mediaUrl ?? undefined}
             clientName={activeClient?.name ?? "Klant"}
