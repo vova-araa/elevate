@@ -79,6 +79,9 @@ async function accessTokenFor(clientId: string, platform: FeedPlatform): Promise
       access_token: fresh.accessToken,
       refresh_token: fresh.refreshToken,
       token_expires_at: fresh.expiresAt,
+      ...(fresh.refreshExpiresAt !== undefined
+        ? { refresh_expires_at: fresh.refreshExpiresAt }
+        : {}),
     })
     .eq("client_id", clientId)
     .eq("platform", platform);

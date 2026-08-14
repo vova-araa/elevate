@@ -20,6 +20,7 @@ import {
   X,
   Plug,
   AlertTriangle,
+  ShieldCheck,
   Share2,
   Copy,
   Check,
@@ -110,19 +111,19 @@ export const Route = createFileRoute("/_authenticated/admin/channels")({
 type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 
 /**
- * Waarschuwing als een token (bijna) verlopen is. Alleen tonen wanneer er een
- * token_expires_at bekend is die binnen 14 dagen valt of al verstreken is;
- * platforms zonder verlooptijd leveren null op en tonen dus niets.
+ * Waarschuwing wanneer er écht een mens aan te pas moet komen.
+ *
+ * Nadrukkelijk niet op basis van de vervaldatum van het access-token: die van
+ * TikTok is 24 uur en wordt elke dag automatisch vernieuwd, en het Meta
+ * page-token waarmee we publiceren verloopt helemaal niet. `reconnectBefore` is
+ * de datum waarop verversen niet meer kan — is die leeg, dan blijft de
+ * koppeling vanzelf in leven.
  */
 function tokenExpiryWarning(
-  tokenExpiresAt: string | null | undefined,
-  autoRefresh?: boolean,
+  reconnectBefore: string | null | undefined,
 ): { expired: boolean; message: string } | null {
-  // Ververst de koppeling zichzelf (refresh-token, zoals TikTok's 24-uurs
-  // tokens)? Dan is een vervalwaarschuwing misleidend.
-  if (autoRefresh) return null;
-  if (!tokenExpiresAt) return null;
-  const expires = new Date(tokenExpiresAt);
+  if (!reconnectBefore) return null;
+  const expires = new Date(reconnectBefore);
   if (Number.isNaN(expires.getTime())) return null;
   const days = differenceInCalendarDays(expires, new Date());
   if (days < 0) return { expired: true, message: "Koppeling verlopen — opnieuw koppelen" };
@@ -332,7 +333,7 @@ function AdminChannels() {
           const ch = channelsByPlatform.get(id);
           const connectedActive = !!ch && ch.status === "active";
           const expired = !!ch && ch.status === "expired";
-          const warn = tokenExpiryWarning(ch?.token_expires_at, ch?.autoRefresh);
+          const warn = tokenExpiryWarning(ch?.reconnectBefore);
           return (
             <div
               key={id}
@@ -374,6 +375,17 @@ function AdminChannels() {
                 <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                   {warn.message}
+                </div>
+              )}
+
+              {/* Geen waarschuwing is niet hetzelfde als geen informatie: zeg
+                  ook wanneer een koppeling gewoon actief blijft. */}
+              {connectedActive && !warn && (
+                <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                  {ch?.neverExpires
+                    ? "Blijft actief — dit token verloopt niet"
+                    : "Blijft actief — vernieuwt zichzelf automatisch"}
                 </div>
               )}
 

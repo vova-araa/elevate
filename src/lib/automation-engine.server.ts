@@ -11,6 +11,7 @@ import {
   retryDelayMinutes,
   MAX_PUBLISH_RETRIES,
 } from "@/lib/publish-errors";
+import { reconnectDeadline, shouldRefreshNow } from "@/lib/token-lifetime";
 
 type WebhookEndpoint = Tables<"webhook_endpoints">;
 type AutomationRule = Tables<"automation_rules">;
@@ -396,22 +397,32 @@ export async function runTick() {
     summary.purged++;
   }
 
-  // 1c) Tokenbewaking. TikTok-tokens leven 24 uur, Meta long-lived tokens 60
-  // dagen. Zonder bewaking sterft een koppeling stil en merk je het pas als een
-  // publicatie mislukt — precies te laat. Daarom hier: op tijd verversen waar
-  // dat kan, en waarschuwen waar opnieuw koppelen nodig is.
+  // 1c) Tokenbewaking — koppelingen in leven houden in plaats van ze zien sterven.
+  //
+  // De vervaldatum van een access-token is géén maat voor de levensduur van een
+  // koppeling. TikTok geeft 24 uur, maar levert bij elke verversing een nieuw
+  // refresh-token van 365 dagen; Google-refresh-tokens verlopen helemaal niet;
+  // en het Meta page-token waarmee wij publiceren heeft geen vervaldatum, ook al
+  // verloopt het user-token na 60 dagen.
+  //
+  // Dus: op tijd verversen (kort voor het access-token verloopt, niet dagen
+  // ervoor — anders draaien we bij TikTok elke tick een verversing en roteren we
+  // het refresh-token stuk), en alleen waarschuwen wanneer er écht een mens aan
+  // te pas moet komen.
   const WARN_WINDOW_DAYS = 5;
-  const warnCutoff = new Date(now.getTime() + WARN_WINDOW_DAYS * 86400000).toISOString();
-  const { data: expiring } = await sb
-    .from("social_connections")
-    .select("id, client_id, platform, refresh_token, token_expires_at, status, meta")
-    .eq("status", "active")
-    .not("token_expires_at", "is", null)
-    .lt("token_expires_at", warnCutoff)
-    .limit(100);
+  const warnWindowMs = WARN_WINDOW_DAYS * 86400000;
 
-  if (expiring?.length) {
-    const tokenClientIds = [...new Set(expiring.map((c) => c.client_id))];
+  const { data: connections } = await sb
+    .from("social_connections")
+    .select(
+      "id, client_id, platform, refresh_token, token_expires_at, refresh_expires_at, never_expires, status, meta",
+    )
+    .eq("status", "active")
+    .eq("never_expires", false)
+    .limit(200);
+
+  if (connections?.length) {
+    const tokenClientIds = [...new Set(connections.map((c) => c.client_id))];
     for (const id of tokenClientIds) {
       if (!clientNames.has(id)) {
         const { data: c } = await sb.from("clients").select("name").eq("id", id).maybeSingle();
@@ -419,33 +430,63 @@ export async function runTick() {
       }
     }
 
-    for (const conn of expiring) {
+    for (const conn of connections) {
       const meta =
         conn.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
           ? (conn.meta as Record<string, unknown>)
           : {};
 
-      // Eerst proberen te verversen. Lukt dat, dan merkt niemand er iets van.
-      if (conn.refresh_token) {
+      let refreshExpiry = conn.refresh_expires_at
+        ? new Date(conn.refresh_expires_at).getTime()
+        : null;
+      let refreshed = false;
+
+      // Verversen zodra het access-token binnen twee uur verloopt. Bij TikTok
+      // komt dat neer op eens per etmaal in plaats van elke tick.
+      if (conn.refresh_token && shouldRefreshNow(conn.token_expires_at, now)) {
         const fresh = await refreshAccessToken(
           conn.platform as SocialPlatform,
           conn.refresh_token,
         ).catch(() => null);
         if (fresh) {
+          refreshed = true;
+          if (fresh.refreshExpiresAt !== undefined) {
+            refreshExpiry = fresh.refreshExpiresAt
+              ? new Date(fresh.refreshExpiresAt).getTime()
+              : null;
+          }
           await sb
             .from("social_connections")
             .update({
               access_token: fresh.accessToken,
               refresh_token: fresh.refreshToken,
               token_expires_at: fresh.expiresAt,
+              refresh_expires_at: fresh.refreshExpiresAt ?? conn.refresh_expires_at,
               meta: { ...meta, expiry_warned_at: null },
             })
             .eq("id", conn.id);
-          continue;
         }
       }
 
-      const expired = new Date(conn.token_expires_at!).getTime() <= now.getTime();
+      /**
+       * De datum waarop een mens opnieuw moet koppelen:
+       *  - is er een refresh-token, dan die van het refresh-token (en `null`
+       *    betekent: verloopt niet, bijvoorbeeld bij Google);
+       *  - is er geen refresh-token, dan die van het access-token zelf.
+       * Zolang verversen net gelukt is, is er sowieso niets aan de hand.
+       */
+      const deadlineIso = reconnectDeadline({
+        neverExpires: conn.never_expires,
+        hasRefreshToken: !!conn.refresh_token,
+        tokenExpiresAt: conn.token_expires_at,
+        refreshExpiresAt: refreshExpiry === null ? null : new Date(refreshExpiry).toISOString(),
+      });
+      if (deadlineIso === null) continue;
+      const remaining = new Date(deadlineIso).getTime() - now.getTime();
+      if (remaining > warnWindowMs) continue;
+      if (refreshed && remaining > 0) continue;
+
+      const expired = remaining <= 0;
       if (expired) {
         await sb.from("social_connections").update({ status: "expired" }).eq("id", conn.id);
       }
@@ -461,7 +502,7 @@ export async function runTick() {
         expired ? "Koppeling verlopen" : "Koppeling verloopt binnenkort",
         expired
           ? `De ${conn.platform}-koppeling van ${who} is verlopen. Koppel opnieuw om te blijven publiceren.`
-          : `De ${conn.platform}-koppeling van ${who} verloopt binnen ${WARN_WINDOW_DAYS} dagen en kan niet automatisch worden ververst.`,
+          : `De ${conn.platform}-koppeling van ${who} verloopt binnen ${WARN_WINDOW_DAYS} dagen en kan niet automatisch worden vernieuwd.`,
         "/admin/kanalen",
       );
       await sb

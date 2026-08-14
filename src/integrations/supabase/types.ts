@@ -1630,6 +1630,8 @@ export type Database = {
           meta: Json;
           platform: Database["public"]["Enums"]["social_platform"];
           postiz_integration_id: string | null;
+          never_expires: boolean;
+          refresh_expires_at: string | null;
           refresh_token: string | null;
           status: Database["public"]["Enums"]["social_connection_status"];
           token_expires_at: string | null;
@@ -1649,6 +1651,8 @@ export type Database = {
           meta?: Json;
           platform: Database["public"]["Enums"]["social_platform"];
           postiz_integration_id?: string | null;
+          never_expires?: boolean;
+          refresh_expires_at?: string | null;
           refresh_token?: string | null;
           status?: Database["public"]["Enums"]["social_connection_status"];
           token_expires_at?: string | null;
@@ -1668,6 +1672,8 @@ export type Database = {
           meta?: Json;
           platform?: Database["public"]["Enums"]["social_platform"];
           postiz_integration_id?: string | null;
+          never_expires?: boolean;
+          refresh_expires_at?: string | null;
           refresh_token?: string | null;
           status?: Database["public"]["Enums"]["social_connection_status"];
           token_expires_at?: string | null;

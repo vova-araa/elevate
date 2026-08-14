@@ -62,6 +62,11 @@ function env(name: string): string {
   return v;
 }
 
+/** App-token voor Graph-endpoints die de app zelf moeten identificeren. */
+function metaAppToken(): string {
+  return `${env("META_APP_ID")}|${env("META_APP_SECRET")}`;
+}
+
 function credentialsFor(platform: SocialPlatform): { id: string; secret: string } {
   switch (platform) {
     case "facebook":
@@ -208,6 +213,14 @@ export interface TokenSet {
   accessToken: string;
   refreshToken: string | null;
   expiresAt: string | null; // ISO
+  /**
+   * Wanneer het refresh-token zelf verloopt. Dít is de datum waarop een mens
+   * opnieuw moet koppelen — de vervaldatum van het access-token zegt daar niets
+   * over, want die wordt automatisch vernieuwd.
+   */
+  refreshExpiresAt?: string | null;
+  /** Het token dat wij gebruiken heeft geen vervaldatum (bv. Meta page-token). */
+  neverExpires?: boolean;
   raw: Record<string, unknown>;
 }
 
@@ -289,6 +302,10 @@ export async function exchangeCode(
         accessToken: String(json.access_token),
         refreshToken: json.refresh_token ? String(json.refresh_token) : null,
         expiresAt: expiry(json.expires_in),
+        // TikTok: access 24 uur, refresh 365 dagen. Elke verversing levert weer
+        // een refresh-token van 365 dagen op, dus zolang we blijven verversen
+        // verloopt de koppeling nooit.
+        refreshExpiresAt: expiry(json.refresh_expires_in),
         raw: json,
       };
     }
@@ -345,6 +362,7 @@ export async function refreshAccessToken(
         accessToken: String(json.access_token),
         refreshToken: json.refresh_token ? String(json.refresh_token) : refreshToken,
         expiresAt: expiry(json.expires_in),
+        refreshExpiresAt: expiry(json.refresh_expires_in),
         raw: json,
       };
     }
@@ -360,6 +378,9 @@ export async function refreshAccessToken(
         accessToken: String(json.access_token),
         refreshToken,
         expiresAt: expiry(json.expires_in),
+        // Google-refresh-tokens hebben geen vervaldatum zolang de app
+        // gepubliceerd is en de gebruiker de toegang niet intrekt.
+        refreshExpiresAt: null,
         raw: json,
       };
     }
@@ -378,6 +399,12 @@ export interface SocialProfile {
   followers: number | null;
   /** Extra publicatiecontext (page-token, IG business id, LinkedIn URN, …). */
   meta: Record<string, unknown>;
+  /**
+   * Het token waarmee we straks publiceren heeft geen vervaldatum. Geldt voor
+   * Meta: het page-token dat uit een long-lived user token komt verloopt niet,
+   * ook al verloopt dat user-token na 60 dagen.
+   */
+  neverExpires?: boolean;
 }
 
 async function getJson(url: string, token?: string): Promise<Record<string, unknown>> {
@@ -422,6 +449,23 @@ async function firstFacebookPage(accessToken: string): Promise<FbPage> {
  * verwijderverzoek niet aan een koppeling koppelen. Faalt dit, dan is dat geen
  * reden om de hele koppeling te laten mislukken.
  */
+/**
+ * Verloopt dit page-token echt niet? Graph geeft in debug_token `expires_at: 0`
+ * voor tokens zonder vervaldatum. We vragen het na in plaats van het aan te
+ * nemen: gaat Meta het ooit anders doen, dan waarschuwen we weer op tijd.
+ */
+async function metaTokenNeverExpires(pageToken: string, appToken: string): Promise<boolean> {
+  try {
+    const json = await getJson(
+      `${GRAPH}/debug_token?input_token=${encodeURIComponent(pageToken)}&access_token=${encodeURIComponent(appToken)}`,
+    );
+    const data = (json.data ?? {}) as { expires_at?: number };
+    return data.expires_at === 0;
+  } catch {
+    return false;
+  }
+}
+
 async function metaUserId(accessToken: string): Promise<string | null> {
   try {
     const json = await getJson(
@@ -449,6 +493,7 @@ export async function fetchProfile(
           pageToken: page.access_token,
           metaUserId: await metaUserId(tokens.accessToken),
         },
+        neverExpires: await metaTokenNeverExpires(page.access_token, metaAppToken()),
       };
     }
     case "instagram": {
@@ -471,6 +516,7 @@ export async function fetchProfile(
           pageToken: page.access_token,
           metaUserId: await metaUserId(tokens.accessToken),
         },
+        neverExpires: await metaTokenNeverExpires(page.access_token, metaAppToken()),
       };
     }
     case "tiktok": {

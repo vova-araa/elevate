@@ -59,6 +59,11 @@ async function getConnection(clientId: string, platform: SocialPlatform) {
           access_token: fresh.accessToken,
           refresh_token: fresh.refreshToken,
           token_expires_at: fresh.expiresAt,
+          // Ook de échte deadline bijwerken: TikTok geeft bij elke verversing
+          // weer 365 dagen, dus zolang we publiceren blijft de koppeling leven.
+          ...(fresh.refreshExpiresAt !== undefined
+            ? { refresh_expires_at: fresh.refreshExpiresAt }
+            : {}),
         })
         .eq("client_id", clientId)
         .eq("platform", platform);

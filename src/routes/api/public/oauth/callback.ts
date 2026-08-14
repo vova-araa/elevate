@@ -58,6 +58,10 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
               access_token: tokens.accessToken,
               refresh_token: tokens.refreshToken,
               token_expires_at: tokens.expiresAt,
+              // De échte levensduur van de koppeling: die van het refresh-token,
+              // of helemaal geen vervaldatum (Meta page-token).
+              refresh_expires_at: tokens.refreshExpiresAt ?? null,
+              never_expires: profile.neverExpires ?? false,
               connection_id: profile.accountId,
               postiz_integration_id: null,
               status: "active" as const,

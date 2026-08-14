@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { reconnectDeadline } from "@/lib/token-lifetime";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import {
@@ -137,13 +138,18 @@ export const listClientChannels = createServerFn({ method: "POST" })
     const { data: channels } = await supabaseAdmin
       .from("social_connections")
       .select(
-        "platform, account_username, follower_count, status, connected_at, token_expires_at, refresh_token",
+        "platform, account_username, follower_count, status, connected_at, token_expires_at, refresh_expires_at, never_expires, refresh_token",
       )
       .eq("client_id", clientId);
 
-    // Het refresh-token zelf blijft server-side; we geven alleen door of de
-    // koppeling zichzelf kan vernieuwen. TikTok-tokens verlopen elke 24 uur,
-    // maar worden automatisch ververst — dan is een waarschuwing misleidend.
+    // Het refresh-token zelf blijft server-side. Naar buiten geven we twee
+    // dingen die er voor de gebruiker toe doen: vernieuwt de koppeling zichzelf,
+    // en wanneer moet er dan tóch een mens aan te pas komen.
+    //
+    // Dat laatste is nadrukkelijk niet `token_expires_at`: een TikTok-token
+    // verloopt elke 24 uur en wordt elke dag automatisch vernieuwd, en een Meta
+    // page-token verloopt helemaal niet. "Verloopt over 1 dag" tonen omdat het
+    // access-token morgen verloopt is dus gewoon onjuist.
     return {
       clientId,
       clientName: client?.name ?? null,
@@ -151,6 +157,13 @@ export const listClientChannels = createServerFn({ method: "POST" })
       channels: (channels ?? []).map(({ refresh_token, ...c }) => ({
         ...c,
         autoRefresh: !!refresh_token,
+        neverExpires: c.never_expires,
+        reconnectBefore: reconnectDeadline({
+          neverExpires: c.never_expires,
+          hasRefreshToken: !!refresh_token,
+          tokenExpiresAt: c.token_expires_at,
+          refreshExpiresAt: c.refresh_expires_at,
+        }),
       })),
     };
   });
@@ -192,7 +205,7 @@ export const refreshChannel = createServerFn({ method: "POST" })
 
     const { data: conn } = await supabaseAdmin
       .from("social_connections")
-      .select("access_token, refresh_token, token_expires_at, meta")
+      .select("access_token, refresh_token, token_expires_at, refresh_expires_at, meta")
       .eq("client_id", clientId)
       .eq("platform", data.platform)
       .maybeSingle();
@@ -203,15 +216,17 @@ export const refreshChannel = createServerFn({ method: "POST" })
     let accessToken = conn.access_token;
     let refreshToken = conn.refresh_token;
     let expiresAt = conn.token_expires_at;
+    let refreshExpiresAt = conn.refresh_expires_at;
 
-    const nearlyExpired =
-      !!expiresAt && new Date(expiresAt).getTime() - Date.now() < 24 * 3600 * 1000;
-    if (nearlyExpired && refreshToken) {
+    // Handmatig verversen mag altijd meteen het token vernieuwen — dat is
+    // precies waarvoor iemand op de knop drukt.
+    if (refreshToken) {
       const fresh = await refreshAccessToken(platform, refreshToken);
       if (fresh) {
         accessToken = fresh.accessToken;
         refreshToken = fresh.refreshToken;
         expiresAt = fresh.expiresAt;
+        if (fresh.refreshExpiresAt !== undefined) refreshExpiresAt = fresh.refreshExpiresAt;
       }
     }
 
@@ -232,6 +247,8 @@ export const refreshChannel = createServerFn({ method: "POST" })
           access_token: accessToken,
           refresh_token: refreshToken,
           token_expires_at: expiresAt,
+          refresh_expires_at: refreshExpiresAt,
+          never_expires: profile.neverExpires ?? false,
           account_id: profile.accountId,
           account_username: profile.handle,
           follower_count: profile.followers,
