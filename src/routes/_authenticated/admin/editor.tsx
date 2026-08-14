@@ -3,6 +3,11 @@ import { PageTabs } from "@/components/page-tabs";
 import { CONTENT_TABS } from "@/lib/page-tabs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
+import { NEUTRAL_GRADE, gradeFilter, isNeutral, type Grade } from "@/lib/color-grade";
+import { paintGradeLayers } from "@/lib/grade-render";
+import { GradeOverlays } from "@/components/editor/grade-overlays";
+import { GradePanel } from "@/components/editor/grade-panel";
+import { TemplatePanel } from "@/components/editor/template-panel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -12,6 +17,7 @@ import {
   ImageIcon,
   Type,
   Crop as CropIcon,
+  SlidersHorizontal,
   Save,
   X,
   Plus,
@@ -309,7 +315,8 @@ function ImageEditor({
   const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
   const [layers, setLayers] = useState<TextLayer[]>([]);
   const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
-  const [mode, setMode] = useState<"crop" | "text">("crop");
+  const [mode, setMode] = useState<"crop" | "color" | "text">("crop");
+  const [grade, setGrade] = useState<Grade>({ ...NEUTRAL_GRADE });
   const previewRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; dx: number; dy: number } | null>(null);
 
@@ -372,7 +379,14 @@ function ImageEditor({
     canvas.width = Math.round(area.width);
     canvas.height = Math.round(area.height);
     const ctx = canvas.getContext("2d")!;
+    // Toonbewerkingen zitten in het filter waarmee het beeld getekend wordt;
+    // de kleurlagen komen er daarna overheen. Exact dezelfde volgorde als in
+    // het voorbeeld, zodat het bestand niet afwijkt van wat je zag.
+    ctx.filter = gradeFilter(grade);
     ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height);
+    ctx.filter = "none";
+    if (!isNeutral(grade)) paintGradeLayers(ctx, canvas.width, canvas.height, grade);
+    // Tekst gaat ná de grade: een bijschrift hoort niet mee te vergelen.
     for (const l of layers) {
       ctx.save();
       ctx.font = `${l.weight} ${l.fontSize}px ${l.family}, sans-serif`;
@@ -408,6 +422,12 @@ function ImageEditor({
             icon={CropIcon}
             label="Bijsnijden"
           />
+          <Tab
+            active={mode === "color"}
+            onClick={() => setMode("color")}
+            icon={SlidersHorizontal}
+            label="Kleur"
+          />
           <Tab active={mode === "text"} onClick={() => setMode("text")} icon={Type} label="Tekst" />
           <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
             {naturalSize.w > 0 && (
@@ -420,7 +440,10 @@ function ImageEditor({
 
         {mode === "crop" ? (
           <>
-            <div className="relative w-full aspect-[4/3] bg-black/40 rounded-xl overflow-hidden">
+            <div
+              className="relative w-full aspect-[4/3] bg-black/40 rounded-xl overflow-hidden"
+              style={{ filter: gradeFilter(grade) }}
+            >
               <Cropper
                 image={src.url}
                 crop={crop}
@@ -466,8 +489,12 @@ function ImageEditor({
                 naturalSize.w && naturalSize.h ? `${naturalSize.w}/${naturalSize.h}` : "4/3",
             }}
           >
-            {/* show CROPPED preview if a crop is active */}
-            <CroppedPreview src={src.url} area={croppedArea} naturalSize={naturalSize} />
+            {/* Beeld met toonbewerking, daarna de kleurlagen. Tekst komt er
+                daarna overheen — die hoort niet mee te vergelen. */}
+            <div className="absolute inset-0" style={{ filter: gradeFilter(grade) }}>
+              <CroppedPreview src={src.url} area={croppedArea} naturalSize={naturalSize} />
+            </div>
+            {!isNeutral(grade) && <GradeOverlays grade={grade} />}
             {/* text layers overlay (positioned over full natural; if cropped we still show but they may sit outside) */}
             {layers.map((l) => {
               // when a crop exists, position relative to crop area
@@ -508,7 +535,22 @@ function ImageEditor({
       </div>
 
       <div className="glass rounded-2xl p-4 space-y-4">
-        {mode === "text" ? (
+        {mode === "color" ? (
+          <>
+            <GradePanel grade={grade} onChange={setGrade} />
+            <div className="border-t border-gold/10 pt-4">
+              <TemplatePanel
+                clientId={src.clientId}
+                current={{ grade, aspect, layers }}
+                onApply={(t) => {
+                  setGrade(t.grade);
+                  setAspect(t.aspect);
+                  setLayers(t.layers as TextLayer[]);
+                }}
+              />
+            </div>
+          </>
+        ) : mode === "text" ? (
           <>
             <div className="flex items-center justify-between">
               <div className="font-display text-lg">Tekstlagen</div>

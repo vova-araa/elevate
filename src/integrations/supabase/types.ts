@@ -990,6 +990,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      editor_templates: {
+        Row: {
+          aspect: number | null;
+          client_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          grade: Json;
+          id: string;
+          layers: Json;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          aspect?: number | null;
+          client_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          grade?: Json;
+          id?: string;
+          layers?: Json;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          aspect?: number | null;
+          client_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          grade?: Json;
+          id?: string;
+          layers?: Json;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "editor_templates_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       evaluations: {
         Row: {
           body: string | null;
