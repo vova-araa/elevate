@@ -6,38 +6,109 @@ import {
   ArrowRight,
   ExternalLink,
   Facebook,
+  ImageOff,
   Instagram,
+  Linkedin,
   Music2,
+  Play,
   Plug,
+  Youtube,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
-import { getPublishedFeed } from "@/lib/feed.functions";
-
-type FeedPlatform = "instagram" | "facebook";
-
-const META: Record<FeedPlatform, { label: string; Icon: LucideIcon; ratio: string }> = {
-  instagram: { label: "Instagram", Icon: Instagram, ratio: "1 / 1" },
-  facebook: { label: "Facebook", Icon: Facebook, ratio: "1.91 / 1" },
-};
+import { getPublishedFeed, type FeedPlatform } from "@/lib/feed.functions";
 
 /**
- * De échte feed van het account dat nu actief is in de sidebar — zodat je op
- * het dashboard direct ziet hoe het profiel van die klant er nú uitziet.
+ * De feed van de klant die nu actief is, zoals hij er op het platform uitziet.
  *
- * TikTok staat er bewust niet bij: het uitlezen van een TikTok-feed vereist de
- * video.list-scope, die we niet aanvragen.
+ * Klik je op een ander kanaal, dan wisselt het profielkopje én het raster mee:
+ * elk platform heeft zijn eigen vorm (Instagram vierkant, TikTok staand,
+ * Facebook liggend), en dat is precies waar je naar kijkt als je beoordeelt of
+ * een profiel klopt.
+ *
+ * Instagram en Facebook halen we rechtstreeks bij het platform op. Voor TikTok,
+ * LinkedIn en YouTube vragen we de scopes voor terugleesbare feeds niet aan;
+ * daar tonen we wat wij voor deze klant hebben gepubliceerd.
  */
+
+interface PlatformStyle {
+  label: string;
+  Icon: LucideIcon;
+  /** Verhouding van een tegel. */
+  ratio: string;
+  /** Kolommen in het raster. */
+  cols: string;
+  /** Merkkleur voor het actieve tabblad en de gloed achter het profiel. */
+  tint: string;
+  glow: string;
+  /** Haalt de feed bij het platform zelf, of komt hij uit onze eigen registratie? */
+  live: boolean;
+}
+
+const STYLES: Record<FeedPlatform, PlatformStyle> = {
+  instagram: {
+    label: "Instagram",
+    Icon: Instagram,
+    ratio: "1 / 1",
+    cols: "grid-cols-3",
+    tint: "text-fuchsia-500 dark:text-rose-300",
+    glow: "from-fuchsia-500/25 via-orange-400/15",
+    live: true,
+  },
+  facebook: {
+    label: "Facebook",
+    Icon: Facebook,
+    ratio: "1.91 / 1",
+    cols: "grid-cols-2",
+    tint: "text-indigo-500 dark:text-indigo-300",
+    glow: "from-indigo-500/25 via-sky-400/15",
+    live: true,
+  },
+  tiktok: {
+    label: "TikTok",
+    Icon: Music2,
+    ratio: "9 / 16",
+    cols: "grid-cols-3",
+    tint: "text-cyan-600 dark:text-cyan-300",
+    glow: "from-cyan-400/25 via-rose-400/15",
+    live: false,
+  },
+  linkedin: {
+    label: "LinkedIn",
+    Icon: Linkedin,
+    ratio: "1.91 / 1",
+    cols: "grid-cols-2",
+    tint: "text-sky-600 dark:text-sky-300",
+    glow: "from-sky-500/25 via-blue-400/15",
+    live: false,
+  },
+  youtube: {
+    label: "YouTube",
+    Icon: Youtube,
+    ratio: "16 / 9",
+    cols: "grid-cols-2",
+    tint: "text-red-500 dark:text-red-300",
+    glow: "from-red-500/25 via-orange-400/15",
+    live: false,
+  },
+};
+
+const ORDER: FeedPlatform[] = ["instagram", "tiktok", "facebook", "linkedin", "youtube"];
+
+function compactNumber(n: number): string {
+  return n >= 10_000 ? `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1)}K` : n.toLocaleString("nl-NL");
+}
+
 export function LiveFeedCard() {
   const activeClient = useClientStore((s) => s.activeClient);
   const clientId = activeClient?.id ?? null;
   const [platform, setPlatform] = useState<FeedPlatform>("instagram");
   const feedFn = useServerFn(getPublishedFeed);
 
-  // Welke kanalen heeft deze klant daadwerkelijk gekoppeld?
+  // Gekoppelde kanalen, inclusief handle en volgers voor het profielkopje.
   const { data: channels } = useQuery({
     queryKey: ["live-feed-channels", clientId],
     enabled: !!clientId,
@@ -45,30 +116,30 @@ export function LiveFeedCard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("social_connections")
-        .select("platform")
+        .select("platform, account_username, follower_count")
         .eq("client_id", clientId!)
         .eq("status", "active");
-      return (data ?? []).map((c) => c.platform as string);
+      return data ?? [];
     },
   });
 
-  const available = (["instagram", "facebook"] as FeedPlatform[]).filter((p) =>
-    (channels ?? []).includes(p),
-  );
+  const available = ORDER.filter((p) => (channels ?? []).some((c) => c.platform === p));
   const active = available.includes(platform) ? platform : (available[0] ?? "instagram");
+  const style = STYLES[active];
+  const connection = (channels ?? []).find((c) => c.platform === active);
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["live-feed", clientId, active],
     enabled: !!clientId && available.length > 0,
     staleTime: 5 * 60_000,
     meta: { silent: true },
-    queryFn: () => feedFn({ data: { clientId: clientId!, platform: active, limit: 9 } }),
+    queryFn: () => feedFn({ data: { clientId: clientId!, platform: active, limit: 12 } }),
   });
 
   if (!clientId) {
     return (
       <div className="rounded-2xl border border-gold/15 bg-card p-5">
-        <h2 className="font-display text-xl">Live feed</h2>
+        <h2 className="font-display text-xl">Feed</h2>
         <p className="mt-3 text-sm text-muted-foreground">
           Kies links een klant om hun feed te zien.
         </p>
@@ -77,89 +148,210 @@ export function LiveFeedCard() {
   }
 
   return (
-    <div className="rounded-2xl border border-gold/15 bg-card p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-xl">
-          Live feed
-          <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {activeClient?.name}
-          </span>
-        </h2>
+    <div className="relative overflow-hidden rounded-2xl border border-gold/15 bg-card">
+      {/* Gloed in de kleur van het gekozen platform — het kanaal wisselt zo ook
+          visueel, niet alleen in de inhoud. */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b to-transparent opacity-70 transition-[background] duration-500",
+          style.glow,
+        )}
+      />
+
+      <div className="relative p-5">
+        {/* Profielkopje */}
+        <div className="flex items-center gap-4">
+          <Avatar
+            name={activeClient?.name ?? "?"}
+            logoUrl={activeClient?.logo_url ?? null}
+            color={activeClient?.color ?? null}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <style.Icon className={cn("h-4 w-4 shrink-0", style.tint)} />
+              <p className="truncate font-display text-xl">
+                {connection?.account_username ?? activeClient?.name}
+              </p>
+            </div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+              {typeof connection?.follower_count === "number" && (
+                <span>
+                  <b className="text-foreground tabular-nums">
+                    {compactNumber(connection.follower_count)}
+                  </b>{" "}
+                  volgers
+                </span>
+              )}
+              <span>
+                <b className="text-foreground tabular-nums">{posts?.length ?? 0}</b> recente posts
+              </span>
+              {!style.live && available.length > 0 && (
+                <span className="text-muted-foreground/70">via Elevate gepubliceerd</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Kanaalwissel */}
         {available.length > 1 && (
-          <div className="inline-flex rounded-full glass p-1 text-xs">
+          <div className="mt-4 flex flex-wrap gap-1.5">
             {available.map((p) => {
-              const Icon = META[p].Icon;
+              const s = STYLES[p];
+              const on = active === p;
               return (
                 <button
                   key={p}
+                  type="button"
                   onClick={() => setPlatform(p)}
                   className={cn(
-                    "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 transition sm:min-h-0 sm:py-1",
-                    active === p ? "bg-gold/15 text-gold" : "text-muted-foreground",
+                    "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition",
+                    on
+                      ? "border-gold/40 bg-gold/10 text-foreground"
+                      : "border-border/60 text-muted-foreground hover:border-gold/25 hover:text-foreground",
                   )}
+                  aria-pressed={on}
                 >
-                  <Icon className="h-3.5 w-3.5" /> {META[p].label}
+                  <s.Icon className={cn("h-3.5 w-3.5", on ? s.tint : "")} />
+                  {s.label}
                 </button>
               );
             })}
           </div>
         )}
-      </div>
 
-      {available.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gold/20 p-8 text-center">
-          <Plug className="mx-auto h-5 w-5 text-amber-500" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            Nog geen Instagram of Facebook gekoppeld voor {activeClient?.name}.
-          </p>
-          <Link
-            to="/admin/channels"
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/30 px-4 py-1.5 text-xs text-gold hover:bg-gold/5"
-          >
-            Kanaal koppelen <ArrowRight className="h-3 w-3" />
-          </Link>
-        </div>
-      ) : isLoading ? (
-        <div className="grid grid-cols-3 gap-1">
-          {Array.from({ length: 9 }, (_, i) => (
-            <Skeleton key={i} className="aspect-square w-full rounded-none" />
-          ))}
-        </div>
-      ) : !posts || posts.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Nog geen gepubliceerde posts op dit account.
-        </p>
-      ) : (
-        <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-xl">
-          {posts.map((p) => (
-            <a
-              key={p.id}
-              href={p.permalink ?? undefined}
-              target="_blank"
-              rel="noreferrer"
-              className="group relative bg-surface-elevated/60"
-              style={{ aspectRatio: META[active].ratio }}
-              title={p.caption ?? "Openen op het platform"}
-            >
-              {p.mediaUrl ? (
-                <img
-                  src={p.mediaUrl}
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-cover"
+        {/* Raster */}
+        <div className="mt-4">
+          {available.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gold/20 p-8 text-center">
+              <Plug className="mx-auto h-5 w-5 text-amber-500" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Nog geen kanaal gekoppeld voor {activeClient?.name}.
+              </p>
+              <Link
+                to="/admin/channels"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/30 px-4 py-1.5 text-xs text-gold hover:bg-gold/5"
+              >
+                Kanaal koppelen <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          ) : isLoading ? (
+            <div className={cn("grid gap-1", style.cols)}>
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton
+                  key={i}
+                  className="w-full rounded-none"
+                  style={{ aspectRatio: style.ratio }}
                 />
-              ) : (
-                <span className="grid h-full w-full place-items-center text-muted-foreground/40">
-                  <Instagram className="h-5 w-5" />
-                </span>
-              )}
-              <span className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
-                <ExternalLink className="h-4 w-4 text-white" />
-              </span>
-            </a>
-          ))}
+              ))}
+            </div>
+          ) : !posts || posts.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gold/20 p-8 text-center">
+              <ImageOff className="mx-auto h-5 w-5 text-muted-foreground/60" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Nog niets gepubliceerd op {style.label}.
+              </p>
+              <Link
+                to="/admin/compose"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/30 px-4 py-1.5 text-xs text-gold hover:bg-gold/5"
+              >
+                Eerste post maken <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          ) : (
+            <div className={cn("grid gap-1 overflow-hidden rounded-xl", style.cols)}>
+              {posts.map((p) => (
+                <Tile key={p.id} post={p} shape={style} />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+function Avatar({
+  name,
+  logoUrl,
+  color,
+}: {
+  name: string;
+  logoUrl: string | null;
+  color: string | null;
+}) {
+  if (logoUrl) {
+    return (
+      <img
+        src={logoUrl}
+        alt={name}
+        className="h-14 w-14 shrink-0 rounded-full border border-gold/25 object-cover"
+      />
+    );
+  }
+  return (
+    <div
+      className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-gold/25 font-display text-2xl text-primary-foreground"
+      style={{ background: color || "var(--gradient-gold)" }}
+    >
+      {name[0]?.toUpperCase()}
+    </div>
+  );
+}
+
+function Tile({
+  post,
+  shape,
+}: {
+  post: {
+    id: string;
+    caption: string | null;
+    mediaUrl: string | null;
+    permalink: string | null;
+    isVideo: boolean;
+  };
+  shape: PlatformStyle;
+}) {
+  const Wrapper = post.permalink ? "a" : "div";
+  return (
+    <Wrapper
+      {...(post.permalink ? { href: post.permalink, target: "_blank", rel: "noreferrer" } : {})}
+      className="group relative block overflow-hidden bg-surface-elevated/60"
+      style={{ aspectRatio: shape.ratio }}
+      title={post.caption ?? undefined}
+    >
+      {post.mediaUrl ? (
+        <img
+          src={post.mediaUrl}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+        />
+      ) : (
+        <span className="grid h-full w-full place-items-center text-muted-foreground/40">
+          <shape.Icon className="h-5 w-5" />
+        </span>
+      )}
+
+      {post.isVideo && (
+        <span className="pointer-events-none absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+          <Play className="h-3 w-3 translate-x-px fill-current" />
+        </span>
+      )}
+
+      {/* Bijschrift verschijnt bij hover — anders leidt tekst af van het beeld,
+          en juist het beeld beoordeel je hier. */}
+      <span className="pointer-events-none absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-2 opacity-0 transition group-hover:opacity-100">
+        {post.caption && (
+          <span className="line-clamp-3 text-[11px] leading-snug text-white/90">
+            {post.caption}
+          </span>
+        )}
+        {post.permalink && (
+          <span className="mt-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-white/70">
+            Openen <ExternalLink className="h-2.5 w-2.5" />
+          </span>
+        )}
+      </span>
+    </Wrapper>
   );
 }
