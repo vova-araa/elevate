@@ -458,7 +458,7 @@ function PlannerPage() {
         platform={feedPlatform}
         setPlatform={setFeedPlatform}
         posts={feedPosts ?? []}
-        livePosts={livePosts ?? []}
+        livePosts={livePosts?.items ?? []}
         days={feedDays}
         setDays={setFeedDays}
         open={feedOpen}

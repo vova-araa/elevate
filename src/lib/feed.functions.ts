@@ -4,6 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  refreshAccessToken,
+  tiktokCanReadFeed,
+  type SocialPlatform,
+} from "@/lib/social-oauth.server";
 
 /**
  * De échte gepubliceerde feed van een gekoppeld account ophalen, zodat je in de
@@ -31,8 +36,141 @@ export interface PublishedFeedItem {
 const FEED_PLATFORM = z.enum(["instagram", "facebook", "tiktok", "linkedin", "youtube"]);
 export type FeedPlatform = z.infer<typeof FEED_PLATFORM>;
 
-/** Platforms waarvan we de feed rechtstreeks bij het platform kunnen ophalen. */
-const READABLE_VIA_API: FeedPlatform[] = ["instagram", "facebook"];
+/**
+ * Waar de getoonde feed vandaan komt. Dit staat ook in de kaart zelf, want het
+ * verschil is echt: "platform" is wat de wereld ziet op het profiel, "eigen" is
+ * alleen wat wij hebben gepubliceerd.
+ */
+export type FeedSource = "platform" | "eigen";
+
+export interface PublishedFeed {
+  source: FeedSource;
+  items: PublishedFeedItem[];
+  /** Waarom het niet de echte feed is, als dat zo is. */
+  note: string | null;
+}
+
+/**
+ * Toegangstoken van een koppeling, zo nodig eerst ververst. TikTok-tokens leven
+ * 24 uur, dus zonder deze stap is de feed de dag na het koppelen al leeg.
+ */
+async function accessTokenFor(clientId: string, platform: FeedPlatform): Promise<string | null> {
+  const { data: conn } = await supabaseAdmin
+    .from("social_connections")
+    .select("access_token, refresh_token, token_expires_at, status")
+    .eq("client_id", clientId)
+    .eq("platform", platform)
+    .maybeSingle();
+  if (!conn?.access_token || conn.status !== "active") return null;
+
+  const nearlyExpired =
+    !!conn.token_expires_at &&
+    new Date(conn.token_expires_at).getTime() - Date.now() < 30 * 60 * 1000;
+  if (!nearlyExpired || !conn.refresh_token) return conn.access_token;
+
+  const fresh = await refreshAccessToken(platform as SocialPlatform, conn.refresh_token).catch(
+    () => null,
+  );
+  if (!fresh) return conn.access_token;
+
+  await supabaseAdmin
+    .from("social_connections")
+    .update({
+      access_token: fresh.accessToken,
+      refresh_token: fresh.refreshToken,
+      token_expires_at: fresh.expiresAt,
+    })
+    .eq("client_id", clientId)
+    .eq("platform", platform);
+  return fresh.accessToken;
+}
+
+/**
+ * De echte TikTok-feed. Vereist de `video.list`-scope, die pas na de volledige
+ * app-audit beschikbaar is; zonder die scope weigert TikTok het hele verzoek,
+ * dus vragen we het niet eens en vallen we terug op onze eigen registratie.
+ */
+async function tiktokFeed(clientId: string, limit: number): Promise<PublishedFeedItem[] | null> {
+  if (!tiktokCanReadFeed()) return null;
+  const token = await accessTokenFor(clientId, "tiktok");
+  if (!token) return null;
+
+  const res = await fetch(
+    "https://open.tiktokapis.com/v2/video/list/?fields=id,title,video_description,cover_image_url,share_url,create_time",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ max_count: Math.min(limit, 20) }),
+    },
+  );
+  const json = (await res.json().catch(() => ({}))) as {
+    data?: { videos?: Array<Record<string, unknown>> };
+    error?: { code?: string; message?: string };
+  };
+  if (!res.ok || (json.error?.code && json.error.code !== "ok")) return null;
+
+  return (json.data?.videos ?? []).map((v) => ({
+    id: String(v.id),
+    caption: (v.video_description as string) || (v.title as string) || null,
+    mediaUrl: (v.cover_image_url as string) ?? null,
+    permalink: (v.share_url as string) ?? null,
+    publishedAt: v.create_time
+      ? new Date(Number(v.create_time) * 1000).toISOString()
+      : new Date(0).toISOString(),
+    isVideo: true,
+  }));
+}
+
+/**
+ * De echte YouTube-feed via de uploads-playlist van het kanaal. De
+ * `youtube.readonly`-scope vragen we al bij het koppelen, dus dit werkt zodra
+ * een kanaal gekoppeld is.
+ */
+async function youtubeFeed(clientId: string, limit: number): Promise<PublishedFeedItem[] | null> {
+  const token = await accessTokenFor(clientId, "youtube");
+  if (!token) return null;
+
+  try {
+    const channel = await getJson(
+      "https://www.googleapis.com/youtube/v3/channels?part=contentDetails&mine=true",
+      token,
+    );
+    const uploads = ((channel.items as Array<{
+      contentDetails?: { relatedPlaylists?: { uploads?: string } };
+    }>) ?? [])[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploads) return null;
+
+    const json = await getJson(
+      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(uploads)}&maxResults=${Math.min(limit, 50)}`,
+      token,
+    );
+    const rows = (json.items ?? []) as Array<{
+      snippet?: {
+        title?: string;
+        publishedAt?: string;
+        resourceId?: { videoId?: string };
+        thumbnails?: Record<string, { url?: string }>;
+      };
+    }>;
+    return rows.map((r) => {
+      const videoId = r.snippet?.resourceId?.videoId ?? "";
+      const thumbs = r.snippet?.thumbnails ?? {};
+      return {
+        id: videoId || crypto.randomUUID(),
+        caption: r.snippet?.title ?? null,
+        mediaUrl: (thumbs.high ?? thumbs.medium ?? thumbs.default)?.url ?? null,
+        permalink: videoId ? `https://www.youtube.com/watch?v=${videoId}` : null,
+        publishedAt: r.snippet?.publishedAt ?? new Date(0).toISOString(),
+        isVideo: true,
+      };
+    });
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Terugval: onze eigen registratie van wat we voor deze klant hebben
@@ -119,13 +257,39 @@ async function connectionMeta(
     : null;
 }
 
-async function getJson(url: string): Promise<Record<string, unknown>> {
-  const res = await fetch(url);
+async function getJson(url: string, token?: string): Promise<Record<string, unknown>> {
+  const res = await fetch(
+    url,
+    token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+  );
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
     error?: { message?: string };
   };
   if (!res.ok) throw new Error(json.error?.message ?? `Feed ophalen mislukt (${res.status})`);
   return json;
+}
+
+/** Waarom er geen echte feed is, per platform. */
+const FALLBACK_NOTE: Record<FeedPlatform, string> = {
+  instagram: "Instagram-koppeling geeft nu geen feed terug — dit zijn onze eigen posts.",
+  facebook: "Facebook-koppeling geeft nu geen feed terug — dit zijn onze eigen posts.",
+  tiktok:
+    "TikTok geeft de feed pas vrij met de video.list-scope (na de app-audit) — dit zijn onze eigen posts.",
+  youtube: "YouTube-koppeling geeft nu geen feed terug — dit zijn onze eigen posts.",
+  linkedin:
+    "LinkedIn laat eigen berichten niet teruglezen zonder partnerstatus — dit zijn onze eigen posts.",
+};
+
+async function fallback(
+  clientId: string,
+  platform: FeedPlatform,
+  limit: number,
+): Promise<PublishedFeed> {
+  return {
+    source: "eigen",
+    items: await ownPublishedPosts(clientId, platform, limit),
+    note: FALLBACK_NOTE[platform],
+  };
 }
 
 export const getPublishedFeed = createServerFn({ method: "POST" })
@@ -139,23 +303,35 @@ export const getPublishedFeed = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }): Promise<PublishedFeedItem[]> => {
+  .handler(async ({ data, context }): Promise<PublishedFeed> => {
     await assertClientAccess(context.supabase, context.userId, data.clientId);
     const { platform, clientId, limit } = data;
 
-    if (!READABLE_VIA_API.includes(platform)) {
-      return ownPublishedPosts(clientId, platform, limit);
+    if (platform === "tiktok") {
+      const items = await tiktokFeed(clientId, limit).catch(() => null);
+      return items
+        ? { source: "platform", items, note: null }
+        : fallback(clientId, platform, limit);
     }
 
-    const meta = await connectionMeta(clientId, platform as "instagram" | "facebook");
+    if (platform === "youtube") {
+      const items = await youtubeFeed(clientId, limit).catch(() => null);
+      return items
+        ? { source: "platform", items, note: null }
+        : fallback(clientId, platform, limit);
+    }
+
+    if (platform === "linkedin") return fallback(clientId, platform, limit);
+
+    const meta = await connectionMeta(clientId, platform);
     // Geen bruikbare koppeling → onze eigen registratie in plaats van een lege
     // kaart, zodat je altijd nog ziet wat er via ons is gepubliceerd.
-    if (!meta?.pageToken) return ownPublishedPosts(clientId, platform, limit);
+    if (!meta?.pageToken) return fallback(clientId, platform, limit);
     const token = encodeURIComponent(meta.pageToken);
 
     try {
       if (platform === "instagram") {
-        if (!meta.igUserId) return ownPublishedPosts(clientId, platform, limit);
+        if (!meta.igUserId) return fallback(clientId, platform, limit);
         const json = await getJson(
           `${GRAPH}/${meta.igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=${limit}&access_token=${token}`,
         );
@@ -168,18 +344,22 @@ export const getPublishedFeed = createServerFn({ method: "POST" })
           permalink?: string;
           timestamp?: string;
         }>;
-        return rows.map((r) => ({
-          id: r.id,
-          caption: r.caption ?? null,
-          // Video's leveren een thumbnail; die is geschikter voor een grid.
-          mediaUrl: r.thumbnail_url ?? r.media_url ?? null,
-          permalink: r.permalink ?? null,
-          publishedAt: r.timestamp ?? new Date(0).toISOString(),
-          isVideo: r.media_type === "VIDEO" || r.media_type === "REELS",
-        }));
+        return {
+          source: "platform",
+          note: null,
+          items: rows.map((r) => ({
+            id: r.id,
+            caption: r.caption ?? null,
+            // Video's leveren een thumbnail; die is geschikter voor een grid.
+            mediaUrl: r.thumbnail_url ?? r.media_url ?? null,
+            permalink: r.permalink ?? null,
+            publishedAt: r.timestamp ?? new Date(0).toISOString(),
+            isVideo: r.media_type === "VIDEO" || r.media_type === "REELS",
+          })),
+        };
       }
 
-      if (!meta.pageId) return ownPublishedPosts(clientId, platform, limit);
+      if (!meta.pageId) return fallback(clientId, platform, limit);
       const json = await getJson(
         `${GRAPH}/${meta.pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=${limit}&access_token=${token}`,
       );
@@ -190,17 +370,21 @@ export const getPublishedFeed = createServerFn({ method: "POST" })
         permalink_url?: string;
         created_time?: string;
       }>;
-      return rows.map((r) => ({
-        id: r.id,
-        caption: r.message ?? null,
-        mediaUrl: r.full_picture ?? null,
-        permalink: r.permalink_url ?? null,
-        publishedAt: r.created_time ?? new Date(0).toISOString(),
-        isVideo: false,
-      }));
+      return {
+        source: "platform",
+        note: null,
+        items: rows.map((r) => ({
+          id: r.id,
+          caption: r.message ?? null,
+          mediaUrl: r.full_picture ?? null,
+          permalink: r.permalink_url ?? null,
+          publishedAt: r.created_time ?? new Date(0).toISOString(),
+          isVideo: false,
+        })),
+      };
     } catch {
       // Token ingetrokken of rechten weg: liever onze eigen posts tonen dan een
       // foutmelding op het dashboard. De tokenbewaking meldt het probleem apart.
-      return ownPublishedPosts(clientId, platform, limit);
+      return fallback(clientId, platform, limit);
     }
   });

@@ -102,6 +102,15 @@ export function tiktokCanPublishDirectly(): boolean {
   return TIKTOK_SCOPES.includes("video.publish");
 }
 
+/**
+ * Mogen we de TikTok-feed teruglezen? Daarvoor is `video.list` nodig, dat net
+ * als video.publish pas na de volledige audit beschikbaar is. Zonder die scope
+ * weigert TikTok het verzoek, dus vragen we het niet eens.
+ */
+export function tiktokCanReadFeed(): boolean {
+  return TIKTOK_SCOPES.includes("video.list");
+}
+
 // ── State (HMAC-getekend, voorkomt CSRF en koppelt callback aan klant) ───────
 
 interface OAuthState {

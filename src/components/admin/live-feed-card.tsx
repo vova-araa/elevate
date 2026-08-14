@@ -44,8 +44,6 @@ interface PlatformStyle {
   /** Merkkleur voor het actieve tabblad en de gloed achter het profiel. */
   tint: string;
   glow: string;
-  /** Haalt de feed bij het platform zelf, of komt hij uit onze eigen registratie? */
-  live: boolean;
 }
 
 const STYLES: Record<FeedPlatform, PlatformStyle> = {
@@ -55,8 +53,7 @@ const STYLES: Record<FeedPlatform, PlatformStyle> = {
     ratio: "1 / 1",
     cols: "grid-cols-3",
     tint: "text-fuchsia-500 dark:text-rose-300",
-    glow: "from-fuchsia-500/25 via-orange-400/15",
-    live: true,
+    glow: "from-fuchsia-500/12 via-orange-300/8",
   },
   facebook: {
     label: "Facebook",
@@ -64,8 +61,7 @@ const STYLES: Record<FeedPlatform, PlatformStyle> = {
     ratio: "1.91 / 1",
     cols: "grid-cols-2",
     tint: "text-indigo-500 dark:text-indigo-300",
-    glow: "from-indigo-500/25 via-sky-400/15",
-    live: true,
+    glow: "from-indigo-500/12 via-sky-300/8",
   },
   tiktok: {
     label: "TikTok",
@@ -73,8 +69,7 @@ const STYLES: Record<FeedPlatform, PlatformStyle> = {
     ratio: "9 / 16",
     cols: "grid-cols-3",
     tint: "text-cyan-600 dark:text-cyan-300",
-    glow: "from-cyan-400/25 via-rose-400/15",
-    live: false,
+    glow: "from-cyan-400/14 via-rose-300/8",
   },
   linkedin: {
     label: "LinkedIn",
@@ -82,8 +77,7 @@ const STYLES: Record<FeedPlatform, PlatformStyle> = {
     ratio: "1.91 / 1",
     cols: "grid-cols-2",
     tint: "text-sky-600 dark:text-sky-300",
-    glow: "from-sky-500/25 via-blue-400/15",
-    live: false,
+    glow: "from-sky-500/12 via-blue-300/8",
   },
   youtube: {
     label: "YouTube",
@@ -91,8 +85,7 @@ const STYLES: Record<FeedPlatform, PlatformStyle> = {
     ratio: "16 / 9",
     cols: "grid-cols-2",
     tint: "text-red-500 dark:text-red-300",
-    glow: "from-red-500/25 via-orange-400/15",
-    live: false,
+    glow: "from-red-500/12 via-orange-300/8",
   },
 };
 
@@ -128,7 +121,7 @@ export function LiveFeedCard() {
   const style = STYLES[active];
   const connection = (channels ?? []).find((c) => c.platform === active);
 
-  const { data: posts, isLoading } = useQuery({
+  const { data: feed, isLoading } = useQuery({
     queryKey: ["live-feed", clientId, active],
     enabled: !!clientId && available.length > 0,
     staleTime: 5 * 60_000,
@@ -153,7 +146,7 @@ export function LiveFeedCard() {
           visueel, niet alleen in de inhoud. */}
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b to-transparent opacity-70 transition-[background] duration-500",
+          "pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b to-transparent transition-[background] duration-500",
           style.glow,
         )}
       />
@@ -183,10 +176,13 @@ export function LiveFeedCard() {
                 </span>
               )}
               <span>
-                <b className="text-foreground tabular-nums">{posts?.length ?? 0}</b> recente posts
+                <b className="text-foreground tabular-nums">{feed?.items.length ?? 0}</b> recente
+                posts
               </span>
-              {!style.live && available.length > 0 && (
-                <span className="text-muted-foreground/70">via Elevate gepubliceerd</span>
+              {feed?.source === "eigen" && (
+                <span className="text-muted-foreground/70" title={feed.note ?? undefined}>
+                  via Elevate gepubliceerd
+                </span>
               )}
             </div>
           </div>
@@ -244,7 +240,7 @@ export function LiveFeedCard() {
                 />
               ))}
             </div>
-          ) : !posts || posts.length === 0 ? (
+          ) : !feed || feed.items.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gold/20 p-8 text-center">
               <ImageOff className="mx-auto h-5 w-5 text-muted-foreground/60" />
               <p className="mt-2 text-sm text-muted-foreground">
@@ -259,10 +255,14 @@ export function LiveFeedCard() {
             </div>
           ) : (
             <div className={cn("grid gap-1 overflow-hidden rounded-xl", style.cols)}>
-              {posts.map((p) => (
+              {feed.items.map((p) => (
                 <Tile key={p.id} post={p} shape={style} />
               ))}
             </div>
+          )}
+
+          {feed?.note && (
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground/80">{feed.note}</p>
           )}
         </div>
       </div>
