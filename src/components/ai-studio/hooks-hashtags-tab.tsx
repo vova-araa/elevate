@@ -18,14 +18,14 @@ import { CopyButton } from "./copy-button";
 import { cn } from "@/lib/utils";
 
 // Platform-enum van de bestaande planner-functies
-const PLANNER_PLATFORMS = ["instagram", "tiktok", "linkedin", "youtube", "facebook"] as const;
+// Alleen de kanalen waarvoor we koppelen; LinkedIn en YouTube zijn geen
+// publicatiedoel, dus daar hoeven hier ook geen hooks voor.
+const PLANNER_PLATFORMS = ["instagram", "tiktok", "facebook"] as const;
 type PlannerPlatform = (typeof PLANNER_PLATFORMS)[number];
 
 const PLATFORM_LABELS: Record<PlannerPlatform, string> = {
   instagram: "Instagram",
   tiktok: "TikTok",
-  linkedin: "LinkedIn",
-  youtube: "YouTube",
   facebook: "Facebook",
 };
 

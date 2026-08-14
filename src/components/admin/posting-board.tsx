@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { useSignedUrls } from "@/lib/use-signed-url";
 import type { PostingOverview, UpcomingPost } from "@/lib/posting-overview.functions";
 
@@ -50,18 +51,22 @@ function groupByDay(
 export function PostingBoard({
   data,
   loading,
+  error,
+  onRetry,
   days,
   setDays,
 }: {
   data: PostingOverview | undefined;
   loading: boolean;
+  error?: unknown;
+  onRetry?: () => void;
   days: number;
   setDays: (d: number) => void;
 }) {
   // Alle previews van de komende posts in één gebundelde aanroep.
   const urls = useSignedUrls((data?.upcoming ?? []).map((p) => p.mediaPath));
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -71,6 +76,18 @@ export function PostingBoard({
         </div>
         <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
+    );
+  }
+
+  // Zonder data is er niets te tonen — maar dan een foutstaat met een knop, niet
+  // een skeleton die eeuwig blijft pulseren.
+  if (error || !data) {
+    return (
+      <ErrorState
+        title="Postbord kon niet laden"
+        description="De planning van de komende dagen is niet opgehaald."
+        onRetry={onRetry}
+      />
     );
   }
 

@@ -242,7 +242,12 @@ function DashboardContent({
   // (voorheen ~11 losse queries in twee golven).
   const [postingDays, setPostingDays] = useState(7);
   const postingFn = useServerFn(getPostingOverview);
-  const { data: posting, isLoading: postingLoading } = useQuery({
+  const {
+    data: posting,
+    isLoading: postingLoading,
+    error: postingError,
+    refetch: refetchPosting,
+  } = useQuery({
     queryKey: ["posting-overview", clientId ?? "all", postingDays],
     queryFn: () => postingFn({ data: { days: postingDays, ...(clientId ? { clientId } : {}) } }),
   });
@@ -257,7 +262,12 @@ function DashboardContent({
 
   // Motoriek: draait de machine, en wat moet er nog gebeuren.
   const momentumFn = useServerFn(getMomentum);
-  const { data: momentum, isLoading: momentumLoading } = useQuery({
+  const {
+    data: momentum,
+    isLoading: momentumLoading,
+    error: momentumError,
+    refetch: refetchMomentum,
+  } = useQuery({
     queryKey: ["momentum", clientId ?? "all"],
     staleTime: 60_000,
     queryFn: () => momentumFn({ data: clientId ? { clientId } : {} }),
@@ -469,6 +479,8 @@ function DashboardContent({
       <PostingBoard
         data={posting}
         loading={postingLoading}
+        error={postingError}
+        onRetry={() => void refetchPosting()}
         days={postingDays}
         setDays={setPostingDays}
       />
@@ -497,7 +509,12 @@ function DashboardContent({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <MomentumCard data={momentum} loading={momentumLoading} />
+        <MomentumCard
+          data={momentum}
+          loading={momentumLoading}
+          error={momentumError}
+          onRetry={() => void refetchMomentum()}
+        />
         {/* De echte feed van de klant die in de sidebar actief is. */}
         <LiveFeedCard />
       </div>

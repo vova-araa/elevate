@@ -645,17 +645,20 @@ function MonthView({
 
   return (
     <div className="glass-strong rounded-2xl p-4">
-      {/* Op smalle schermen horizontaal scrollen i.p.v. samengeperste cellen. */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[720px]">
-          <div className="grid grid-cols-7 gap-1 text-[10px] uppercase tracking-[0.18em] text-gold/70 pb-2">
+      {/* De hele maand moet passen, op elk scherm. Eerder stond hier een vaste
+          minimumbreedte van 720px met horizontale scroll eromheen; daardoor viel
+          zondag buiten beeld zodra het venster of de zijkolom smaller was. De
+          cellen krimpen nu mee en de inhoud past zich aan de breedte aan. */}
+      <div>
+        <div>
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.18em] text-gold/70 pb-2">
             {["ma", "di", "wo", "do", "vr", "za", "zo"].map((d) => (
               <div key={d} className="text-center">
                 {d}
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {days.map((d, i) => {
               const k = toKey(d);
               const items = byDay[k] || [];
@@ -679,7 +682,7 @@ function MonthView({
                     }
                   }}
                   className={cn(
-                    "min-h-28 text-left rounded-lg p-2 transition border cursor-pointer",
+                    "min-h-16 sm:min-h-24 lg:min-h-28 text-left rounded-md sm:rounded-lg p-1 sm:p-2 transition border cursor-pointer overflow-hidden",
                     inMonth ? "bg-surface/50" : "bg-surface/20 opacity-50",
                     isSelected
                       ? "border-gold ring-1 ring-gold/40"
@@ -689,7 +692,7 @@ function MonthView({
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        "text-xs flex items-center justify-center h-6 w-6 rounded-full",
+                        "text-[11px] sm:text-xs flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 shrink-0 rounded-full",
                         isToday
                           ? "bg-gold text-primary-foreground font-semibold"
                           : "text-muted-foreground",
@@ -699,7 +702,7 @@ function MonthView({
                     </span>
                     {holidayName && (
                       <span
-                        className="mx-1 flex-1 truncate text-center text-[9px] text-muted-foreground/60"
+                        className="mx-1 hidden flex-1 truncate text-center text-[9px] text-muted-foreground/60 sm:block"
                         title={holidayName}
                       >
                         {holidayName}
@@ -709,7 +712,18 @@ function MonthView({
                       <span className="text-[10px] text-gold/80">{items.length}</span>
                     )}
                   </div>
-                  <div className="mt-1.5 space-y-1">
+                  {/* Onder sm is er geen ruimte voor leesbare chips: dan
+                      stippen, die tikbaar blijven en de dag openen. */}
+                  <div className="mt-1 flex flex-wrap gap-0.5 sm:hidden">
+                    {items.slice(0, 4).map((p) => (
+                      <span
+                        key={p.id}
+                        className="h-1.5 w-1.5 rounded-full bg-gold/80"
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-1.5 hidden space-y-1 sm:block">
                     {items.slice(0, 3).map((p) => (
                       <PostChip
                         key={p.id}

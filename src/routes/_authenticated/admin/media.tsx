@@ -46,6 +46,7 @@ import { importMediaFromUrl } from "@/lib/media-import.functions";
 import { DriveImportCard } from "@/components/drive-import-card";
 import { getStorageUsage, purgePostedMedia, type StorageUsage } from "@/lib/storage.functions";
 import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
 import { useSignedUrls } from "@/lib/use-signed-url";
 
@@ -107,7 +108,12 @@ function MediaLibrary() {
     setSelectedIds(new Set());
   }, [clientId]);
 
-  const { data: storage, isLoading: storageLoading } = useQuery({
+  const {
+    data: storage,
+    isLoading: storageLoading,
+    error: storageError,
+    refetch: refetchStorage,
+  } = useQuery({
     queryKey: ["storage-usage"],
     queryFn: () => storageUsage(),
     meta: { silent: true },
@@ -416,7 +422,12 @@ function MediaLibrary() {
         </p>
       </div>
 
-      <StorageCard storage={storage} isLoading={storageLoading} />
+      <StorageCard
+        storage={storage}
+        isLoading={storageLoading}
+        error={storageError}
+        onRetry={() => void refetchStorage()}
+      />
 
       {pendingCount > 0 && (
         <div className="rounded-2xl border border-amber-400/30 bg-amber-500/5">
@@ -722,10 +733,24 @@ function MediaLibrary() {
 function StorageCard({
   storage,
   isLoading,
+  error,
+  onRetry,
 }: {
   storage: StorageUsage | undefined;
   isLoading: boolean;
+  error?: unknown;
+  onRetry?: () => void;
 }) {
+  if (!isLoading && (error || !storage)) {
+    return (
+      <ErrorState
+        title="Opslaggegevens kunnen niet worden opgehaald"
+        description="De rest van de mediabibliotheek werkt gewoon."
+        onRetry={onRetry}
+        className="py-6"
+      />
+    );
+  }
   if (isLoading || !storage) {
     return (
       <div className="rounded-xl border border-gold/10 bg-card p-5">

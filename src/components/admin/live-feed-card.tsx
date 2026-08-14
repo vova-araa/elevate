@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
 import { getPublishedFeed, type FeedPlatform } from "@/lib/feed.functions";
@@ -121,7 +122,12 @@ export function LiveFeedCard() {
   const style = STYLES[active];
   const connection = (channels ?? []).find((c) => c.platform === active);
 
-  const { data: feed, isLoading } = useQuery({
+  const {
+    data: feed,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["live-feed", clientId, active],
     enabled: !!clientId && available.length > 0,
     staleTime: 5 * 60_000,
@@ -240,6 +246,15 @@ export function LiveFeedCard() {
                 />
               ))}
             </div>
+          ) : error ? (
+            // Eerder toonde dit "nog niets gepubliceerd" bij een mislukte
+            // aanroep — dat leest als een lege feed terwijl er iets stuk is.
+            <ErrorState
+              title="Feed kon niet laden"
+              description="De verbinding met het platform gaf geen antwoord."
+              onRetry={() => void refetch()}
+              className="py-6"
+            />
           ) : !feed || feed.items.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gold/20 p-8 text-center">
               <ImageOff className="mx-auto h-5 w-5 text-muted-foreground/60" />
