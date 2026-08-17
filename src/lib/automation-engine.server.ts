@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { publishToPlatform } from "@/lib/social-publish.server";
-import { refreshAccessToken, type SocialPlatform } from "@/lib/social-oauth.server";
+import { fetchProfile, refreshAccessToken, type SocialPlatform } from "@/lib/social-oauth.server";
 import { assertSafeExternalUrl } from "@/lib/ssrf-guard.server";
 import {
   classifyPublishError,
@@ -510,6 +510,63 @@ export async function runTick() {
         .update({ meta: { ...meta, expiry_warned_at: now.toISOString() } })
         .eq("id", conn.id);
       summary.warnings++;
+    }
+  }
+
+  // 1d) Dagelijkse volgersmeting.
+  //
+  // Tot nu toe werd een snapshot alleen geschreven bij het koppelen en bij een
+  // handmatige ververs-actie. De groeigrafieken (dashboard, klantportaal,
+  // rapporten) tekenen dus alleen iets als iemand eraan denkt op de knop te
+  // drukken — en "volgersgroei uit echte metingen" is niets waard met twee
+  // metingen per maand. Daarom meet de tick zelf, hooguit eens per ~20 uur per
+  // koppeling, zodat er hoe dan ook een dagelijkse reeks ontstaat.
+  const SNAPSHOT_EVERY_MS = 20 * 3600 * 1000;
+  const { data: snapConns } = await sb
+    .from("social_connections")
+    .select("id, client_id, platform, access_token, refresh_token, token_expires_at, meta")
+    .eq("status", "active")
+    .limit(50);
+  for (const conn of snapConns ?? []) {
+    if (!conn.access_token) continue;
+    const meta =
+      conn.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
+        ? (conn.meta as Record<string, unknown>)
+        : {};
+    const last =
+      typeof meta.last_snapshot_at === "string" ? new Date(meta.last_snapshot_at).getTime() : 0;
+    if (now.getTime() - last < SNAPSHOT_EVERY_MS) continue;
+
+    // Stempel vóór de poging, ook als die faalt: een kapotte koppeling mag niet
+    // elke tick opnieuw tegen de platform-API aan blijven lopen. De
+    // tokenbewaking hierboven meldt kapotte koppelingen al apart.
+    await sb
+      .from("social_connections")
+      .update({ meta: { ...meta, last_snapshot_at: now.toISOString() } })
+      .eq("id", conn.id);
+
+    try {
+      const profile = await fetchProfile(conn.platform as SocialPlatform, {
+        accessToken: conn.access_token,
+        refreshToken: conn.refresh_token,
+        expiresAt: conn.token_expires_at,
+        raw: {},
+      });
+      // Zonder volgersaantal (bv. TikTok zonder user.info.stats-scope) valt er
+      // niets te meten; een rij met null zou de grafiek alleen maar vervuilen.
+      if (profile.followers !== null) {
+        await sb.from("social_metrics_snapshots").insert({
+          client_id: conn.client_id,
+          platform: conn.platform,
+          followers: profile.followers,
+        });
+        await sb
+          .from("social_connections")
+          .update({ follower_count: profile.followers })
+          .eq("id", conn.id);
+      }
+    } catch {
+      // Volgende ronde opnieuw; de koppeling zelf wordt elders bewaakt.
     }
   }
 

@@ -200,8 +200,13 @@ async function ownPublishedPosts(
     .order("published_at", { ascending: false, nullsFirst: false })
     .limit(limit);
 
+  // Tenant-isolatie: media_path is door de klant bewerkbaar (RLS staat een
+  // update op de hele rij toe), dus signeren we uitsluitend paden binnen de map
+  // van deze klant — dezelfde check als op het publiceerpad. Zonder dit kan een
+  // pad naar andermans map hier een geldige URL opleveren, want de service-role
+  // client negeert de storage-policies.
   const paths = (rows ?? [])
-    .filter((r) => r.media_path && !r.media_purged_at)
+    .filter((r) => r.media_path?.startsWith(`${clientId}/`) && !r.media_purged_at)
     .map((r) => r.media_path!);
 
   // Eén verzoek voor alle paden; per tegel signeren maakt van een grid van 12
