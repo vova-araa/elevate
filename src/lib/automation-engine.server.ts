@@ -311,6 +311,7 @@ export async function runTick() {
         caption: p.caption ?? "",
         mediaUrl,
         mediaType: p.media_type,
+        isAd: p.is_ad,
       });
       await sb
         .from("scheduled_posts")

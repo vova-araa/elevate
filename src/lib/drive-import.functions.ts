@@ -206,6 +206,19 @@ export const importDriveBatch = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<DriveImportResult> => {
     await assertClientAccess(context, data.clientId);
 
+    // Het aanleververzoek moet bij dezelfde klant horen — anders kan iemand
+    // uploads aan andermans verzoek hangen en diens voortgang vervuilen.
+    if (data.deliveryRequestId) {
+      const { data: req } = await supabaseAdmin
+        .from("delivery_requests")
+        .select("client_id")
+        .eq("id", data.deliveryRequestId)
+        .maybeSingle();
+      if (!req || req.client_id !== data.clientId) {
+        throw new Error("Aanleververzoek hoort niet bij deze klant");
+      }
+    }
+
     const listing = await listingFor(data.url);
     const existing = await importedRefs(data.clientId);
     const pending = mediaFiles(listing).filter((f) => !existing.has(`drive:${f.id}`));

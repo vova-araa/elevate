@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { handleMetaDeletion, parseSignedRequest } from "@/lib/data-deletion.server";
+import { allowRequest, requestIp, tooManyRequests } from "@/lib/rate-limit.server";
 
 /**
  * Data Deletion Request Callback voor Meta.
@@ -15,6 +16,11 @@ export const Route = createFileRoute("/api/public/meta/data-deletion")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Elk geldig verzoek verwijdert data; brute force op signed_request is
+        // kansloos (HMAC), maar spam mag hier geen verwijderingslus draaien.
+        if (!allowRequest(`meta-del:${requestIp(request)}`, 10, 60_000)) {
+          return tooManyRequests();
+        }
         let signedRequest = "";
         const contentType = request.headers.get("content-type") ?? "";
         try {

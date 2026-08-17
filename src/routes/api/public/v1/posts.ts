@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { allowRequest, requestIp, tooManyRequests } from "@/lib/rate-limit.server";
 import { authenticateApiKey, dispatchEvent } from "@/lib/automation-engine.server";
 
 function admin() {
@@ -30,6 +31,10 @@ export const Route = createFileRoute("/api/public/v1/posts")({
             status: 401,
             headers: { "Content-Type": "application/json" },
           });
+        // 120/min per sleutel is ruim voor legitiem gebruik en stopt een lus.
+        if (!allowRequest(`v1:${auth.key?.id ?? requestIp(request)}`, 120, 60_000)) {
+          return tooManyRequests();
+        }
         const sb = admin();
         const url = new URL(request.url);
         let q = sb
@@ -52,6 +57,10 @@ export const Route = createFileRoute("/api/public/v1/posts")({
             status: 401,
             headers: { "Content-Type": "application/json" },
           });
+        // 120/min per sleutel is ruim voor legitiem gebruik en stopt een lus.
+        if (!allowRequest(`v1:${auth.key?.id ?? requestIp(request)}`, 120, 60_000)) {
+          return tooManyRequests();
+        }
         if (!auth.key!.scopes?.includes("write"))
           return new Response(JSON.stringify({ error: "Key missing 'write' scope" }), {
             status: 403,

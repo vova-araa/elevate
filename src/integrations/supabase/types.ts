@@ -1580,6 +1580,7 @@ export type Database = {
           error_kind: string | null;
           error_message: string | null;
           id: string;
+          is_ad: boolean;
           is_queued: boolean;
           media_path: string | null;
           last_attempt_at: string | null;
@@ -1606,6 +1607,7 @@ export type Database = {
           error_kind?: string | null;
           error_message?: string | null;
           id?: string;
+          is_ad?: boolean;
           is_queued?: boolean;
           media_path?: string | null;
           last_attempt_at?: string | null;
@@ -1632,6 +1634,7 @@ export type Database = {
           error_kind?: string | null;
           error_message?: string | null;
           id?: string;
+          is_ad?: boolean;
           is_queued?: boolean;
           media_path?: string | null;
           last_attempt_at?: string | null;

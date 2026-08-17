@@ -251,6 +251,7 @@ function ComposePage() {
         media_type: mediaType,
         scheduled_at: scheduledISO,
         status,
+        is_ad: isAd,
       }));
       const { data: inserted, error } = await supabase
         .from("scheduled_posts")
