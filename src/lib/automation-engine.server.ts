@@ -2,7 +2,7 @@
 // evaluates rules, fires outgoing webhooks.
 import { createClient } from "@supabase/supabase-js";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { publishToPlatform } from "@/lib/social-publish.server";
+import { fetchTikTokPublishStatus, publishToPlatform } from "@/lib/social-publish.server";
 import { fetchProfile, refreshAccessToken, type SocialPlatform } from "@/lib/social-oauth.server";
 import { assertSafeExternalUrl } from "@/lib/ssrf-guard.server";
 import {
@@ -12,6 +12,7 @@ import {
   MAX_PUBLISH_RETRIES,
 } from "@/lib/publish-errors";
 import { reconnectDeadline, shouldRefreshNow } from "@/lib/token-lifetime";
+import { interpretTikTokStatus } from "@/lib/tiktok-post";
 
 type WebhookEndpoint = Tables<"webhook_endpoints">;
 type AutomationRule = Tables<"automation_rules">;
@@ -513,6 +514,74 @@ export async function runTick() {
       summary.warnings++;
     }
   }
+
+  // 1c2) TikTok-napraat: een aangenomen upload is nog geen geplaatste video.
+  // TikTok modereert asynchroon en kan een post minuten tot uren later alsnog
+  // afkeuren — en dan stond hij bij ons al die tijd als "gepubliceerd". Daarom
+  // vragen we het eindoordeel na tot het binnen is, met een grens van 24 uur.
+  const verifyCutoff = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+  const { data: unverified } = await sb
+    .from("scheduled_posts")
+    .select("id, client_id, platform, platform_post_id, published_at")
+    .eq("platform", "tiktok")
+    .eq("status", "published")
+    .is("platform_verified_at", null)
+    .not("platform_post_id", "is", null)
+    .gte("published_at", verifyCutoff)
+    .limit(20);
+
+  for (const post of unverified ?? []) {
+    try {
+      const { status: ttStatus, failReason } = await fetchTikTokPublishStatus(
+        post.client_id,
+        post.platform_post_id!,
+      );
+      const outcome = interpretTikTokStatus(ttStatus);
+      if (outcome === "bezig") continue; // volgende tick opnieuw
+
+      if (outcome === "mislukt") {
+        const reason = failReason ?? "door TikTok afgekeurd bij verwerking";
+        await sb
+          .from("scheduled_posts")
+          .update({
+            status: "failed",
+            error_message: reason,
+            error_kind: "permanent",
+            platform_verified_at: now.toISOString(),
+          })
+          .eq("id", post.id);
+        summary.errors++;
+        await notifyAdmins(
+          sb,
+          "TikTok keurde een post af",
+          `De upload was gelukt, maar TikTok heeft de video daarna afgekeurd: ${reason}`,
+          "/admin/planner",
+        );
+        await dispatchEvent(
+          "post.failed",
+          { post, error: reason, kind: "permanent" },
+          post.client_id,
+        );
+      } else {
+        await sb
+          .from("scheduled_posts")
+          .update({ platform_verified_at: now.toISOString() })
+          .eq("id", post.id);
+      }
+    } catch {
+      // Statuscheck zelf mislukt (bv. token net ververst): volgende tick weer.
+    }
+  }
+
+  // Ouder dan 24 uur zonder oordeel: afsluiten, anders blijft de lijst groeien.
+  await sb
+    .from("scheduled_posts")
+    .update({ platform_verified_at: now.toISOString() })
+    .eq("platform", "tiktok")
+    .eq("status", "published")
+    .is("platform_verified_at", null)
+    .not("platform_post_id", "is", null)
+    .lt("published_at", verifyCutoff);
 
   // 1d) Dagelijkse volgersmeting.
   //

@@ -283,6 +283,23 @@ async function publishTikTok(clientId: string, input: PublishInput): Promise<Pub
   return { externalId: initData.publish_id ?? null };
 }
 
+/**
+ * Vraag TikTok hoe het met een eerder aangenomen publicatie staat. De upload
+ * accepteren en de video daadwerkelijk plaatsen zijn daar twee losse stappen —
+ * moderatie zit ertussen — dus het echte oordeel komt pas hieruit.
+ */
+export async function fetchTikTokPublishStatus(
+  clientId: string,
+  publishId: string,
+): Promise<{ status: string; failReason: string | null }> {
+  const { accessToken } = await getConnection(clientId, "tiktok");
+  const json = await tiktokJson("/post/publish/status/fetch/", accessToken, {
+    publish_id: publishId,
+  });
+  const data = (json.data ?? {}) as { status?: string; fail_reason?: string };
+  return { status: data.status ?? "UNKNOWN", failReason: data.fail_reason ?? null };
+}
+
 export async function publishToPlatform(
   clientId: string,
   platform: SocialPlatform,

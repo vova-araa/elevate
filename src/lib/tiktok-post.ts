@@ -142,3 +142,26 @@ export function buildInboxInitBody(videoSize: number): Record<string, unknown> {
     },
   };
 }
+
+/** Uitkomst van een statuscheck, in onze termen. */
+export type TikTokPublishOutcome = "bezig" | "klaar" | "mislukt";
+
+/**
+ * Vertaal TikToks verwerkingsstatus naar een besluit voor de tick.
+ *
+ * SEND_TO_USER_INBOX telt als klaar: dat ís de bedoelde uitkomst zolang de app
+ * niet geauditeerd is (concept in de inbox, de klant maakt hem af in de app).
+ * Onbekende statussen behandelen we als "bezig" — dan kijken we later gewoon
+ * nog eens, in plaats van op een nieuwe statuswaarde stuk te lopen.
+ */
+export function interpretTikTokStatus(status: string): TikTokPublishOutcome {
+  switch (status) {
+    case "PUBLISH_COMPLETE":
+    case "SEND_TO_USER_INBOX":
+      return "klaar";
+    case "FAILED":
+      return "mislukt";
+    default:
+      return "bezig";
+  }
+}

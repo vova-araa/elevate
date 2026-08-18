@@ -1591,6 +1591,7 @@ export type Database = {
           platform: Database["public"]["Enums"]["social_platform"];
           platform_container_id: string | null;
           platform_post_id: string | null;
+          platform_verified_at: string | null;
           published_at: string | null;
           recurring_rule: Json | null;
           retry_count: number;
@@ -1618,6 +1619,7 @@ export type Database = {
           platform?: Database["public"]["Enums"]["social_platform"];
           platform_container_id?: string | null;
           platform_post_id?: string | null;
+          platform_verified_at?: string | null;
           published_at?: string | null;
           recurring_rule?: Json | null;
           retry_count?: number;
@@ -1645,6 +1647,7 @@ export type Database = {
           platform?: Database["public"]["Enums"]["social_platform"];
           platform_container_id?: string | null;
           platform_post_id?: string | null;
+          platform_verified_at?: string | null;
           published_at?: string | null;
           recurring_rule?: Json | null;
           retry_count?: number;

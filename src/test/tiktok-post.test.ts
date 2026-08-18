@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MB,
   MAX_CHUNK,
+  interpretTikTokStatus,
   buildDirectInitBody,
   buildInboxInitBody,
   chunkPlan,
@@ -134,5 +135,24 @@ describe("buildInboxInitBody", () => {
     const body = buildInboxInitBody(8 * MB);
     expect("post_info" in body).toBe(false);
     expect((body.source_info as Record<string, unknown>).source).toBe("FILE_UPLOAD");
+  });
+});
+
+describe("interpretTikTokStatus", () => {
+  it("ziet zowel een geplaatste video als een inbox-concept als eindstation", () => {
+    expect(interpretTikTokStatus("PUBLISH_COMPLETE")).toBe("klaar");
+    // Vóór de audit is de inbox de bedoelde uitkomst — geen fout.
+    expect(interpretTikTokStatus("SEND_TO_USER_INBOX")).toBe("klaar");
+  });
+
+  it("meldt een afkeuring als mislukt", () => {
+    expect(interpretTikTokStatus("FAILED")).toBe("mislukt");
+  });
+
+  it("wacht rustig af bij tussen- en onbekende statussen", () => {
+    expect(interpretTikTokStatus("PROCESSING_UPLOAD")).toBe("bezig");
+    expect(interpretTikTokStatus("PROCESSING_DOWNLOAD")).toBe("bezig");
+    // Nieuwe statuswaarde van TikTok mag geen fout worden — later opnieuw kijken.
+    expect(interpretTikTokStatus("IETS_NIEUWS")).toBe("bezig");
   });
 });
