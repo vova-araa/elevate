@@ -169,6 +169,13 @@ export function MobileNavSheet() {
                   </button>
                 );
               })}
+              <Link
+                to="/admin/clients/new"
+                onClick={() => setOpen(false)}
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-dashed border-gold/35 px-2.5 py-1.5 text-xs text-gold"
+              >
+                <Plus className="h-3.5 w-3.5" /> Nieuwe klant
+              </Link>
             </div>
           </div>
         )}

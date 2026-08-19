@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
+import { invalidateClientLists } from "@/lib/client-cache";
 import { toast } from "sonner";
 import {
   Instagram,
@@ -91,7 +92,7 @@ function EditClient() {
     if (error) return toast.error(error.message);
     toast.success("Klant bijgewerkt");
     qc.invalidateQueries({ queryKey: ["client", id] });
-    qc.invalidateQueries({ queryKey: ["recent-clients"] });
+    invalidateClientLists(qc);
     nav({ to: "/admin/clients/$id", params: { id } });
   }
 
@@ -107,7 +108,7 @@ function EditClient() {
     setDeleting(false);
     if (error) return toast.error(error.message);
     toast.success("Klant verwijderd");
-    qc.invalidateQueries({ queryKey: ["recent-clients"] });
+    invalidateClientLists(qc);
     nav({ to: "/admin/clients" });
   }
 

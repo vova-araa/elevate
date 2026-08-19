@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateClientLists } from "@/lib/client-cache";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -130,6 +131,7 @@ const steps = [
 
 function IntakePage() {
   const nav = useNavigate();
+  const qc = useQueryClient();
   const { clientId: presetClientId } = Route.useSearch();
   const [step, setStep] = useState(0);
   const [f, setF] = useState<IntakeState>(init);
@@ -208,6 +210,7 @@ function IntakePage() {
         return toast.error(e.message);
       }
       clientId = c.id;
+      invalidateClientLists(qc);
     }
 
     const { create_client: _omit, ...payload } = f;
