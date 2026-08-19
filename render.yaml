@@ -15,6 +15,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+
+      # ── Vereist: zonder deze start de app niet fatsoenlijk ──────────────
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
@@ -27,4 +29,51 @@ services:
         sync: false
       # Publieke basis-URL voor OAuth-callbacks (social koppelingen).
       - key: APP_URL
+        sync: false
+      # Waar uitnodigingsmails naartoe wijzen (klant-logins aanmaken). Zonder
+      # dit landt de klant na het accepteren op een lege pagina.
+      - key: SITE_URL
+        sync: false
+      # Claude-sleutel voor ALLE AI-functies (captions, hashtags, varianten,
+      # strategie, assistent). Zonder deze geeft elk AI-scherm de melding
+      # "ANTHROPIC_API_KEY ontbreekt". Haal hem op bij console.anthropic.com.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # ── Vereist zodra er automatisch gepubliceerd wordt ─────────────────
+      # Gedeeld geheim voor de publiceer-tick (header x-cron-secret). Zonder
+      # dit kan iedereen de tick aanroepen óf draait hij helemaal niet.
+      - key: CRON_SECRET
+        sync: false
+      # Ondertekent de OAuth-state bij het koppelen van kanalen. Valt terug op
+      # de service-role key, maar een eigen waarde is netter.
+      - key: OAUTH_STATE_SECRET
+        sync: false
+
+      # ── Social koppelingen (per platform, pas nodig bij dat platform) ────
+      - key: META_APP_ID
+        sync: false
+      # Ook gebruikt om Meta's verwijderverzoek-callback te verifiëren.
+      - key: META_APP_SECRET
+        sync: false
+      - key: TIKTOK_CLIENT_KEY
+        sync: false
+      - key: TIKTOK_CLIENT_SECRET
+        sync: false
+      # Pas uitbreiden NA goedkeuring van de TikTok-audit; te vroeg uitbreiden
+      # breekt het koppelen. Volledige set na goedkeuring:
+      # user.info.basic,user.info.stats,video.publish,video.upload,video.list
+      - key: TIKTOK_SCOPES
+        sync: false
+
+      # ── Optioneel ───────────────────────────────────────────────────────
+      # Google Drive-import (mappen van klanten automatisch binnenhalen).
+      - key: GOOGLE_DRIVE_API_KEY
+        sync: false
+      # Maximale uploadgrootte in MB; moet passen bij de limiet die in
+      # Supabase Storage staat ingesteld.
+      - key: VITE_MAX_UPLOAD_MB
+        sync: false
+      # Overschrijft het Claude-model; leeg laten gebruikt de standaard.
+      - key: CLAUDE_MODEL
         sync: false
