@@ -34,6 +34,7 @@ import {
   startSocialConnect,
   disconnectChannel,
   refreshChannel,
+  selectFacebookPage,
   getSocialSetupStatus,
 } from "@/lib/channels.functions";
 import { createChannelInvite } from "@/lib/channel-invites.functions";
@@ -164,6 +165,7 @@ function AdminChannels() {
   const connect = useServerFn(startSocialConnect);
   const disc = useServerFn(disconnectChannel);
   const refresh = useServerFn(refreshChannel);
+  const selectPage = useServerFn(selectFacebookPage);
   const createInvite = useServerFn(createChannelInvite);
 
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -235,6 +237,18 @@ function AdminChannels() {
       window.location.href = res.redirectUrl;
     },
     onError: (e: Error) => toast.error(e.message ?? "Verbinden mislukt"),
+  });
+
+  const selectPageMut = useMutation({
+    mutationFn: async (vars: { platform: "facebook" | "instagram"; pageId: string }) => {
+      if (!clientId) throw new Error("Geen klant geselecteerd");
+      return selectPage({ data: { clientId, ...vars } });
+    },
+    onSuccess: (res) => {
+      toast.success(`Overgeschakeld naar ${res.pageName}`);
+      refetch();
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Wisselen mislukt"),
   });
 
   const refreshMut = useMutation({
@@ -424,6 +438,31 @@ function AdminChannels() {
                       )}
                       Ontkoppel
                     </button>
+
+                    {/* Meerdere Facebook-pagina's op het account? Dan hier
+                        wisselen zonder opnieuw te koppelen. Bij Instagram
+                        alleen pagina's met een gekoppeld Business-account. */}
+                    {(id === "facebook" || id === "instagram") && (ch?.pages?.length ?? 0) > 1 && (
+                      <select
+                        value={ch?.currentPageId ?? ""}
+                        disabled={selectPageMut.isPending}
+                        onChange={(e) => {
+                          if (e.target.value && e.target.value !== ch?.currentPageId) {
+                            selectPageMut.mutate({ platform: id, pageId: e.target.value });
+                          }
+                        }}
+                        className="h-8 max-w-full rounded-lg border border-gold/20 bg-input/60 px-2 text-xs"
+                        aria-label="Gekoppelde pagina wisselen"
+                      >
+                        {ch?.pages
+                          ?.filter((pg) => id === "facebook" || pg.hasInstagram)
+                          .map((pg) => (
+                            <option key={pg.id} value={pg.id}>
+                              {pg.name}
+                            </option>
+                          ))}
+                      </select>
+                    )}
                   </>
                 ) : setup && !setup.platforms[id]?.configured ? (
                   <details className="w-full text-xs">

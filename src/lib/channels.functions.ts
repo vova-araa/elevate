@@ -3,8 +3,9 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { reconnectDeadline } from "@/lib/token-lifetime";
+import { toPublicPages, type StoredPage } from "@/lib/meta-pages";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import {
   buildAuthorizeUrl,
   signState,
@@ -138,7 +139,7 @@ export const listClientChannels = createServerFn({ method: "POST" })
     const { data: channels } = await supabaseAdmin
       .from("social_connections")
       .select(
-        "platform, account_username, follower_count, status, connected_at, token_expires_at, refresh_expires_at, never_expires, refresh_token",
+        "platform, account_username, follower_count, status, connected_at, token_expires_at, refresh_expires_at, never_expires, refresh_token, meta",
       )
       .eq("client_id", clientId);
 
@@ -154,17 +155,27 @@ export const listClientChannels = createServerFn({ method: "POST" })
       clientId,
       clientName: client?.name ?? null,
       provisioned: !!client,
-      channels: (channels ?? []).map(({ refresh_token, ...c }) => ({
-        ...c,
-        autoRefresh: !!refresh_token,
-        neverExpires: c.never_expires,
-        reconnectBefore: reconnectDeadline({
+      channels: (channels ?? []).map(({ refresh_token, meta, ...c }) => {
+        const m =
+          meta && typeof meta === "object" && !Array.isArray(meta)
+            ? (meta as Record<string, unknown>)
+            : {};
+        return {
+          ...c,
+          // Beheerde Meta-pagina's, zónder tokens: alleen wat de UI nodig heeft
+          // om een klant met meerdere pagina's te laten wisselen.
+          pages: toPublicPages(m.pages),
+          currentPageId: typeof m.pageId === "string" ? m.pageId : null,
+          autoRefresh: !!refresh_token,
           neverExpires: c.never_expires,
-          hasRefreshToken: !!refresh_token,
-          tokenExpiresAt: c.token_expires_at,
-          refreshExpiresAt: c.refresh_expires_at,
-        }),
-      })),
+          reconnectBefore: reconnectDeadline({
+            neverExpires: c.never_expires,
+            hasRefreshToken: !!refresh_token,
+            tokenExpiresAt: c.token_expires_at,
+            refreshExpiresAt: c.refresh_expires_at,
+          }),
+        };
+      }),
     };
   });
 
@@ -186,6 +197,92 @@ export const disconnectChannel = createServerFn({ method: "POST" })
       .eq("platform", data.platform);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Wissel de gekoppelde Facebook-pagina (en daarmee bij Instagram het
+ * bijbehorende Business-account) zonder opnieuw te koppelen. De paginalijst is
+ * bij het koppelen opgeslagen in `meta.pages` — inclusief page-tokens, die de
+ * client nooit te zien krijgt; hier wordt server-side alleen omgeschakeld.
+ */
+export const selectFacebookPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        clientId: z.string().uuid().optional(),
+        platform: z.enum(["facebook", "instagram"]),
+        pageId: z.string().min(1).max(64),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const clientId = data.clientId ?? (await getUserClientId(supabase, userId));
+    if (!clientId) throw new Error("Geen client gekoppeld");
+    await assertClientAccess(supabase, userId, clientId);
+
+    const { data: conn } = await supabaseAdmin
+      .from("social_connections")
+      .select("meta")
+      .eq("client_id", clientId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    const meta =
+      conn?.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
+        ? (conn.meta as Record<string, unknown>)
+        : {};
+    const pages = Array.isArray(meta.pages) ? (meta.pages as StoredPage[]) : [];
+    const page = pages.find((p) => p.id === data.pageId);
+    if (!page) throw new Error("Deze pagina hoort niet bij de koppeling");
+    if (data.platform === "instagram" && !page.igUserId) {
+      throw new Error(
+        "Deze pagina heeft geen gekoppeld Instagram Business-account — kies een andere pagina",
+      );
+    }
+
+    const update: {
+      account_username: string;
+      account_id: string | null;
+      follower_count?: number;
+      meta: Json;
+    } = {
+      account_username: page.name,
+      account_id: data.platform === "instagram" ? page.igUserId : page.id,
+      meta: JSON.parse(
+        JSON.stringify({
+          ...meta,
+          pageId: page.id,
+          pageToken: page.token,
+          ...(data.platform === "instagram" ? { igUserId: page.igUserId } : {}),
+        }),
+      ) as Json,
+    };
+
+    // Voor Instagram de echte handle en het volgersaantal van dít account
+    // ophalen; de paginanaam is niet de Instagram-naam.
+    if (data.platform === "instagram" && page.igUserId) {
+      try {
+        const res = await fetch(
+          `https://graph.facebook.com/v21.0/${page.igUserId}?fields=username,followers_count&access_token=${encodeURIComponent(page.token)}`,
+        );
+        const ig = (await res.json()) as { username?: string; followers_count?: number };
+        if (res.ok && ig.username) {
+          update.account_username = `@${ig.username}`;
+          if (typeof ig.followers_count === "number") update.follower_count = ig.followers_count;
+        }
+      } catch {
+        // Naam bijwerken is best effort; de wissel zelf slaagt gewoon.
+      }
+    }
+
+    const { error } = await supabaseAdmin
+      .from("social_connections")
+      .update(update)
+      .eq("client_id", clientId)
+      .eq("platform", data.platform);
+    if (error) throw new Error(error.message);
+    return { ok: true, pageName: page.name };
   });
 
 /**

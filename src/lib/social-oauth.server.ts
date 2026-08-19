@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { pickPageForPlatform, toStoredPages } from "@/lib/meta-pages";
 
 /**
  * Directe OAuth-koppelingen met de social platforms (geen tussenpartij).
@@ -431,7 +432,7 @@ interface FbPage {
   instagram_business_account?: { id: string };
 }
 
-async function firstFacebookPage(accessToken: string): Promise<FbPage> {
+async function listFacebookPages(accessToken: string): Promise<FbPage[]> {
   const json = await getJson(
     `${GRAPH}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${encodeURIComponent(accessToken)}`,
   );
@@ -440,7 +441,7 @@ async function firstFacebookPage(accessToken: string): Promise<FbPage> {
     throw new Error(
       "Geen Facebook-pagina gevonden op dit account. Koppel een account dat beheerder is van de bedrijfspagina.",
     );
-  return pages[0];
+  return pages;
 }
 
 /**
@@ -483,7 +484,8 @@ export async function fetchProfile(
 ): Promise<SocialProfile> {
   switch (platform) {
     case "facebook": {
-      const page = await firstFacebookPage(tokens.accessToken);
+      const pages = await listFacebookPages(tokens.accessToken);
+      const page = pickPageForPlatform(pages, "facebook")!;
       return {
         accountId: page.id,
         handle: page.name,
@@ -492,17 +494,25 @@ export async function fetchProfile(
           pageId: page.id,
           pageToken: page.access_token,
           metaUserId: await metaUserId(tokens.accessToken),
+          // Alle beheerde pagina's bewaren (server-only leesbaar), zodat een
+          // klant met meerdere pagina's naderhand kan wisselen zonder opnieuw
+          // te koppelen.
+          pages: toStoredPages(pages),
         },
         neverExpires: await metaTokenNeverExpires(page.access_token, metaAppToken()),
       };
     }
     case "instagram": {
-      const page = await firstFacebookPage(tokens.accessToken);
-      const igId = page.instagram_business_account?.id;
-      if (!igId)
+      // Niet blind de eerste pagina: de eerste pagina mét een Instagram
+      // Business-account. Voorheen faalde de koppeling als pagina één er geen
+      // had terwijl pagina twee dat wél had.
+      const pages = await listFacebookPages(tokens.accessToken);
+      const page = pickPageForPlatform(pages, "instagram");
+      if (!page)
         throw new Error(
-          "Deze Facebook-pagina heeft geen gekoppeld Instagram Business-account. Koppel dat eerst in Meta Business Suite.",
+          "Geen van je Facebook-pagina's heeft een gekoppeld Instagram Business-account. Koppel dat eerst in Meta Business Suite.",
         );
+      const igId = page.instagram_business_account!.id;
       const ig = await getJson(
         `${GRAPH}/${igId}?fields=username,followers_count&access_token=${encodeURIComponent(page.access_token)}`,
       );
@@ -515,6 +525,7 @@ export async function fetchProfile(
           pageId: page.id,
           pageToken: page.access_token,
           metaUserId: await metaUserId(tokens.accessToken),
+          pages: toStoredPages(pages),
         },
         neverExpires: await metaTokenNeverExpires(page.access_token, metaAppToken()),
       };
