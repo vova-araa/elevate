@@ -6,6 +6,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadMedia } from "@/lib/upload-media";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import {
@@ -342,14 +343,13 @@ function MediaLibrary() {
     const { data: u } = await supabase.auth.getUser();
     let successCount = 0;
     for (const file of uploadable) {
-      const safeName = file.name.replace(/[\\/]/g, "_");
-      const path = `${clientId}/${folderId ? `${folderId}/` : ""}${Date.now()}-${safeName}`;
-      const { error: uploadError } = await supabase.storage
-        .from("client-uploads")
-        .upload(path, file);
-      if (uploadError) {
-        toast.error(`${file.name}: ${uploadError.message}`);
-      } else {
+      let path: string | null = null;
+      try {
+        ({ path } = await uploadMedia(file, { clientId, folder: folderId ?? undefined }));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : String(err));
+      }
+      if (path) {
         const { error: insertError } = await supabase.from("uploads").insert({
           client_id: clientId,
           file_path: path,

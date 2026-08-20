@@ -3,6 +3,7 @@ import { InstallAppSetting } from "@/components/admin/install-app-setting";
 import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { resetFileInput } from "@/lib/upload-media";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
@@ -261,7 +262,11 @@ function BrandTab({ clientId }: { clientId: string }) {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => e.target.files?.[0] && uploadLogo(e.target.files[0])}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  resetFileInput(e.target);
+                  if (f) uploadLogo(f);
+                }}
               />
             </label>
             {form.logo_url && (

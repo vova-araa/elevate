@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Check, FileUp, HelpCircle, Loader2, Sparkles, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeIntakeDocument, type IntakeAnalysis } from "@/lib/intake-docs.functions";
-import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
+import { uploadMedia } from "@/lib/upload-media";
 
 const ACCEPT = ".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv";
 
@@ -33,18 +33,13 @@ export function IntakeDocumentCard({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > MAX_UPLOAD_BYTES) return toast.error(tooLargeMessage(file.name));
 
     setBusy(true);
     setAnalysis(null);
     setApplied(new Set());
     setFileName(file.name);
     try {
-      // Binnen de map van de klant houden — daar hangt de storage-isolatie aan.
-      const safeName = file.name.replace(/[\\/]/g, "_");
-      const path = `${clientId}/intake/${Date.now()}-${safeName}`;
-      const { error } = await supabase.storage.from("client-uploads").upload(path, file);
-      if (error) throw new Error(error.message);
+      const { path } = await uploadMedia(file, { clientId, folder: "intake" });
 
       const result = await analyze({
         data: { clientId, filePath: path, fileName: file.name, existingAnswers },

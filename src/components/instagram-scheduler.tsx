@@ -3,6 +3,7 @@ import { confirmDialog } from "@/components/ui/confirm";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadMedia, resetFileInput } from "@/lib/upload-media";
 import { toast } from "sonner";
 import {
   Instagram,
@@ -363,11 +364,12 @@ function NewPostForm({ clientId }: { clientId: string }) {
     e.preventDefault();
     if (!file) return toast.error("Kies een afbeelding");
     setBusy(true);
-    const path = `${clientId}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("client-uploads").upload(path, file);
-    if (upErr) {
+    let path: string;
+    try {
+      ({ path } = await uploadMedia(file, { clientId }));
+    } catch (err) {
       setBusy(false);
-      return toast.error(upErr.message);
+      return toast.error(err instanceof Error ? err.message : String(err));
     }
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase.from("scheduled_posts").insert({
@@ -396,7 +398,10 @@ function NewPostForm({ clientId }: { clientId: string }) {
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            setFile(e.target.files?.[0] ?? null);
+            resetFileInput(e.target);
+          }}
           className="hidden"
         />
       </label>
