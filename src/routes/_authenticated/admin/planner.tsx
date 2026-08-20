@@ -12,7 +12,13 @@ import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
 import { publishScheduledPost } from "@/lib/publish.functions";
 import { preflightPost, hasBlocker, type PreflightIssue } from "@/lib/post-preflight";
-import { uploadMedia, resetFileInput, UploadError } from "@/lib/upload-media";
+import {
+  uploadMedia,
+  resetFileInput,
+  UploadError,
+  formatBytes,
+  type UploadProgress,
+} from "@/lib/upload-media";
 import { getPublishedFeed, type PublishedFeedItem } from "@/lib/feed.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -1031,6 +1037,8 @@ function ComposeModal({
   const [tone, setTone] = useState<string>("");
   const [brief, setBrief] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const uploadAbort = useRef<AbortController | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const existingRecurringRule = existing?.recurring_rule as RecurringRule | null | undefined;
@@ -1125,10 +1133,15 @@ function ComposeModal({
 
   async function onPickFile(file: File) {
     setUploading(true);
+    setUploadProgress({ loaded: 0, total: file.size, percent: 0 });
+    const controller = new AbortController();
+    uploadAbort.current = controller;
     try {
       const { path, mediaType: type } = await uploadMedia(file, {
         clientId,
         folder: "planner",
+        signal: controller.signal,
+        onProgress: setUploadProgress,
       });
       setMediaPath(path);
       setMediaType(type);
@@ -1139,6 +1152,8 @@ function ComposeModal({
       toast.error(e instanceof UploadError ? e.message : String(e));
     } finally {
       setUploading(false);
+      setUploadProgress(null);
+      uploadAbort.current = null;
     }
   }
 
@@ -1471,7 +1486,13 @@ function ComposeModal({
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  {mediaPath ? "Vervang" : "Upload foto / video"}
+                  {uploading
+                    ? uploadProgress
+                      ? `Uploaden ${uploadProgress.percent}%`
+                      : "Voorbereiden…"
+                    : mediaPath
+                      ? "Vervang"
+                      : "Upload foto / video"}
                 </button>
                 {mediaPath && (
                   <button
@@ -1495,6 +1516,30 @@ function ComposeModal({
                   </span>
                 )}
               </div>
+              {uploading && (
+                <div className="mt-3">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-input/60">
+                    <div
+                      className="h-full rounded-full bg-gradient-gold transition-[width] duration-200"
+                      style={{ width: `${uploadProgress?.percent ?? 0}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="tabular-nums">
+                      {uploadProgress
+                        ? `${formatBytes(uploadProgress.loaded)} van ${formatBytes(uploadProgress.total)}`
+                        : "Verbinden met de opslag…"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => uploadAbort.current?.abort()}
+                      className="text-muted-foreground underline-offset-2 hover:text-destructive hover:underline"
+                    >
+                      Annuleren
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Schedule + best-time */}

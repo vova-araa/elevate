@@ -92,6 +92,7 @@ function MediaLibrary() {
   const [filter, setFilter] = useState<"all" | "image" | "video" | "other">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [filePercent, setFilePercent] = useState(0);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
@@ -345,7 +346,12 @@ function MediaLibrary() {
     for (const file of uploadable) {
       let path: string | null = null;
       try {
-        ({ path } = await uploadMedia(file, { clientId, folder: folderId ?? undefined }));
+        setFilePercent(0);
+        ({ path } = await uploadMedia(file, {
+          clientId,
+          folder: folderId ?? undefined,
+          onProgress: (pr) => setFilePercent(pr.percent),
+        }));
       } catch (err) {
         toast.error(err instanceof Error ? err.message : String(err));
       }
@@ -537,7 +543,8 @@ function MediaLibrary() {
         {uploadProgress && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
-            {uploadProgress.done}/{uploadProgress.total} geüpload…
+            {uploadProgress.done}/{uploadProgress.total} geüpload
+            {uploadProgress.done < uploadProgress.total ? ` — huidige ${filePercent}%` : "…"}
           </div>
         )}
         <div className="ml-auto text-xs text-muted-foreground">{filtered.length} items</div>
