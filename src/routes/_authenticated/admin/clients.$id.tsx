@@ -1764,6 +1764,7 @@ function UploadsView({ clientId }: { clientId: string }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [filePercent, setFilePercent] = useState(0);
   const { data } = useQuery({
     queryKey: ["uploads", clientId],
     queryFn: async () =>
@@ -1786,7 +1787,11 @@ function UploadsView({ clientId }: { clientId: string }) {
     for (const file of files) {
       let path: string;
       try {
-        ({ path } = await uploadMedia(file, { clientId }));
+        setFilePercent(0);
+        ({ path } = await uploadMedia(file, {
+          clientId,
+          onProgress: (pr) => setFilePercent(pr.percent),
+        }));
       } catch (err) {
         toast.error(err instanceof Error ? err.message : String(err));
         setProgress((p) => p && { ...p, done: p.done + 1 });
@@ -1818,7 +1823,9 @@ function UploadsView({ clientId }: { clientId: string }) {
         <Plus className="h-6 w-6 mx-auto text-gold" />
         <div className="mt-2 text-sm">
           {busy
-            ? `Bezig met uploaden… ${progress ? `${progress.done}/${progress.total}` : ""}`
+            ? `Bezig met uploaden… ${progress ? `${progress.done}/${progress.total}` : ""}${
+                progress && progress.done < progress.total ? ` — huidige ${filePercent}%` : ""
+              }`
             : "Klik om beeld of video toe te voegen"}
         </div>
         <input
