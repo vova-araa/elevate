@@ -77,3 +77,20 @@ services:
       # Overschrijft het Claude-model; leeg laten gebruikt de standaard.
       - key: CLAUDE_MODEL
         sync: false
+
+  # Zonder deze cron gebeurt er met een ingeplande post niets: de app publiceert
+  # niet uit zichzelf, hij wacht tot iemand de tick aanroept. Elke 5 minuten is
+  # nauwkeurig genoeg voor een planning op de minuut en rustig voor de API's.
+  #
+  # CRON_SECRET moet exact gelijk zijn aan die van de web-service, en APP_BASE
+  # is de publieke URL daarvan (bv. https://www.elevatedesign.nl).
+  - type: cron
+    name: elevate-tick
+    runtime: docker
+    dockerfilePath: ./Dockerfile.cron
+    schedule: "*/5 * * * *"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: APP_BASE
+        sync: false

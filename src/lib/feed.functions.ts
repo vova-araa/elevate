@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { mergeFeed, signablePaths } from "@/lib/feed-merge";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import {
@@ -30,6 +31,12 @@ export interface PublishedFeedItem {
   permalink: string | null;
   publishedAt: string;
   isVideo: boolean;
+  /**
+   * "gepubliceerd" staat op het profiel; "gepland" staat klaar bij ons. Beide
+   * horen in hetzelfde raster: een feed die alleen het verleden toont is voor
+   * een bureau half werk — je wilt zien hoe het profiel eruit gáát zien.
+   */
+  kind: "gepubliceerd" | "gepland";
 }
 
 /** Alle platforms waarvoor we een feed kunnen tonen. */
@@ -43,11 +50,17 @@ export type FeedPlatform = z.infer<typeof FEED_PLATFORM>;
  */
 export type FeedSource = "platform" | "eigen";
 
+/** De feed zoals een bron hem levert, nog zonder tellingen. */
+export type FeedBase = Omit<PublishedFeed, "publishedCount" | "plannedCount">;
+
 export interface PublishedFeed {
   source: FeedSource;
   items: PublishedFeedItem[];
   /** Waarom het niet de echte feed is, als dat zo is. */
   note: string | null;
+  /** Aantallen apart, zodat het kopje niet hoeft te tellen. */
+  publishedCount: number;
+  plannedCount: number;
 }
 
 /**
@@ -124,6 +137,7 @@ async function tiktokFeed(clientId: string, limit: number): Promise<PublishedFee
       ? new Date(Number(v.create_time) * 1000).toISOString()
       : new Date(0).toISOString(),
     isVideo: true,
+    kind: "gepubliceerd" as const,
   }));
 }
 
@@ -168,6 +182,7 @@ async function youtubeFeed(clientId: string, limit: number): Promise<PublishedFe
         permalink: videoId ? `https://www.youtube.com/watch?v=${videoId}` : null,
         publishedAt: r.snippet?.publishedAt ?? new Date(0).toISOString(),
         isVideo: true,
+        kind: "gepubliceerd" as const,
       };
     });
   } catch {
@@ -205,9 +220,7 @@ async function ownPublishedPosts(
   // van deze klant — dezelfde check als op het publiceerpad. Zonder dit kan een
   // pad naar andermans map hier een geldige URL opleveren, want de service-role
   // client negeert de storage-policies.
-  const paths = (rows ?? [])
-    .filter((r) => r.media_path?.startsWith(`${clientId}/`) && !r.media_purged_at)
-    .map((r) => r.media_path!);
+  const paths = signablePaths(rows ?? [], clientId);
 
   // Eén verzoek voor alle paden; per tegel signeren maakt van een grid van 12
   // tegels twaalf rondjes naar de opslag.
@@ -228,6 +241,7 @@ async function ownPublishedPosts(
     permalink: null,
     publishedAt: r.published_at ?? r.scheduled_at,
     isVideo: (r.media_type ?? "").startsWith("video"),
+    kind: "gepubliceerd" as const,
   }));
 }
 
@@ -277,6 +291,75 @@ async function getJson(url: string, token?: string): Promise<Record<string, unkn
   return json;
 }
 
+/**
+ * Wat er klaarstaat maar nog niet live is: concepten en ingeplande posts.
+ *
+ * Een bureau beoordeelt een profiel op hoe het straks oogt, niet alleen op wat
+ * er al staat. Door deze posts vóór de gepubliceerde te zetten zie je precies
+ * dat: het raster leest als het toekomstige profiel.
+ */
+async function plannedPosts(
+  clientId: string,
+  platform: FeedPlatform,
+  limit: number,
+): Promise<PublishedFeedItem[]> {
+  const { data: rows } = await supabaseAdmin
+    .from("scheduled_posts")
+    .select("id, caption, media_path, media_type, scheduled_at, media_purged_at")
+    .eq("client_id", clientId)
+    .eq("platform", platform)
+    .in("status", ["scheduled", "draft", "publishing"])
+    .is("deleted_at", null)
+    // Wat het eerst live gaat, staat vooraan — dat is ook de volgorde waarin
+    // het straks op het profiel verschijnt.
+    .order("scheduled_at", { ascending: true })
+    .limit(limit);
+
+  // Dezelfde tenant-check als elders: media_path is door de klant te bewerken,
+  // dus we signeren uitsluitend paden binnen de map van deze klant.
+  const paths = signablePaths(rows ?? [], clientId);
+
+  const signed = new Map<string, string>();
+  if (paths.length) {
+    const { data } = await supabaseAdmin.storage
+      .from("client-uploads")
+      .createSignedUrls(paths, 3600);
+    for (const entry of data ?? []) {
+      if (entry.path && entry.signedUrl) signed.set(entry.path, entry.signedUrl);
+    }
+  }
+
+  return (rows ?? []).map((r) => ({
+    id: r.id,
+    caption: r.caption,
+    mediaUrl: r.media_path ? (signed.get(r.media_path) ?? null) : null,
+    permalink: null,
+    publishedAt: r.scheduled_at,
+    isVideo: (r.media_type ?? "").startsWith("video"),
+    kind: "gepland" as const,
+  }));
+}
+
+/**
+ * Plakt de geplande posts vóór de feed en telt beide soorten. Dit gebeurt voor
+ * élke bron: ook als Instagram een echte feed teruggeeft wil je zien wat er
+ * bovenop komt.
+ */
+async function withPlanned(
+  clientId: string,
+  platform: FeedPlatform,
+  limit: number,
+  feed: FeedBase,
+): Promise<PublishedFeed> {
+  const planned = await plannedPosts(clientId, platform, limit).catch(() => []);
+  return {
+    ...feed,
+    items: mergeFeed(planned, feed.items, limit),
+    publishedCount: feed.items.length,
+    plannedCount: planned.length,
+  };
+}
+
 /** Waarom er geen echte feed is, per platform. */
 const FALLBACK_NOTE: Record<FeedPlatform, string> = {
   instagram: "Instagram-koppeling geeft nu geen feed terug — dit zijn onze eigen posts.",
@@ -292,7 +375,7 @@ async function fallback(
   clientId: string,
   platform: FeedPlatform,
   limit: number,
-): Promise<PublishedFeed> {
+): Promise<FeedBase> {
   return {
     source: "eigen",
     items: await ownPublishedPosts(clientId, platform, limit),
@@ -314,85 +397,91 @@ export const getPublishedFeed = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<PublishedFeed> => {
     await assertClientAccess(context.supabase, context.userId, data.clientId);
     const { platform, clientId, limit } = data;
+    return withPlanned(clientId, platform, limit, await sourceFeed(clientId, platform, limit));
+  });
 
-    if (platform === "tiktok") {
-      const items = await tiktokFeed(clientId, limit).catch(() => null);
-      return items
-        ? { source: "platform", items, note: null }
-        : fallback(clientId, platform, limit);
-    }
+/** Haalt de feed op bij de beste beschikbare bron voor dit platform. */
+async function sourceFeed(
+  clientId: string,
+  platform: FeedPlatform,
+  limit: number,
+): Promise<FeedBase> {
+  if (platform === "tiktok") {
+    const items = await tiktokFeed(clientId, limit).catch(() => null);
+    return items ? { source: "platform", items, note: null } : fallback(clientId, platform, limit);
+  }
 
-    if (platform === "youtube") {
-      const items = await youtubeFeed(clientId, limit).catch(() => null);
-      return items
-        ? { source: "platform", items, note: null }
-        : fallback(clientId, platform, limit);
-    }
+  if (platform === "youtube") {
+    const items = await youtubeFeed(clientId, limit).catch(() => null);
+    return items ? { source: "platform", items, note: null } : fallback(clientId, platform, limit);
+  }
 
-    if (platform === "linkedin") return fallback(clientId, platform, limit);
+  if (platform === "linkedin") return fallback(clientId, platform, limit);
 
-    const meta = await connectionMeta(clientId, platform);
-    // Geen bruikbare koppeling → onze eigen registratie in plaats van een lege
-    // kaart, zodat je altijd nog ziet wat er via ons is gepubliceerd.
-    if (!meta?.pageToken) return fallback(clientId, platform, limit);
-    const token = encodeURIComponent(meta.pageToken);
+  const meta = await connectionMeta(clientId, platform);
+  // Geen bruikbare koppeling → onze eigen registratie in plaats van een lege
+  // kaart, zodat je altijd nog ziet wat er via ons is gepubliceerd.
+  if (!meta?.pageToken) return fallback(clientId, platform, limit);
+  const token = encodeURIComponent(meta.pageToken);
 
-    try {
-      if (platform === "instagram") {
-        if (!meta.igUserId) return fallback(clientId, platform, limit);
-        const json = await getJson(
-          `${GRAPH}/${meta.igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=${limit}&access_token=${token}`,
-        );
-        const rows = (json.data ?? []) as Array<{
-          id: string;
-          caption?: string;
-          media_type?: string;
-          media_url?: string;
-          thumbnail_url?: string;
-          permalink?: string;
-          timestamp?: string;
-        }>;
-        return {
-          source: "platform",
-          note: null,
-          items: rows.map((r) => ({
-            id: r.id,
-            caption: r.caption ?? null,
-            // Video's leveren een thumbnail; die is geschikter voor een grid.
-            mediaUrl: r.thumbnail_url ?? r.media_url ?? null,
-            permalink: r.permalink ?? null,
-            publishedAt: r.timestamp ?? new Date(0).toISOString(),
-            isVideo: r.media_type === "VIDEO" || r.media_type === "REELS",
-          })),
-        };
-      }
-
-      if (!meta.pageId) return fallback(clientId, platform, limit);
+  try {
+    if (platform === "instagram") {
+      if (!meta.igUserId) return fallback(clientId, platform, limit);
       const json = await getJson(
-        `${GRAPH}/${meta.pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=${limit}&access_token=${token}`,
+        `${GRAPH}/${meta.igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=${limit}&access_token=${token}`,
       );
       const rows = (json.data ?? []) as Array<{
         id: string;
-        message?: string;
-        full_picture?: string;
-        permalink_url?: string;
-        created_time?: string;
+        caption?: string;
+        media_type?: string;
+        media_url?: string;
+        thumbnail_url?: string;
+        permalink?: string;
+        timestamp?: string;
       }>;
       return {
         source: "platform",
         note: null,
         items: rows.map((r) => ({
           id: r.id,
-          caption: r.message ?? null,
-          mediaUrl: r.full_picture ?? null,
-          permalink: r.permalink_url ?? null,
-          publishedAt: r.created_time ?? new Date(0).toISOString(),
-          isVideo: false,
+          caption: r.caption ?? null,
+          // Video's leveren een thumbnail; die is geschikter voor een grid.
+          mediaUrl: r.thumbnail_url ?? r.media_url ?? null,
+          permalink: r.permalink ?? null,
+          publishedAt: r.timestamp ?? new Date(0).toISOString(),
+          isVideo: r.media_type === "VIDEO" || r.media_type === "REELS",
+          kind: "gepubliceerd" as const,
         })),
       };
-    } catch {
-      // Token ingetrokken of rechten weg: liever onze eigen posts tonen dan een
-      // foutmelding op het dashboard. De tokenbewaking meldt het probleem apart.
-      return fallback(clientId, platform, limit);
     }
-  });
+
+    if (!meta.pageId) return fallback(clientId, platform, limit);
+    const json = await getJson(
+      `${GRAPH}/${meta.pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=${limit}&access_token=${token}`,
+    );
+    const rows = (json.data ?? []) as Array<{
+      id: string;
+      message?: string;
+      full_picture?: string;
+      permalink_url?: string;
+      created_time?: string;
+    }>;
+    return {
+      source: "platform",
+      note: null,
+      items: rows.map((r) => ({
+        id: r.id,
+        caption: r.message ?? null,
+        mediaUrl: r.full_picture ?? null,
+        permalink: r.permalink_url ?? null,
+        publishedAt: r.created_time ?? new Date(0).toISOString(),
+        isVideo: false,
+        kind: "gepubliceerd" as const,
+      })),
+    };
+  } catch {
+    // Token ingetrokken of rechten weg: liever onze eigen posts tonen dan een
+    // foutmelding op het dashboard. De tokenbewaking meldt het probleem apart.
+    return fallback(clientId, platform, limit);
+  }
+}

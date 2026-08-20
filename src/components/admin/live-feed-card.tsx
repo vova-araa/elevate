@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ExternalLink,
   Facebook,
+  CalendarClock,
   ImageOff,
   Instagram,
   Linkedin,
@@ -182,9 +183,14 @@ export function LiveFeedCard() {
                 </span>
               )}
               <span>
-                <b className="text-foreground tabular-nums">{feed?.items.length ?? 0}</b> recente
-                posts
+                <b className="text-foreground tabular-nums">{feed?.publishedCount ?? 0}</b>{" "}
+                gepubliceerd
               </span>
+              {!!feed?.plannedCount && (
+                <span className="text-gold">
+                  <b className="tabular-nums">{feed.plannedCount}</b> gepland
+                </span>
+              )}
               {feed?.source === "eigen" && (
                 <span className="text-muted-foreground/70" title={feed.note ?? undefined}>
                   via Elevate gepubliceerd
@@ -259,7 +265,7 @@ export function LiveFeedCard() {
             <div className="rounded-xl border border-dashed border-gold/20 p-8 text-center">
               <ImageOff className="mx-auto h-5 w-5 text-muted-foreground/60" />
               <p className="mt-2 text-sm text-muted-foreground">
-                Nog niets gepubliceerd op {style.label}.
+                Nog niets gepubliceerd of ingepland op {style.label}.
               </p>
               <Link
                 to="/admin/compose"
@@ -313,6 +319,13 @@ function Avatar({
   );
 }
 
+/** Datum kort, zoals je hem in een planning wilt lezen. */
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" });
+}
+
 function Tile({
   post,
   shape,
@@ -323,14 +336,20 @@ function Tile({
     mediaUrl: string | null;
     permalink: string | null;
     isVideo: boolean;
+    publishedAt: string;
+    kind: "gepubliceerd" | "gepland";
   };
   shape: PlatformStyle;
 }) {
+  const planned = post.kind === "gepland";
   const Wrapper = post.permalink ? "a" : "div";
   return (
     <Wrapper
       {...(post.permalink ? { href: post.permalink, target: "_blank", rel: "noreferrer" } : {})}
-      className="group relative block overflow-hidden bg-surface-elevated/60"
+      className={cn(
+        "group relative block overflow-hidden bg-surface-elevated/60",
+        planned && "ring-1 ring-inset ring-gold/45",
+      )}
       style={{ aspectRatio: shape.ratio }}
       title={post.caption ?? undefined}
     >
@@ -339,11 +358,24 @@ function Tile({
           src={post.mediaUrl}
           alt=""
           loading="lazy"
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+          className={cn(
+            "h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]",
+            // Ingetogener dan het echte werk, maar bij hover zie je hem vol —
+            // anders kun je niet beoordelen of het beeld in het raster past.
+            planned &&
+              "opacity-80 saturate-[0.85] group-hover:opacity-100 group-hover:saturate-100",
+          )}
         />
       ) : (
         <span className="grid h-full w-full place-items-center text-muted-foreground/40">
           <shape.Icon className="h-5 w-5" />
+        </span>
+      )}
+
+      {planned && (
+        <span className="pointer-events-none absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-black/55 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white backdrop-blur-sm">
+          <CalendarClock className="h-2.5 w-2.5" />
+          {shortDate(post.publishedAt)}
         </span>
       )}
 

@@ -1178,16 +1178,75 @@ function ComposeModal({
     return dates;
   }
 
-  async function save(asStatus: PostStatus, queueIt = false) {
-    if (platforms.length === 0) return toast.error("Kies minimaal 1 platform");
-    if (!queueIt && !scheduledAt) return toast.error("Kies een datum en tijd");
-    if (overHard) return toast.error(`Caption te lang voor ${limit.label} (max ${limit.hard})`);
+  const publishNowFn = useServerFn(publishScheduledPost);
+  const [publishing, setPublishing] = useState(false);
+
+  /**
+   * Direct plaatsen in plaats van wachten op de publiceerronde.
+   *
+   * De post wordt eerst opgeslagen met de tijd op nu — mislukt het versturen,
+   * dan staat hij als mislukte post klaar en pikt de automatische ronde hem
+   * alsnog op, in plaats van dat het werk verdwijnt.
+   */
+  async function publishNow() {
+    const now = new Date();
+    const tz = now.getTimezoneOffset();
+    setScheduledAt(new Date(now.getTime() - tz * 60000).toISOString().slice(0, 16));
+
+    const ids = await save("scheduled");
+    if (!ids?.length) return;
+
+    setPublishing(true);
+    const t = toast.loading(ids.length > 1 ? `Publiceren (${ids.length})…` : "Publiceren…");
+    const mislukt: string[] = [];
+    for (const id of ids) {
+      try {
+        await publishNowFn({ data: { postId: id } });
+      } catch (e) {
+        mislukt.push(e instanceof Error ? e.message : "onbekende fout");
+      }
+    }
+    setPublishing(false);
+
+    if (mislukt.length === 0) {
+      toast.success(ids.length > 1 ? `${ids.length} posts gepubliceerd` : "Gepubliceerd", {
+        id: t,
+      });
+    } else if (mislukt.length === ids.length) {
+      toast.error(mislukt[0], { id: t });
+    } else {
+      toast.warning(
+        `${ids.length - mislukt.length} van ${ids.length} gepubliceerd — ${mislukt[0]}`,
+        {
+          id: t,
+        },
+      );
+    }
+    onSaved();
+  }
+
+  async function save(asStatus: PostStatus, queueIt = false): Promise<string[] | null> {
+    if (platforms.length === 0) {
+      toast.error("Kies minimaal 1 platform");
+      return null;
+    }
+    if (!queueIt && !scheduledAt) {
+      toast.error("Kies een datum en tijd");
+      return null;
+    }
+    if (overHard) {
+      toast.error(`Caption te lang voor ${limit.label} (max ${limit.hard})`);
+      return null;
+    }
     setSaving(true);
     try {
       const recurringRule =
         recurring !== "none" && !editId ? { freq: recurring, count: recurringCount } : null;
 
+      let createdIds: string[] = [];
+
       if (editId) {
+        createdIds = [editId];
         const { error } = await supabase
           .from("scheduled_posts")
           .update({
@@ -1215,8 +1274,12 @@ function ComposeModal({
           is_queued: true,
           created_by: userId ?? null,
         }));
-        const { error } = await supabase.from("scheduled_posts").insert(rows);
+        const { data: inserted, error } = await supabase
+          .from("scheduled_posts")
+          .insert(rows)
+          .select("id");
         if (error) throw error;
+        createdIds = (inserted ?? []).map((r) => r.id);
       } else {
         const base = new Date(scheduledAt);
         const dates = expandRecurring(base);
@@ -1249,8 +1312,12 @@ function ComposeModal({
         }
         // Insert all without parent_recurring_id linkage (simple model)
         const insertRows = rows.map(({ _isParent, _idx, _platform, ...r }) => r);
-        const { error } = await supabase.from("scheduled_posts").insert(insertRows);
+        const { data: inserted, error } = await supabase
+          .from("scheduled_posts")
+          .insert(insertRows)
+          .select("id");
         if (error) throw error;
+        createdIds = (inserted ?? []).map((r) => r.id);
       }
       const msg = queueIt
         ? `Toegevoegd aan wachtrij`
@@ -1261,8 +1328,10 @@ function ComposeModal({
             : `${platforms.length} post${platforms.length > 1 ? "s" : ""} aangemaakt`;
       toast.success(msg);
       onSaved();
+      return createdIds;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
+      return null;
     } finally {
       setSaving(false);
     }
@@ -1656,8 +1725,21 @@ function ComposeModal({
             Opslaan als concept
           </button>
           <button
+            onClick={publishNow}
+            disabled={saving || publishing || overHard || platforms.length === 0}
+            title="Slaat op en plaatst meteen — niet wachten op de publiceerronde"
+            className="rounded-full border border-emerald-400/45 text-emerald-300 hover:bg-emerald-500/10 px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
+          >
+            {publishing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}{" "}
+            Nu publiceren
+          </button>
+          <button
             onClick={() => save("scheduled")}
-            disabled={saving || overHard}
+            disabled={saving || publishing || overHard}
             className="rounded-full bg-gradient-gold text-primary-foreground px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
           >
             {saving ? (

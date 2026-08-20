@@ -1,0 +1,9 @@
+# Minimale image voor de publiceer-tick: één curl-aanroep, verder niets.
+# Render vereist voor een cron-service een runtime; docker met alpine is hier
+# veruit het lichtst (geen npm install, geen build).
+FROM alpine:3.20
+RUN apk add --no-cache curl
+# --fail zodat een 401 of 500 de run rood maakt in plaats van stil te slagen.
+CMD curl --fail --silent --show-error --max-time 300 \
+    -H "x-cron-secret: $CRON_SECRET" \
+    "$APP_BASE/api/public/automation-tick"
