@@ -4,7 +4,11 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
+        env:
+          # Sinds v2 verplicht voor pull requests; zonder dit stopt de scan
+          # meteen met een fout in plaats van te scannen.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
