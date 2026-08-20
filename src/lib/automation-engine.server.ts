@@ -1,6 +1,7 @@
 // Server-only automation engine: dispatches scheduled posts,
 // evaluates rules, fires outgoing webhooks.
 import { createClient } from "@supabase/supabase-js";
+import { timingSafeEqual } from "node:crypto";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { fetchTikTokPublishStatus, publishToPlatform } from "@/lib/social-publish.server";
 import { fetchProfile, refreshAccessToken, type SocialPlatform } from "@/lib/social-oauth.server";
@@ -380,19 +381,23 @@ export async function runTick() {
   const retentionCutoff = new Date(now.getTime() - RETENTION_DAYS * 86400000).toISOString();
   const { data: oldPosts } = await sb
     .from("scheduled_posts")
-    .select("id, media_path")
+    .select("id, client_id, media_path")
     .eq("status", "published")
     .not("media_path", "is", null)
     .is("media_purged_at", null)
     .lt("published_at", retentionCutoff)
     .limit(200);
   for (const p of oldPosts ?? []) {
-    if (p.media_path) {
+    // Zelfde tenant-check als op het publiceerpad: alleen paden binnen de map
+    // van deze klant verwijderen. Dit is de enige plek waar de service-role een
+    // bestand wist op basis van een veld dat ooit uit klantinvoer kwam.
+    if (p.media_path?.startsWith(`${p.client_id}/`)) {
       await sb.storage.from("client-uploads").remove([p.media_path]);
       // Ook de mediabibliotheek-registratie markeren als opgeruimd.
       await sb
         .from("uploads")
         .update({ media_purged_at: now.toISOString() })
+        .eq("client_id", p.client_id)
         .eq("file_path", p.media_path);
     }
     await sb.from("scheduled_posts").update({ media_purged_at: now.toISOString() }).eq("id", p.id);
@@ -657,6 +662,13 @@ export async function runTick() {
 }
 
 // Helper for API key auth
+
+/** Vergelijkt twee hex-strings in constante tijd. */
+function safeHexEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
 export async function authenticateApiKey(
   req: Request,
 ): Promise<{ ok: boolean; key?: Tables<"api_keys">; error?: string }> {
@@ -677,7 +689,9 @@ export async function authenticateApiKey(
     .eq("key_prefix", prefix)
     .eq("is_active", true)
     .maybeSingle();
-  if (!data || data.key_hash !== hash) return { ok: false, error: "Invalid key" };
+  // Constante-tijdvergelijking: praktisch niet aanvalbaar (we vergelijken
+  // SHA-256-hashes en zoeken op prefix), maar het kost hier niets.
+  if (!data || !safeHexEqual(data.key_hash, hash)) return { ok: false, error: "Invalid key" };
   await sb.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", data.id);
   return { ok: true, key: data };
 }

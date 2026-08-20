@@ -242,8 +242,18 @@ function PlannedRow({
   }, [post.media_path]);
 
   async function changeTime(value: string) {
-    const iso = new Date(value).toISOString();
-    await supabase.from("scheduled_posts").update({ scheduled_at: iso }).eq("id", post.id);
+    // Een leeggemaakt datetime-veld geeft "", en new Date("").toISOString()
+    // gooit een RangeError in een async handler die niemand opvangt: er gebeurt
+    // dan niets en er komt geen melding.
+    const d = new Date(value);
+    if (!value || Number.isNaN(d.getTime())) {
+      return toast.error("Kies een geldige datum en tijd.");
+    }
+    const { error } = await supabase
+      .from("scheduled_posts")
+      .update({ scheduled_at: d.toISOString() })
+      .eq("id", post.id);
+    if (error) return toast.error(`Tijd niet gewijzigd: ${error.message}`);
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
   }
   async function del() {
@@ -342,7 +352,11 @@ function PlannedRow({
         <button onClick={markPublished} className="text-[10px] text-emerald-400 hover:underline">
           Gepubliceerd
         </button>
-        <button onClick={del} className="text-muted-foreground hover:text-destructive">
+        <button
+          onClick={del}
+          aria-label="Geplande post verwijderen"
+          className="text-muted-foreground hover:text-destructive"
+        >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>

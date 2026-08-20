@@ -49,7 +49,7 @@ const DELIVERABLE_LABELS: Record<string, string> = {
   other: "Overig",
 };
 
-export function ClientRoadmap() {
+function ClientRoadmap() {
   const { user } = useAuth();
 
   const { data: membership, isLoading: loadingMembership } = useQuery({

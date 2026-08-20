@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageTabs } from "@/components/page-tabs";
 import { CONTENT_TABS } from "@/lib/page-tabs";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -97,10 +97,15 @@ const TIME_RE = /^\d{2}:\d{2}$/;
 
 function isValidCalendarDate(raw: string): boolean {
   if (!DATE_RE.test(raw)) return false;
-  const d = new Date(`${raw}T00:00:00`);
+  // Bewust met lokale datumdelen vergelijken, niet via toISOString(). Die
+  // rekent naar UTC om, en in Nederland (UTC+1/+2) valt lokale middernacht dan
+  // op de dág ervoor — waardoor deze controle hier élke datum afkeurde en de
+  // hele CSV-import onbruikbaar was.
+  const [jaar, maand, dag] = raw.split("-").map(Number);
+  const d = new Date(jaar, maand - 1, dag);
   if (Number.isNaN(d.getTime())) return false;
-  // Voorkom dat bv. 2026-02-30 stilletjes overloopt naar maart.
-  return d.toISOString().slice(0, 10) === raw;
+  // Vangt 2026-02-30, dat anders stilletjes naar maart overloopt.
+  return d.getFullYear() === jaar && d.getMonth() === maand - 1 && d.getDate() === dag;
 }
 
 /**
@@ -255,9 +260,11 @@ function BulkPlannerPage() {
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({ to: "/admin/bulk", search: { clientId: activeId }, replace: true });
-  }
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({ to: "/admin/bulk", search: { clientId: activeId }, replace: true });
+    }
+  }, [clientId, activeId, navigate]);
 
   const importableRows = useMemo(
     () => (parsed?.rows ?? []).filter((r) => r.status !== "fout"),

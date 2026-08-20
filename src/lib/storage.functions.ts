@@ -113,7 +113,7 @@ export const purgePostedMedia = createServerFn({ method: "POST" })
 
     const { data: ups, error } = await supabaseAdmin
       .from("uploads")
-      .select("id, file_path, media_purged_at")
+      .select("id, client_id, file_path, media_purged_at")
       .in("id", data.uploadIds);
     if (error) throw new Error(error.message);
 
@@ -124,10 +124,21 @@ export const purgePostedMedia = createServerFn({ method: "POST" })
         skipped++;
         continue;
       }
-      // Alleen opruimen als dit bestand daadwerkelijk al gepubliceerd is.
+      // Tenant-isolatie: `file_path` wordt door de klant-UI zelf meegestuurd
+      // en de RLS-policy op `uploads` controleert alleen de klant, niet het
+      // pad. Zonder deze check kan een rij met het pad van een ándere klant
+      // hier diens bestand laten verwijderen — de service-role negeert immers
+      // de storage-policies.
+      if (!u.file_path?.startsWith(`${u.client_id}/`)) {
+        skipped++;
+        continue;
+      }
+      // Alleen opruimen als dit bestand daadwerkelijk al gepubliceerd is,
+      // en dan uitsluitend binnen dezelfde klant.
       const { count } = await supabaseAdmin
         .from("scheduled_posts")
         .select("id", { count: "exact", head: true })
+        .eq("client_id", u.client_id)
         .eq("media_path", u.file_path)
         .eq("status", "published");
       if (!count) {
@@ -139,6 +150,7 @@ export const purgePostedMedia = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("scheduled_posts")
         .update({ media_purged_at: now })
+        .eq("client_id", u.client_id)
         .eq("media_path", u.file_path)
         .eq("status", "published");
       purged++;

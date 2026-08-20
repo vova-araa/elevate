@@ -63,13 +63,24 @@ export function resetRateLimits(): void {
 }
 
 /**
- * Afzender-IP van de huidige aanvraag, voor IP-gebaseerde limieten. Achter de
- * proxy van Render staat de echte afzender vooraan in x-forwarded-for.
+ * Afzender-IP van de huidige aanvraag, voor IP-gebaseerde limieten.
+ *
+ * Bewust de LAATSTE waarde uit x-forwarded-for, niet de eerste. Die header is
+ * een keten waar elke proxy achteraan aanplakt; de eerste waarde komt van de
+ * client en is dus vrij invulbaar. Wie zelf een willekeurig IP vooraan zette
+ * kreeg per aanvraag een verse emmer, waarmee de limiet feitelijk niets deed.
+ * De laatste hop is degene die onze eigen proxy heeft toegevoegd.
  */
 export function requestIp(request?: Request): string {
   const req = request ?? getRequest();
   const fwd = req?.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0]!.trim();
+  if (fwd) {
+    const hops = fwd
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean);
+    if (hops.length) return hops[hops.length - 1]!;
+  }
   return req?.headers.get("x-real-ip") ?? "onbekend";
 }
 

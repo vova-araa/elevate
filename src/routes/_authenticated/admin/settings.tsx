@@ -51,13 +51,17 @@ function SettingsPage() {
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({
-      to: "/admin/settings",
-      search: { clientId: activeId, tab: activeTab },
-      replace: true,
-    });
-  }
+  // In een effect, niet tijdens de render — anders een router-update midden in
+  // de render-fase, met een React-waarschuwing en een extra render.
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({
+        to: "/admin/settings",
+        search: { clientId: activeId, tab: activeTab },
+        replace: true,
+      });
+    }
+  }, [clientId, activeId, activeTab, navigate]);
 
   if (!clients) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
   if (clients.length === 0) {
@@ -475,10 +479,26 @@ function TeamTab({ clientId }: { clientId: string }) {
   }
 
   async function updateRole(userId: string, newRole: "admin" | "editor" | "client") {
-    // Replace existing roles for this user with the new one (simple model)
-    await supabase.from("user_roles").delete().eq("user_id", userId);
-    await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
-    toast.success("Rol bijgewerkt");
+    // Volgorde is hier belangrijk: eerst de nieuwe rol toevoegen, dán de oude
+    // opruimen. Andersom (verwijderen, dan invoegen) laat de gebruiker zonder
+    // enkele rol achter zodra het invoegen faalt — en die wordt bij de
+    // volgende login uit het portaal gegooid. De foutmeldingen werden bovendien
+    // allebei genegeerd, dus dat gebeurde ook nog eens onopgemerkt.
+    const { error: insErr } = await supabase
+      .from("user_roles")
+      .upsert({ user_id: userId, role: newRole }, { onConflict: "user_id,role" });
+    if (insErr) return toast.error(`Rol niet gewijzigd: ${insErr.message}`);
+
+    const { error: delErr } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .neq("role", newRole);
+    if (delErr) {
+      toast.warning(`Nieuwe rol toegekend, maar de oude bleef staan: ${delErr.message}`);
+    } else {
+      toast.success("Rol bijgewerkt");
+    }
     qc.invalidateQueries({ queryKey: ["team", clientId] });
   }
 

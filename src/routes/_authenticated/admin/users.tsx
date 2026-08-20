@@ -14,6 +14,7 @@ import {
 } from "@/lib/admin.functions";
 import { invalidateClientLists } from "@/lib/client-cache";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { Check, Copy, FlaskConical, Rocket, Shield } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import type { Tables } from "@/integrations/supabase/types";
@@ -314,10 +315,7 @@ function UsersAdmin() {
                     <div className="truncate font-mono text-sm">{value}</div>
                   </div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(value);
-                      toast.success(`${label} gekopieerd`);
-                    }}
+                    onClick={() => void copyToClipboard(value, `${label} gekopieerd`)}
                     className="shrink-0 rounded-md border border-gold/20 p-1.5 text-gold hover:bg-gold/10"
                     aria-label={`${label} kopiëren`}
                   >
@@ -384,10 +382,7 @@ function UsersAdmin() {
                     <div className="truncate font-mono text-sm">{value}</div>
                   </div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(value);
-                      toast.success(`${label} gekopieerd`);
-                    }}
+                    onClick={() => void copyToClipboard(value, `${label} gekopieerd`)}
                     className="shrink-0 rounded-md border border-gold/20 p-1.5 text-gold hover:bg-gold/10"
                     aria-label={`${label} kopiëren`}
                   >

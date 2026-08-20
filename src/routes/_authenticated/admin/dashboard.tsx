@@ -2,17 +2,7 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  addDays,
-  endOfWeek,
-  format,
-  formatDistanceToNow,
-  getISOWeek,
-  isToday,
-  startOfDay,
-  startOfWeek,
-  subDays,
-} from "date-fns";
+import { endOfWeek, format, formatDistanceToNow, getISOWeek, startOfWeek } from "date-fns";
 import { nl } from "date-fns/locale";
 import {
   Area,
@@ -34,8 +24,6 @@ import {
 } from "@/lib/analytics.functions";
 import { useAuth } from "@/lib/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState } from "@/components/error-state";
-import { HealthRing } from "@/components/admin/health-ring";
 import { PostingBoard } from "@/components/admin/posting-board";
 import { InsightsCard } from "@/components/admin/insights-card";
 import { LiveFeedCard } from "@/components/admin/live-feed-card";
@@ -126,16 +114,6 @@ function AdminDashboard() {
 /* Data + layout van de "Studio-editie"                                */
 /* ------------------------------------------------------------------ */
 
-type AgendaItem = {
-  id: string;
-  caption: string | null;
-  scheduled_at: string;
-  platform: Platform;
-  status: PostStatus;
-  client_id: string;
-  clients: { name: string } | null;
-};
-
 type DraftFocusItem = {
   id: string;
   caption: string | null;
@@ -162,12 +140,6 @@ type ExpiredChannelItem = {
   clients: { name: string } | null;
 };
 
-type HealthData = {
-  upcomingSet: Set<string>;
-  oldDraftSet: Set<string>;
-  channelCounts: Map<string, number>;
-};
-
 type FocusKind = "draft" | "failed" | "channel";
 type FocusItem = {
   id: string;
@@ -178,21 +150,6 @@ type FocusItem = {
   href: string;
   actionLabel: string;
 };
-
-function computeHealthScore(clientId: string, health: HealthData): number {
-  let score = 0;
-  if (health.upcomingSet.has(clientId)) score += 40;
-  if (!health.oldDraftSet.has(clientId)) score += 30;
-  if ((health.channelCounts.get(clientId) ?? 0) > 0) score += 30;
-  return score;
-}
-
-function healthStatusLabel(clientId: string, health: HealthData): string {
-  if ((health.channelCounts.get(clientId) ?? 0) === 0) return "Geen kanaal gekoppeld";
-  if (health.oldDraftSet.has(clientId)) return "Concepten wachten al > 5 dagen";
-  if (!health.upcomingSet.has(clientId)) return "Niets gepland deze week";
-  return "Alles op schema";
-}
 
 function buildFocusItems(
   drafts: DraftFocusItem[],
@@ -312,29 +269,6 @@ function DashboardContent({
     },
   });
 
-  // Agenda: geplande posts van vandaag en morgen
-  const {
-    data: agenda,
-    isLoading: agendaLoading,
-    isError: agendaError,
-    refetch: agendaRefetch,
-  } = useQuery({
-    queryKey: ["dashboard-agenda", clientId ?? "all"],
-    queryFn: async () => {
-      const start = startOfDay(new Date());
-      const end = addDays(start, 2);
-      let q = supabase
-        .from("scheduled_posts")
-        .select("id,caption,scheduled_at,platform,status,client_id,clients(name)")
-        .is("deleted_at", null)
-        .neq("status", "failed")
-        .gte("scheduled_at", start.toISOString())
-        .lt("scheduled_at", end.toISOString());
-      if (clientId) q = q.eq("client_id", clientId);
-      return (await q.order("scheduled_at", { ascending: true })).data ?? [];
-    },
-  });
-
   // Focus nu: concepten die het langst wachten op akkoord
   const { data: focusDrafts, isLoading: focusDraftsLoading } = useQuery({
     queryKey: ["dashboard-focus-drafts", clientId ?? "all"],
@@ -376,54 +310,6 @@ function DashboardContent({
     },
   });
 
-  // Klant-gezondheid: ruwe data om per klant een score 0-100 te berekenen
-  const {
-    data: health,
-    isLoading: healthLoading,
-    isError: healthError,
-    refetch: healthRefetch,
-  } = useQuery({
-    queryKey: ["dashboard-client-health", clientId ?? "all"],
-    queryFn: async (): Promise<HealthData> => {
-      const now = new Date();
-      const in7 = addDays(now, 7);
-      const fiveDaysAgo = subDays(now, 5);
-
-      let upcomingQ = supabase
-        .from("scheduled_posts")
-        .select("client_id")
-        .eq("status", "scheduled")
-        .is("deleted_at", null)
-        .gte("scheduled_at", now.toISOString())
-        .lte("scheduled_at", in7.toISOString());
-      if (clientId) upcomingQ = upcomingQ.eq("client_id", clientId);
-
-      let oldDraftsQ = supabase
-        .from("scheduled_posts")
-        .select("client_id")
-        .eq("status", "draft")
-        .is("deleted_at", null)
-        .lt("created_at", fiveDaysAgo.toISOString());
-      if (clientId) oldDraftsQ = oldDraftsQ.eq("client_id", clientId);
-
-      let channelsQ = supabase.from("social_connections").select("client_id");
-      if (clientId) channelsQ = channelsQ.eq("client_id", clientId);
-
-      const [upcoming, oldDrafts, channels] = await Promise.all([upcomingQ, oldDraftsQ, channelsQ]);
-
-      const channelCounts = new Map<string, number>();
-      for (const row of channels.data ?? []) {
-        channelCounts.set(row.client_id, (channelCounts.get(row.client_id) ?? 0) + 1);
-      }
-
-      return {
-        upcomingSet: new Set((upcoming.data ?? []).map((r) => r.client_id)),
-        oldDraftSet: new Set((oldDrafts.data ?? []).map((r) => r.client_id)),
-        channelCounts,
-      };
-    },
-  });
-
   // Bereik: echte cijfers uit de gedeelde analytics-laag — gepubliceerde
   // posts per dag (echt, uit scheduled_posts) plus volgers/volgersgroei
   // (echt, uit social_connections + social_metrics_snapshots). Geen
@@ -444,26 +330,11 @@ function DashboardContent({
     count: d.published,
   }));
 
-  const todayItems = (agenda ?? []).filter((p) => isToday(new Date(p.scheduled_at)));
-  const tomorrowItems = (agenda ?? []).filter((p) => !isToday(new Date(p.scheduled_at)));
-
   const focusItems = useMemo(
     () => buildFocusItems(focusDrafts ?? [], focusFailed ?? [], focusExpired ?? []),
     [focusDrafts, focusFailed, focusExpired],
   );
   const focusLoading = focusDraftsLoading || focusFailedLoading || focusExpiredLoading;
-
-  const healthRows = useMemo(() => {
-    if (!health) return [];
-    const relevantClients = selected ? [selected] : clients;
-    return relevantClients
-      .map((c) => ({
-        client: c,
-        score: computeHealthScore(c.id, health),
-        status: healthStatusLabel(c.id, health),
-      }))
-      .sort((a, b) => a.score - b.score);
-  }, [clients, selected, health]);
 
   return (
     <>
@@ -604,81 +475,6 @@ function StatTile({
   );
 }
 
-function StatBand({
-  scheduledThisWeek,
-  waitingApproval,
-  followersTotal,
-  followerGrowth,
-  series,
-  loading,
-}: {
-  scheduledThisWeek: number | null;
-  waitingApproval: number | null;
-  followersTotal: number | null;
-  followerGrowth: number | null;
-  series: { date: string; count: number }[];
-  loading: boolean;
-}) {
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-28 w-full rounded-xl" />
-        ))}
-      </div>
-    );
-  }
-  const published = series.reduce((sum, p) => sum + p.count, 0);
-  const growthLabel =
-    followerGrowth == null
-      ? "—"
-      : `${followerGrowth > 0 ? "+" : ""}${followerGrowth.toLocaleString("nl-NL")}`;
-  const growthTone =
-    followerGrowth == null || followerGrowth === 0
-      ? "bg-muted/40 text-muted-foreground"
-      : followerGrowth > 0
-        ? "bg-emerald-500/12 text-emerald-500"
-        : "bg-red-500/12 text-red-400";
-
-  return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <StatTile
-        icon={CalendarCheck}
-        value={scheduledThisWeek ?? 0}
-        label="Gepland deze week"
-        to="/admin/planner"
-        tone="bg-gold/12 text-gold"
-      />
-      <StatTile
-        icon={FileText}
-        value={waitingApproval ?? 0}
-        label="Wachten op akkoord"
-        to="/admin/approvals"
-        tone="bg-amber-500/12 text-amber-500"
-      />
-      <StatTile
-        icon={Users}
-        value={followersTotal != null ? followersTotal.toLocaleString("nl-NL") : "—"}
-        label="Volgers totaal"
-        to="/admin/reach"
-        tone="bg-gold/12 text-gold"
-      />
-      <StatTile
-        icon={TrendingUp}
-        value={published}
-        label="Gepubliceerd (30d)"
-        to="/admin/reach"
-        tone={growthTone}
-      >
-        <span className="mt-1 inline-block text-[11px] text-muted-foreground">
-          volgersgroei {growthLabel}
-        </span>
-        <Sparkline series={series} tint="var(--gold)" />
-      </StatTile>
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* Masthead                                                            */
 /* ------------------------------------------------------------------ */
@@ -797,45 +593,6 @@ function TickerLink({ to, count, label }: { to: string; count: number; label: st
 /* ------------------------------------------------------------------ */
 /* Vandaag & morgen — verticale tijdlijn                               */
 /* ------------------------------------------------------------------ */
-
-function TimelineDay({ label, items }: { label: string; items: AgendaItem[] }) {
-  if (items.length === 0) return null;
-  return (
-    <div>
-      <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {label}
-      </div>
-      <ul className="border-l-2 border-gold/30 ml-1">
-        {items.map((p) => {
-          const Icon = PLATFORM_ICONS[p.platform] ?? Instagram;
-          return (
-            <li key={p.id} className="relative pl-5 pb-5 last:pb-0">
-              <span className="absolute -left-[7px] top-0.5 h-3 w-3 rounded-full border-2 border-gold bg-card" />
-              <Link
-                to="/admin/planner"
-                className="block -ml-2 rounded-lg p-2 transition hover:bg-accent/40"
-              >
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-medium tabular-nums text-gold">
-                    {format(new Date(p.scheduled_at), "HH:mm", { locale: nl })}
-                  </span>
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-medium truncate">
-                    {p.clients?.name ?? "Onbekende klant"}
-                  </span>
-                  <StatusPill status={p.status} />
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground truncate">
-                  {p.caption || <span className="italic">geen caption</span>}
-                </p>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
 
 function StatusPill({ status }: { status: PostStatus }) {
   return (

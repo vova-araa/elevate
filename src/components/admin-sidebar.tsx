@@ -40,12 +40,22 @@ export function AdminSidebar() {
           .from("scheduled_posts")
           .select("id", { count: "exact", head: true })
           .eq("status", "scheduled")
+          // Zonder deze twee filters telt de badge weggegooide posts en de
+          // wachtrij mee, terwijl de planner ze wegfiltert — dan zegt de
+          // sidebar 12 en toont de planner er 9.
+          .is("deleted_at", null)
+          .eq("is_queued", false)
           .gte("scheduled_at", now)
           .lte("scheduled_at", in7),
         supabase
           .from("scheduled_posts")
           .select("id", { count: "exact", head: true })
-          .eq("status", "draft"),
+          .eq("status", "draft")
+          .is("deleted_at", null)
+          // Deze badge hangt aan /admin/queue, en díe pagina toont juist de
+          // wachtrij (is_queued = true). Op false filteren gaf precies de
+          // complementaire verzameling: drie posts in de wachtrij, badge op 0.
+          .eq("is_queued", true),
         supabase
           .from("notifications")
           .select("id", { count: "exact", head: true })

@@ -18,47 +18,6 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
   }
 }
 
-// Block SSRF: alleen publieke https-URL's toestaan, geen localhost/privé-IP's
-// (zelfde aanpak als assertSafeWebhookUrl in automation-admin.functions.ts).
-function assertSafeImportUrl(raw: string): URL {
-  let u: URL;
-  try {
-    u = new URL(raw);
-  } catch {
-    throw new Error("Ongeldige URL");
-  }
-  if (u.protocol !== "https:" && u.protocol !== "http:") {
-    throw new Error("Alleen http(s)-URL's zijn toegestaan");
-  }
-  const host = u.hostname.toLowerCase();
-  if (
-    host === "localhost" ||
-    host === "0.0.0.0" ||
-    host.endsWith(".local") ||
-    host.endsWith(".internal")
-  ) {
-    throw new Error("Interne hostnames zijn niet toegestaan");
-  }
-  const ipv4 = host.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-  if (ipv4) {
-    const [a, b] = [parseInt(ipv4[1], 10), parseInt(ipv4[2], 10)];
-    if (
-      a === 10 ||
-      a === 127 ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      a === 0
-    ) {
-      throw new Error("Privé IP-adressen zijn niet toegestaan");
-    }
-  }
-  if (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) {
-    throw new Error("Privé IPv6-adressen zijn niet toegestaan");
-  }
-  return u;
-}
-
 const MAX_IMPORT_SIZE = 50 * 1024 * 1024; // 50MB
 
 // Herkent Google Drive share-links en zet ze om naar een directe download-URL.
@@ -75,7 +34,7 @@ function toDirectDownloadUrl(raw: string): string {
       if (id) return `https://drive.google.com/uc?export=download&id=${id}`;
     }
   } catch {
-    // negeren — validatie gebeurt in assertSafeImportUrl
+    // negeren — validatie gebeurt in assertSafeExternalUrl
   }
   return raw;
 }
@@ -133,7 +92,7 @@ export const importMediaFromUrl = createServerFn({ method: "POST" })
     // hop: redirects (bv. Google Drive → googleusercontent.com) volgen we zelf
     // op ("redirect: manual") en elke Location wordt opnieuw gevalideerd —
     // anders zou een kwaadwillende URL via een redirect alsnog naar een
-    // interne/privé host kunnen wijzen die assertSafeImportUrl niet ziet.
+    // interne/privé host kunnen wijzen die een tekstuele check niet ziet.
     const MAX_REDIRECTS = 5;
     let currentUrl = directUrl;
     let response: Response;
@@ -190,6 +149,19 @@ export const importMediaFromUrl = createServerFn({ method: "POST" })
     for (const chunk of chunks) {
       bytes.set(chunk, offset);
       offset += chunk.byteLength;
+    }
+
+    // De doelmap moet bij dezelfde klant horen; anders belandt een import in
+    // de bibliotheek van een ander en is hij in de eigen bibliotheek zoek.
+    if (data.folderId) {
+      const { data: map } = await supabaseAdmin
+        .from("media_folders")
+        .select("client_id")
+        .eq("id", data.folderId)
+        .maybeSingle();
+      if (!map || map.client_id !== data.clientId) {
+        throw new Error("Deze map hoort niet bij deze klant");
+      }
     }
 
     const rawName =

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { z } from "zod";
 import { differenceInCalendarDays, formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -285,8 +286,7 @@ function AdminChannels() {
   const redirectUri =
     typeof window !== "undefined" ? `${window.location.origin}/api/public/oauth/callback` : "";
   const copyRedirect = async () => {
-    await navigator.clipboard.writeText(redirectUri);
-    toast.success("Redirect-URI gekopieerd");
+    await copyToClipboard(redirectUri, "Redirect-URI gekopieerd");
   };
 
   const channelsByPlatform = new Map((data?.channels ?? []).map((c) => [c.platform, c]));
@@ -548,9 +548,10 @@ function AdminChannels() {
             <button
               onClick={() => {
                 if (!inviteUrl) return;
-                navigator.clipboard.writeText(inviteUrl);
-                setInviteCopied(true);
-                toast.success("Link gekopieerd");
+                // Alleen als het écht lukte de knop op "gekopieerd" zetten.
+                void copyToClipboard(inviteUrl, "Uitnodigingslink gekopieerd").then((ok) => {
+                  if (ok) setInviteCopied(true);
+                });
               }}
               className="shrink-0 min-h-11 min-w-11 rounded-lg border border-gold/20 inline-flex items-center justify-center hover:bg-gold/10"
               title="Kopieer link"

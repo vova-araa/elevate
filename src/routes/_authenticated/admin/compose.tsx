@@ -279,9 +279,12 @@ function ComposePage() {
     onError: (e: Error) => toast.error(e?.message ?? "Opslaan mislukt"),
   });
 
-  const longest = Math.max(
-    ...selectedPlatforms.map((p) => PLATFORMS.find((x) => x.id === p)?.limit ?? 2200),
-  );
+  // Math.max() van een lege array is -Infinity; zonder deze ondergrens stond er
+  // letterlijk "0 / -Infinity" onder het captionveld zodra je alle platforms
+  // uitvinkte.
+  const longest = selectedPlatforms.length
+    ? Math.max(...selectedPlatforms.map((p) => PLATFORMS.find((x) => x.id === p)?.limit ?? 2200))
+    : 2200;
 
   const togglePlatform = (id: string) => {
     setTouchedPlatforms(true);

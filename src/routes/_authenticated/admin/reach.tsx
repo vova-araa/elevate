@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ErrorState } from "@/components/error-state";
 import { PageTabs } from "@/components/page-tabs";
 import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useQuery } from "@tanstack/react-query";
@@ -54,7 +55,12 @@ function ReachPage() {
   const getClient = useServerFn(getClientAnalytics);
   const getAgency = useServerFn(getAgencyAnalytics);
 
-  const { data: analytics, isLoading } = useQuery<ClientAnalytics | AgencyAnalytics>({
+  const {
+    data: analytics,
+    isLoading,
+    error: analyticsError,
+    refetch: refetchAnalytics,
+  } = useQuery<ClientAnalytics | AgencyAnalytics>({
     queryKey: ["reach-analytics", activeClient?.id ?? "all", days],
     queryFn: () =>
       activeClient?.id
@@ -90,6 +96,12 @@ function ReachPage() {
 
       {isLoading ? (
         <Loader2 className="h-6 w-6 animate-spin text-gold" />
+      ) : analyticsError ? (
+        <ErrorState
+          title="Cijfers konden niet geladen worden"
+          description="De server gaf geen antwoord. De getallen hieronder zouden onjuist zijn, dus tonen we ze niet."
+          onRetry={() => void refetchAnalytics()}
+        />
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

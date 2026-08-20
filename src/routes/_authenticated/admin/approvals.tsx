@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { confirmDialog } from "@/components/ui/confirm";
 import {
   CheckCircle2,
@@ -104,6 +105,10 @@ function ApprovalsPage() {
         .from("scheduled_posts")
         .select("*")
         .eq("status", "draft")
+        // Zonder deze filter staan weggegooide concepten hier gewoon tussen, en
+        // zet goedkeuren ze alsnog op 'ingepland' — dan gaat een verwijderde
+        // post live. De rest van de app filtert deze wél weg.
+        .is("deleted_at", null)
         .order("scheduled_at", { ascending: true });
       return data ?? [];
     },
@@ -152,6 +157,8 @@ function ApprovalsPage() {
     );
     toast.success("Goedgekeurd");
     qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+    // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
+    qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
   }
 
   async function reject(postId: string, clientId: string) {
@@ -174,19 +181,32 @@ function ApprovalsPage() {
     );
     toast.success("Afgewezen");
     qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+    // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
+    qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
   }
 
   async function submitFeedback(postId: string, clientId: string) {
-    if (!feedbackText.trim()) return toast.error("Geef feedback mee");
-    await notifyTeam(
-      clientId,
-      "Feedback op concept",
-      feedbackText.trim(),
-      `/admin/planner?clientId=${clientId}`,
-    );
+    const text = feedbackText.trim();
+    if (!text) return toast.error("Geef feedback mee");
+
+    // Eerst vastleggen bij de post zelf. Voorheen ging er alleen een
+    // notificatie uit: zodra die gelezen was, was de feedback onvindbaar —
+    // terwijl de klantkant juist post_comments toont.
+    if (!user) return toast.error("Je sessie is verlopen — log opnieuw in.");
+    const { error } = await supabase.from("post_comments").insert({
+      post_id: postId,
+      client_id: clientId,
+      author_id: user.id,
+      author_role: "team",
+      body: text,
+    });
+    if (error) return toast.error(`Feedback niet opgeslagen: ${error.message}`);
+
+    await notifyTeam(clientId, "Feedback op concept", text, `/admin/planner?clientId=${clientId}`);
     toast.success("Feedback verzonden");
     setFeedbackFor(null);
     setFeedbackText("");
+    qc.invalidateQueries({ queryKey: ["post-comments", postId] });
   }
 
   async function notifyTeam(clientId: string, title: string, body: string, link: string) {
@@ -232,6 +252,7 @@ function ApprovalsPage() {
       toast.success(`${ids.length} goedgekeurd`);
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+      // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
       qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
     } finally {
       setBulkBusy(false);
@@ -269,6 +290,7 @@ function ApprovalsPage() {
       toast.success(`${ids.length} afgewezen`);
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+      // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
       qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
     } finally {
       setBulkBusy(false);
@@ -432,9 +454,9 @@ function ApprovalsPage() {
             <button
               onClick={() => {
                 if (!shareUrl) return;
-                navigator.clipboard.writeText(shareUrl);
-                setShareCopied(true);
-                toast.success("Link gekopieerd");
+                void copyToClipboard(shareUrl, "Link gekopieerd").then((ok) => {
+                  if (ok) setShareCopied(true);
+                });
               }}
               className="shrink-0 min-h-11 min-w-11 rounded-lg border border-gold/20 inline-flex items-center justify-center hover:bg-gold/10"
               title="Kopieer link"

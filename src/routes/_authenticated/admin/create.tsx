@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/planner.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { z } from "zod";
 import {
   Sparkles,
@@ -90,9 +91,11 @@ function CreatePage() {
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({ to: "/admin/create", search: { clientId: activeId }, replace: true });
-  }
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({ to: "/admin/create", search: { clientId: activeId }, replace: true });
+    }
+  }, [clientId, activeId, navigate]);
 
   const [tab, setTab] = useState<Tab>("ideas");
 
@@ -372,11 +375,7 @@ function IdeasTab({ client, userId }: { client: CreateClient; userId?: string })
                   Plan in als concept
                 </button>
                 <button
-                  onClick={() =>
-                    navigator.clipboard
-                      .writeText(`${idea.hook}\n\n${idea.description}`)
-                      .then(() => toast.success("Gekopieerd"))
-                  }
+                  onClick={() => void copyToClipboard(`${idea.hook}\n\n${idea.description}`)}
                   className="rounded-full glass px-3 py-1.5 text-xs inline-flex items-center gap-1.5 hover:bg-accent/30 ml-auto"
                 >
                   <Copy className="h-3 w-3" /> Kopieer
@@ -559,9 +558,7 @@ function CaptionTab({ client, userId }: { client: CreateClient; userId?: string 
               Plan in als concept
             </button>
             <button
-              onClick={() =>
-                navigator.clipboard.writeText(fullText).then(() => toast.success("Gekopieerd"))
-              }
+              onClick={() => void copyToClipboard(fullText)}
               className="rounded-full glass px-3 py-1.5 text-xs inline-flex items-center gap-1.5 hover:bg-accent/30 ml-auto"
             >
               <Copy className="h-3 w-3" /> Kopieer
@@ -659,7 +656,7 @@ function HooksTab() {
         {hooks.map((h, i) => (
           <button
             key={i}
-            onClick={() => navigator.clipboard.writeText(h).then(() => toast.success("Gekopieerd"))}
+            onClick={() => void copyToClipboard(h)}
             className="w-full text-left glass rounded-xl p-4 hover:border-gold/40 border border-transparent transition flex items-center gap-3"
           >
             <span className="text-xs text-gold/70 shrink-0">{String(i + 1).padStart(2, "0")}</span>
@@ -699,7 +696,7 @@ function HashtagsTab() {
   function copyAll() {
     if (!groups) return;
     const all = [...groups.big, ...groups.medium, ...groups.niche].join(" ");
-    navigator.clipboard.writeText(all).then(() => toast.success("Alle hashtags gekopieerd"));
+    void copyToClipboard(all, "Alle hashtags gekopieerd");
   }
 
   return (
@@ -799,9 +796,7 @@ function HashGroup({ label, tags, tone }: { label: string; tags: string[]; tone:
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs uppercase tracking-wider text-gold/80">{label}</div>
         <button
-          onClick={() =>
-            navigator.clipboard.writeText(tags.join(" ")).then(() => toast.success("Gekopieerd"))
-          }
+          onClick={() => void copyToClipboard(tags.join(" "))}
           className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
         >
           <Copy className="h-3 w-3" /> Kopieer

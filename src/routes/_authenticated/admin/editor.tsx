@@ -199,7 +199,11 @@ function MediaPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: Sou
       >
         <div className="flex items-center justify-between p-4 border-b border-gold/10">
           <div className="font-display text-xl">Kies bestand</div>
-          <button onClick={onClose} className="rounded-full p-2 hover:bg-accent/40">
+          <button
+            onClick={onClose}
+            aria-label="Bestandskiezer sluiten"
+            className="rounded-full p-2 hover:bg-accent/40"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

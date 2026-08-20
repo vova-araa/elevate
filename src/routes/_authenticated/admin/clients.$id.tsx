@@ -315,25 +315,46 @@ function Overview({ client }: { client: Tables<"clients"> }) {
 const inp = "rounded-lg bg-input/60 hairline px-3 py-2 text-sm w-full";
 const btnGold = "rounded-lg bg-gradient-gold px-4 py-2 text-sm font-medium text-primary-foreground";
 
+/**
+ * Alle tien de invoerpanelen op deze pagina lopen hier doorheen. Ze hadden geen
+ * bezig-status: twee keer op Enter of een dubbelklik leverde twee gesprekken,
+ * deals of rapporten op. De `fieldset` zet tijdens het opslaan in één klap
+ * alles binnenin op non-actief, dus dat geldt meteen voor elk formulier.
+ */
 function SectionForm({
   children,
   onSubmit,
   title,
 }: {
   children: React.ReactNode;
-  onSubmit: () => void;
+  onSubmit: () => unknown;
   title: string;
 }) {
+  const [busy, setBusy] = useState(false);
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit();
+        if (busy) return;
+        setBusy(true);
+        try {
+          // Handlers geven soms een toast-id terug; die waarde doet er niet toe,
+          // het gaat om het wachten tot ze klaar zijn.
+          await onSubmit();
+        } finally {
+          setBusy(false);
+        }
       }}
-      className="glass-strong rounded-2xl p-5 space-y-3"
+      className="glass-strong rounded-2xl p-5"
     >
-      <div className="text-xs uppercase tracking-[0.2em] text-gold/80">{title}</div>
-      {children}
+      <fieldset
+        disabled={busy} // min-w-0 omdat een fieldset standaard min-inline-size: min-content erft en
+        // dan niet meekrimpt op smalle schermen.
+        className="min-w-0 space-y-3 border-0 p-0 m-0 disabled:opacity-60"
+      >
+        <div className="text-xs uppercase tracking-[0.2em] text-gold/80">{title}</div>
+        {children}
+      </fieldset>
     </form>
   );
 }
@@ -401,6 +422,7 @@ function MeetingsPanel({ clientId }: { clientId: string }) {
             <option value="other">Anders</option>
           </select>
           <input
+            aria-label="Datum en tijd van het gesprek"
             type="datetime-local"
             className={inp}
             value={f.scheduled_at}
@@ -599,6 +621,7 @@ function DealsPanel({ clientId }: { clientId: string }) {
             onChange={(e) => setF({ ...f, probability: Number(e.target.value) })}
           />
           <input
+            aria-label="Verwachte sluitingsdatum"
             type="date"
             className={inp}
             value={f.expected_close_date}
@@ -735,12 +758,14 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
             <option value="other">Anders</option>
           </select>
           <input
+            aria-label="Periode vanaf"
             type="date"
             className={inp}
             value={f.period_start}
             onChange={(e) => setF({ ...f, period_start: e.target.value })}
           />
           <input
+            aria-label="Periode tot"
             type="date"
             className={inp}
             value={f.period_end}
@@ -1008,6 +1033,7 @@ function ContentPanel({ clientId }: { clientId: string }) {
             ))}
           </select>
           <input
+            aria-label="Datum en tijd van het kalenderitem"
             type="datetime-local"
             className={inp}
             value={f.scheduled_at}
@@ -1144,6 +1170,7 @@ function EvaluationPanel({ clientId }: { clientId: string }) {
         <div className="flex items-center gap-3">
           <label className="text-xs uppercase tracking-wider text-gold/80">Score</label>
           <input
+            aria-label="Score van 1 tot 10"
             type="range"
             min={1}
             max={10}
@@ -1516,6 +1543,7 @@ function RoadmapStepRow({
             placeholder="Titel"
           />
           <input
+            aria-label="Streefdatum"
             type="date"
             className={inp}
             value={draft.due_date}
@@ -1604,12 +1632,14 @@ function RoadmapStepRow({
       </select>
       <button
         onClick={() => setEditing(true)}
+        aria-label="Stap bewerken"
         className="shrink-0 text-muted-foreground hover:text-gold p-1"
       >
         <Pencil className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onDelete}
+        aria-label="Stap verwijderen"
         className="shrink-0 text-muted-foreground hover:text-destructive p-1"
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -1649,7 +1679,13 @@ function AddStepForm({
           placeholder="Titel stap"
           className={inp}
         />
-        <input type="date" value={d} onChange={(e) => setD(e.target.value)} className={inp} />
+        <input
+          aria-label="Datum van de stap"
+          type="date"
+          value={d}
+          onChange={(e) => setD(e.target.value)}
+          className={inp}
+        />
       </div>
       <textarea
         value={desc}
@@ -1717,6 +1753,7 @@ function CalendarAdmin({ clientId }: { clientId: string }) {
       <div className="glass rounded-2xl p-5 grid gap-2 md:grid-cols-4">
         <input
           type="date"
+          aria-label="Datum van het kalenderitem"
           value={f.date}
           onChange={(e) => setF({ ...f, date: e.target.value })}
           className={inp}

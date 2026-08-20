@@ -133,7 +133,11 @@ export function useNotificationCenter() {
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("notifications").update({ read: true }).eq("id", id);
+      // Doorgooien: supabase-js gooit niet zelf, dus zonder deze regel vuurde
+      // onSuccess altijd. De melding kwam dan ongelezen terug en de teller
+      // bleef staan, zonder dat iemand zag dat het misging.
+      const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
+      if (error) throw error;
     },
     onSuccess: invalidate,
   });
@@ -141,11 +145,12 @@ export function useNotificationCenter() {
   const markAllRead = useMutation({
     mutationFn: async () => {
       if (!userId) return;
-      await supabase
+      const { error } = await supabase
         .from("notifications")
         .update({ read: true })
         .eq("user_id", userId)
         .eq("read", false);
+      if (error) throw error;
     },
     onSuccess: invalidate,
   });

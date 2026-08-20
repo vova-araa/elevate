@@ -243,7 +243,7 @@ function Landing() {
               >
                 <span className="lp-line" style={{ animationDelay: "80ms" }}>
                   Elevate
-                </span>
+                </span>{" "}
                 <span className="lp-line" style={{ animationDelay: "220ms" }}>
                   <span className="lp-sheen block text-gradient-gold font-light italic">
                     your brand

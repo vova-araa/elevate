@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { Plus, Loader2, Trash2, Key, Copy, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { createApiKey } from "@/lib/automation-admin.functions";
@@ -87,10 +88,7 @@ function ApiKeysPage() {
               {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(newKey);
-                toast.success("Gekopieerd");
-              }}
+              onClick={() => void copyToClipboard(newKey)}
               className="rounded-full p-2 hover:bg-accent/40"
             >
               <Copy className="h-4 w-4" />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 
 export function CopyButton({
@@ -15,13 +15,9 @@ export function CopyButton({
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyToClipboard(text, "Gekopieerd naar klembord")) {
       setCopied(true);
-      toast.success("Gekopieerd naar klembord");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Kopiëren mislukt");
     }
   };
 
