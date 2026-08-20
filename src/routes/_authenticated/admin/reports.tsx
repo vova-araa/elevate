@@ -4,6 +4,7 @@ import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { todayLocalISO } from "@/lib/dates";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Download, FileBarChart, FileDown, Loader2 } from "lucide-react";
@@ -49,7 +50,7 @@ function ReportsPage() {
       const periodStart = new Date(Date.now() - Number(period) * 86400000)
         .toISOString()
         .slice(0, 10);
-      const periodEnd = new Date().toISOString().slice(0, 10);
+      const periodEnd = todayLocalISO();
       return generateFn({ data: { clientId: activeClient.id, periodStart, periodEnd } });
     },
     onSuccess: () => {

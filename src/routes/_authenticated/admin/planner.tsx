@@ -6,6 +6,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { addMonthsClamped } from "@/lib/dates";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
@@ -68,6 +69,7 @@ import { WeekView } from "@/components/planner/week-view";
 import { ClientLegend } from "@/components/planner/client-legend";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 
 const searchSchema = z.object({
   clientId: z.string().uuid().optional(),
@@ -120,21 +122,36 @@ function PlannerPage() {
     return new Date();
   }, [dateParam]);
 
-  const { data: clients } = useQuery({
+  const {
+    data: clients,
+    error: clientsError,
+    refetch: refetchClients,
+  } = useQuery({
     queryKey: ["planner-clients"],
     // Klantenlijst wijzigt zelden — langer cachen scheelt herhaalde queries.
     staleTime: 10 * 60_000,
-    queryFn: async () =>
-      (await supabase.from("clients").select("id,name,brand_color,industry").order("name")).data ??
-      [],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id,name,brand_color,industry")
+        .order("name");
+      // supabase-js gooit niet uit zichzelf. Slikken we de fout, dan toont de
+      // planner "nog geen klanten" terwijl er gewoon iets stuk is.
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({ to: "/admin/planner", search: { clientId: activeId, view }, replace: true });
-  }
+  // In een effect, niet tijdens de render: een router-update midden in de
+  // render-fase geeft een React-waarschuwing en een extra render.
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({ to: "/admin/planner", search: { clientId: activeId, view }, replace: true });
+    }
+  }, [clientId, activeId, view, navigate]);
 
   const [cursor, setCursor] = useState<Date>(initialDate);
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
@@ -333,6 +350,16 @@ function PlannerPage() {
     setEditId(id ?? null);
     setComposeDate(date ?? selectedDate);
     setComposeOpen(true);
+  }
+
+  if (clientsError) {
+    return (
+      <ErrorState
+        title="Klanten konden niet geladen worden"
+        description="De verbinding met de server gaf geen antwoord."
+        onRetry={() => void refetchClients()}
+      />
+    );
   }
 
   if (!clients) return <PlannerSkeleton />;
@@ -1123,9 +1150,13 @@ function ComposeModal({
     const cur = base.getDay();
     const diff = (dayOfWeek - cur + 7) % 7;
     const target = new Date(base);
-    target.setDate(target.getDate() + (diff === 0 ? 7 : diff));
     const [h, m] = timeOfDay.split(":").map(Number);
+    target.setDate(target.getDate() + diff);
     target.setHours(h, m, 0, 0);
+    // Alleen een week doorschuiven als dat tijdstip vandaag al geweest is.
+    // Voorheen sprong hij altijd een week vooruit zodra de aanbevolen dag
+    // dezelfde weekdag was — je klikte "dinsdag 20:00" en kreeg volgende week.
+    if (target.getTime() <= Date.now()) target.setDate(target.getDate() + 7);
     const tz = target.getTimezoneOffset();
     setScheduledAt(new Date(target.getTime() - tz * 60000).toISOString().slice(0, 16));
     toast.success("Beste tijd toegepast");
@@ -1185,10 +1216,16 @@ function ComposeModal({
     const dates: Date[] = [];
     const n = Math.max(1, Math.min(52, recurringCount));
     for (let i = 0; i < n; i++) {
+      if (recurring === "monthly") {
+        // Niet setMonth(): vanaf 31 januari springt dat naar 3 maart, want
+        // februari heeft geen 31e. addMonthsClamped kapt af op de laatste dag
+        // van de doelmaand.
+        dates.push(addMonthsClamped(base, i));
+        continue;
+      }
       const d = new Date(base);
       if (recurring === "daily") d.setDate(d.getDate() + i);
       else if (recurring === "weekly") d.setDate(d.getDate() + i * 7);
-      else if (recurring === "monthly") d.setMonth(d.getMonth() + i);
       dates.push(d);
     }
     return dates;
@@ -1418,7 +1455,11 @@ function ComposeModal({
             </div>
             <h2 className="font-display text-3xl mt-1">{clientName}</h2>
           </div>
-          <button onClick={onClose} className="rounded-full p-2 hover:bg-accent/40">
+          <button
+            onClick={onClose}
+            aria-label="Post-venster sluiten"
+            className="rounded-full p-2 hover:bg-accent/40"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>

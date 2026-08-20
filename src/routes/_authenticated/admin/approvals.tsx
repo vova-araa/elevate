@@ -186,16 +186,27 @@ function ApprovalsPage() {
   }
 
   async function submitFeedback(postId: string, clientId: string) {
-    if (!feedbackText.trim()) return toast.error("Geef feedback mee");
-    await notifyTeam(
-      clientId,
-      "Feedback op concept",
-      feedbackText.trim(),
-      `/admin/planner?clientId=${clientId}`,
-    );
+    const text = feedbackText.trim();
+    if (!text) return toast.error("Geef feedback mee");
+
+    // Eerst vastleggen bij de post zelf. Voorheen ging er alleen een
+    // notificatie uit: zodra die gelezen was, was de feedback onvindbaar —
+    // terwijl de klantkant juist post_comments toont.
+    if (!user) return toast.error("Je sessie is verlopen — log opnieuw in.");
+    const { error } = await supabase.from("post_comments").insert({
+      post_id: postId,
+      client_id: clientId,
+      author_id: user.id,
+      author_role: "team",
+      body: text,
+    });
+    if (error) return toast.error(`Feedback niet opgeslagen: ${error.message}`);
+
+    await notifyTeam(clientId, "Feedback op concept", text, `/admin/planner?clientId=${clientId}`);
     toast.success("Feedback verzonden");
     setFeedbackFor(null);
     setFeedbackText("");
+    qc.invalidateQueries({ queryKey: ["post-comments", postId] });
   }
 
   async function notifyTeam(clientId: string, title: string, body: string, link: string) {

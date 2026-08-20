@@ -51,13 +51,17 @@ function SettingsPage() {
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({
-      to: "/admin/settings",
-      search: { clientId: activeId, tab: activeTab },
-      replace: true,
-    });
-  }
+  // In een effect, niet tijdens de render — anders een router-update midden in
+  // de render-fase, met een React-waarschuwing en een extra render.
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({
+        to: "/admin/settings",
+        search: { clientId: activeId, tab: activeTab },
+        replace: true,
+      });
+    }
+  }, [clientId, activeId, activeTab, navigate]);
 
   if (!clients) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;
   if (clients.length === 0) {

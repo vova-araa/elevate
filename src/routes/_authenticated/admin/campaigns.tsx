@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { todayLocalISO } from "@/lib/dates";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
 import { format } from "date-fns";
@@ -40,7 +41,7 @@ interface PreviewPost extends PlanItem {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayLocalISO();
 }
 
 function scheduledAtFor(startDate: string, item: PlanItem): Date {

@@ -2,9 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageTabs } from "@/components/page-tabs";
 import { PLANNER_TABS } from "@/lib/page-tabs";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { ErrorState } from "@/components/error-state";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -37,16 +38,37 @@ function QueuePage() {
   const qc = useQueryClient();
   const { user } = useAuth();
 
-  const { data: clients } = useQuery({
+  const {
+    data: clients,
+    error: clientsError,
+    refetch: refetchClients,
+  } = useQuery({
     queryKey: ["queue-clients"],
-    queryFn: async () =>
-      (await supabase.from("clients").select("id,name").order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clients").select("id,name").order("name");
+      // Zonder dit blijft de spinner eeuwig draaien bij een fout: `clients`
+      // blijft undefined en de laadtak hieronder heeft geen uitgang.
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({ to: "/admin/queue", search: { clientId: activeId }, replace: true });
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({ to: "/admin/queue", search: { clientId: activeId }, replace: true });
+    }
+  }, [clientId, activeId, navigate]);
+
+  if (clientsError) {
+    return (
+      <ErrorState
+        title="Klanten konden niet geladen worden"
+        description="De verbinding met de server gaf geen antwoord."
+        onRetry={() => void refetchClients()}
+      />
+    );
   }
 
   if (!clients) return <Loader2 className="h-6 w-6 animate-spin text-gold" />;

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageTabs } from "@/components/page-tabs";
 import { CONTENT_TABS } from "@/lib/page-tabs";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -260,9 +260,11 @@ function BulkPlannerPage() {
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({ to: "/admin/bulk", search: { clientId: activeId }, replace: true });
-  }
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({ to: "/admin/bulk", search: { clientId: activeId }, replace: true });
+    }
+  }, [clientId, activeId, navigate]);
 
   const importableRows = useMemo(
     () => (parsed?.rows ?? []).filter((r) => r.status !== "fout"),

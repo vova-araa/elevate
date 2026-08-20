@@ -315,25 +315,42 @@ function Overview({ client }: { client: Tables<"clients"> }) {
 const inp = "rounded-lg bg-input/60 hairline px-3 py-2 text-sm w-full";
 const btnGold = "rounded-lg bg-gradient-gold px-4 py-2 text-sm font-medium text-primary-foreground";
 
+/**
+ * Alle tien de invoerpanelen op deze pagina lopen hier doorheen. Ze hadden geen
+ * bezig-status: twee keer op Enter of een dubbelklik leverde twee gesprekken,
+ * deals of rapporten op. De `fieldset` zet tijdens het opslaan in één klap
+ * alles binnenin op non-actief, dus dat geldt meteen voor elk formulier.
+ */
 function SectionForm({
   children,
   onSubmit,
   title,
 }: {
   children: React.ReactNode;
-  onSubmit: () => void;
+  onSubmit: () => unknown;
   title: string;
 }) {
+  const [busy, setBusy] = useState(false);
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit();
+        if (busy) return;
+        setBusy(true);
+        try {
+          // Handlers geven soms een toast-id terug; die waarde doet er niet toe,
+          // het gaat om het wachten tot ze klaar zijn.
+          await onSubmit();
+        } finally {
+          setBusy(false);
+        }
       }}
-      className="glass-strong rounded-2xl p-5 space-y-3"
+      className="glass-strong rounded-2xl p-5"
     >
-      <div className="text-xs uppercase tracking-[0.2em] text-gold/80">{title}</div>
-      {children}
+      <fieldset disabled={busy} className="space-y-3 border-0 p-0 m-0 disabled:opacity-60">
+        <div className="text-xs uppercase tracking-[0.2em] text-gold/80">{title}</div>
+        {children}
+      </fieldset>
     </form>
   );
 }
@@ -1604,12 +1621,14 @@ function RoadmapStepRow({
       </select>
       <button
         onClick={() => setEditing(true)}
+        aria-label="Stap bewerken"
         className="shrink-0 text-muted-foreground hover:text-gold p-1"
       >
         <Pencil className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onDelete}
+        aria-label="Stap verwijderen"
         className="shrink-0 text-muted-foreground hover:text-destructive p-1"
       >
         <Trash2 className="h-3.5 w-3.5" />

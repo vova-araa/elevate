@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { ErrorState } from "@/components/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientAnalytics } from "@/lib/analytics.functions";
 import { z } from "zod";
@@ -95,7 +96,12 @@ function AnalyticsPage() {
   }, [search.clientId, clientId, range, navigate]);
 
   const getAnalytics = useServerFn(getClientAnalytics);
-  const { data: analytics, isLoading } = useQuery({
+  const {
+    data: analytics,
+    isLoading,
+    error: analyticsError,
+    refetch: refetchAnalytics,
+  } = useQuery({
     enabled: !!clientId,
     queryKey: ["client-analytics", clientId, days],
     queryFn: () => getAnalytics({ data: { clientId: clientId!, days } }),
@@ -191,6 +197,14 @@ function AnalyticsPage() {
 
       {isLoading ? (
         <AnalyticsSkeleton />
+      ) : analyticsError ? (
+        // Zonder deze tak stond hier een compleet ingevuld dashboard vol
+        // nullen, alsof er niets gepubliceerd was.
+        <ErrorState
+          title="Cijfers konden niet geladen worden"
+          description="De server gaf geen antwoord. De getallen hieronder zouden onjuist zijn, dus tonen we ze niet."
+          onRetry={() => void refetchAnalytics()}
+        />
       ) : (
         <>
           {/* KPIs */}

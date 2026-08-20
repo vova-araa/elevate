@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { listClientChannels } from "@/lib/channels.functions";
 import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import { ReportCard } from "@/components/client-portal/report-card";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,25 +71,36 @@ function ClientOverview() {
   // server-side, dit voorkomt slechts een zinloze query voor gewone klanten.
   const previewId = role === "admin" ? asClient : undefined;
 
-  const { data: membership, isLoading: loadingMembership } = useQuery({
+  const {
+    data: membership,
+    isLoading: loadingMembership,
+    error: membershipError,
+    refetch: refetchMembership,
+  } = useQuery({
     queryKey: ["my-client", user?.id, previewId],
     enabled: !!user,
     queryFn: async () => {
       if (previewId) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("clients")
           .select("id, name")
           .eq("id", previewId)
           .maybeSingle();
+        if (error) throw error;
         return data ? { client_id: data.id, clients: { name: data.name } } : null;
       }
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("client_members")
         .select("client_id, clients(name)")
         .eq("user_id", user!.id)
         .order("client_id")
         .limit(1)
         .maybeSingle();
+      // Bewust doorgooien: supabase-js gooit zelf niet, het geeft { data: null,
+      // error } terug. Slikken we die, dan ziet een gekoppelde klant bij een
+      // netwerk- of RLS-fout "Nog geen bedrijf gekoppeld" — alsof het bureau
+      // hem vergeten is.
+      if (error) throw error;
       return data;
     },
   });
@@ -237,6 +249,18 @@ function ClientOverview() {
   // --- Laad-/lege staten ---
   if (loadingMembership) {
     return <OverviewSkeleton />;
+  }
+
+  if (membershipError) {
+    return (
+      <div className="max-w-2xl">
+        <ErrorState
+          title="Je gegevens konden niet geladen worden"
+          description="Dit ligt niet aan je account — de verbinding met de server gaf geen antwoord."
+          onRetry={() => void refetchMembership()}
+        />
+      </div>
+    );
   }
 
   if (!membership) {

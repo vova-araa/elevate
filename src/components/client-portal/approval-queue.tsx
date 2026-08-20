@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSignedUrlState } from "@/lib/use-signed-url";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -270,19 +271,10 @@ function DraftCard({
 }
 
 function MediaPreview({ path, mediaType }: { path: string; mediaType: string | null }) {
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    let cancelled = false;
-    supabase.storage
-      .from("client-uploads")
-      .createSignedUrl(path, 3600)
-      .then(({ data }) => {
-        if (!cancelled) setUrl(data?.signedUrl || "");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [path]);
+  // Via de gedeelde hook: die onderscheidt "nog bezig" van "mislukt". Met de
+  // oude opzet bleef de spinner bij een fout eeuwig draaien en zag de klant
+  // nooit waar hij akkoord op gaf.
+  const { url, isError, retry } = useSignedUrlState(path);
 
   const isVideo = mediaType?.startsWith("video") || /\.(mp4|mov|webm)$/i.test(path);
 
@@ -295,6 +287,14 @@ function MediaPreview({ path, mediaType }: { path: string; mediaType: string | n
           ) : (
             <img src={url} alt="Voorbeeld van de post" className="h-full w-full object-cover" />
           )
+        ) : isError ? (
+          <button
+            type="button"
+            onClick={retry}
+            className="grid h-full w-full place-items-center px-2 text-center text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            Voorbeeld kon niet laden — opnieuw proberen
+          </button>
         ) : (
           <div className="h-full w-full grid place-items-center">
             <Loader2 className="h-4 w-4 animate-spin text-gold" />

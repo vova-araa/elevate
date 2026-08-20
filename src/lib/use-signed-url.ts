@@ -10,7 +10,29 @@ export function useSignedUrl(
   path: string | null | undefined,
   bucket = "client-uploads",
 ): string | null {
-  const { data } = useQuery({
+  return useSignedUrlState(path, bucket).url;
+}
+
+export interface SignedUrlState {
+  url: string | null;
+  isLoading: boolean;
+  isError: boolean;
+  retry: () => void;
+}
+
+/**
+ * Zelfde als `useSignedUrl`, maar mét laad- en foutstatus.
+ *
+ * Nodig omdat "nog aan het laden" en "mislukt" allebei als `null` terugkwamen.
+ * Componenten toonden daardoor een spinner die bij een fout eeuwig bleef
+ * draaien — in de goedkeuringsflow van de klant zag die dan nooit zijn beeld,
+ * zonder enige melding.
+ */
+export function useSignedUrlState(
+  path: string | null | undefined,
+  bucket = "client-uploads",
+): SignedUrlState {
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["signed-url", bucket, path],
     enabled: !!path,
     // Vernieuw de URL proactief net onder de geldigheidsduur van 1 uur, zodat
@@ -18,13 +40,21 @@ export function useSignedUrl(
     staleTime: 55 * 60 * 1000,
     refetchInterval: 55 * 60 * 1000,
     refetchIntervalInBackground: false,
+    retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path!, 3600);
-      if (error) return null;
+      // Doorgooien in plaats van null teruggeven: anders kan de aanroeper een
+      // mislukking niet van "nog bezig" onderscheiden.
+      if (error) throw error;
       return data.signedUrl;
     },
   });
-  return data ?? null;
+  return {
+    url: data ?? null,
+    isLoading: !!path && isLoading,
+    isError,
+    retry: () => void refetch(),
+  };
 }
 
 /**

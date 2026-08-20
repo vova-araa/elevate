@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -91,9 +91,11 @@ function CreatePage() {
   const selected = clients?.find((c) => c.id === clientId) ?? clients?.[0];
   const activeId = selected?.id;
 
-  if (!clientId && activeId) {
-    navigate({ to: "/admin/create", search: { clientId: activeId }, replace: true });
-  }
+  useEffect(() => {
+    if (!clientId && activeId) {
+      navigate({ to: "/admin/create", search: { clientId: activeId }, replace: true });
+    }
+  }, [clientId, activeId, navigate]);
 
   const [tab, setTab] = useState<Tab>("ideas");
 
