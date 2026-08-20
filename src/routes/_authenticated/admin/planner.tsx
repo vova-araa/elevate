@@ -11,6 +11,7 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
 import { publishScheduledPost } from "@/lib/publish.functions";
+import { preflightPost, hasBlocker, type PreflightIssue } from "@/lib/post-preflight";
 import { getPublishedFeed, type PublishedFeedItem } from "@/lib/feed.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import { CAPTION_LIMITS, DAY_LABELS_LONG } from "@/lib/social-constants";
 import { dutchHolidays } from "@/lib/holidays";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
 import {
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -1178,6 +1180,28 @@ function ComposeModal({
     return dates;
   }
 
+  /**
+   * Wat er misgaat als deze post straks de deur uit moet. Per gekozen platform,
+   * want dezelfde media kan op Instagram prima zijn en op TikTok onmogelijk.
+   */
+  const preflight: { platform: Platform; issues: PreflightIssue[] }[] = useMemo(
+    () =>
+      platforms.map((p) => ({
+        platform: p,
+        issues: preflightPost({
+          platform: p,
+          hasMedia: !!mediaPath,
+          mediaType,
+          caption,
+          connected: isConnected(p),
+          scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+        }),
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [platforms, mediaPath, mediaType, caption, scheduledAt, connectedPlatforms],
+  );
+  const blocked = preflight.some((p) => hasBlocker(p.issues));
+
   const publishNowFn = useServerFn(publishScheduledPost);
   const [publishing, setPublishing] = useState(false);
 
@@ -1686,6 +1710,46 @@ function ComposeModal({
         </div>
 
         {/* Footer */}
+        {preflight.some((p) => p.issues.length > 0) && (
+          <div className="mb-3 w-full space-y-2">
+            {preflight
+              .filter((p) => p.issues.length > 0)
+              .map(({ platform, issues }) => (
+                <div
+                  key={platform}
+                  className={cn(
+                    "rounded-xl border px-3 py-2.5 text-sm",
+                    hasBlocker(issues)
+                      ? "border-destructive/40 bg-destructive/5"
+                      : "border-amber-400/35 bg-amber-500/5",
+                  )}
+                >
+                  <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                    {hasBlocker(issues) ? (
+                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                    ) : (
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                    )}
+                    {PLATFORMS.find((x) => x.id === platform)?.label ?? platform}
+                  </div>
+                  <ul className="mt-1.5 space-y-1">
+                    {issues.map((i, n) => (
+                      <li key={n} className="leading-snug">
+                        <span
+                          className={
+                            i.level === "blokkerend" ? "text-destructive" : "text-amber-300"
+                          }
+                        >
+                          {i.message}
+                        </span>
+                        {i.fix && <span className="text-muted-foreground"> {i.fix}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2 pt-4 border-t border-border/30">
           {editId && onDelete && (
             <button
@@ -1726,7 +1790,7 @@ function ComposeModal({
           </button>
           <button
             onClick={publishNow}
-            disabled={saving || publishing || overHard || platforms.length === 0}
+            disabled={saving || publishing || overHard || blocked || platforms.length === 0}
             title="Slaat op en plaatst meteen — niet wachten op de publiceerronde"
             className="rounded-full border border-emerald-400/45 text-emerald-300 hover:bg-emerald-500/10 px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
           >
@@ -1739,7 +1803,7 @@ function ComposeModal({
           </button>
           <button
             onClick={() => save("scheduled")}
-            disabled={saving || publishing || overHard}
+            disabled={saving || publishing || overHard || blocked}
             className="rounded-full bg-gradient-gold text-primary-foreground px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
           >
             {saving ? (
