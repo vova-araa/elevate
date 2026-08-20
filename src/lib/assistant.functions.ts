@@ -4,6 +4,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { reconnectDeadline } from "@/lib/token-lifetime";
 import type { Database, TablesInsert } from "@/integrations/supabase/types";
 import { runToolLoop, type JsonValue, type ToolArgs } from "@/lib/ai-provider.server";
 import { defaultHourFor, type CampaignPlatform } from "@/lib/campaigns.functions";
@@ -146,7 +147,9 @@ async function buildClientOverview(clientId: string, clientName: string): Promis
       .maybeSingle(),
     supabaseAdmin
       .from("social_connections")
-      .select("platform, status, follower_count, token_expires_at, account_username")
+      .select(
+        "platform, status, follower_count, token_expires_at, refresh_expires_at, never_expires, refresh_token, account_username",
+      )
       .eq("client_id", clientId),
     supabaseAdmin
       .from("scheduled_posts")
@@ -254,14 +257,24 @@ async function buildClientOverview(clientId: string, clientName: string): Promis
   const notConnected = ALL_PLATFORMS.filter(
     (p) => !connectedPlatforms.includes(p as (typeof connectedPlatforms)[number]),
   );
+  // Alleen koppelingen waar echt een mens aan te pas moet komen. Een
+  // TikTok-token verloopt elke 24 uur en wordt automatisch vernieuwd; dat als
+  // "bijna verlopen" aan de assistent doorgeven levert alleen vals alarm op.
   const expiringSoon = connections
+    .filter((c) => c.status === "active")
+    .map((c) => ({
+      platform: c.platform,
+      verlooptOp: reconnectDeadline({
+        neverExpires: c.never_expires,
+        hasRefreshToken: !!c.refresh_token,
+        tokenExpiresAt: c.token_expires_at,
+        refreshExpiresAt: c.refresh_expires_at,
+      }),
+    }))
     .filter(
       (c) =>
-        c.status === "active" &&
-        c.token_expires_at !== null &&
-        new Date(c.token_expires_at).getTime() - now.getTime() < 14 * DAY_MS,
-    )
-    .map((c) => ({ platform: c.platform, verlooptOp: c.token_expires_at }));
+        c.verlooptOp !== null && new Date(c.verlooptOp).getTime() - now.getTime() < 14 * DAY_MS,
+    );
   const channels = {
     gekoppeld: connectedPlatforms,
     nietGekoppeld: notConnected,

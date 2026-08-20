@@ -701,6 +701,92 @@ export type Database = {
           },
         ];
       };
+      delivery_requests: {
+        Row: {
+          client_id: string;
+          completed_at: string | null;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          due_date: string | null;
+          id: string;
+          kind: string;
+          quantity_needed: number;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          client_id: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          kind?: string;
+          quantity_needed?: number;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          client_id?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          kind?: string;
+          quantity_needed?: number;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "delivery_requests_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      data_deletion_requests: {
+        Row: {
+          completed_at: string | null;
+          confirmation_code: string;
+          created_at: string;
+          details: Json;
+          id: string;
+          platform: string;
+          platform_user_id: string;
+          status: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          confirmation_code: string;
+          created_at?: string;
+          details?: Json;
+          id?: string;
+          platform?: string;
+          platform_user_id: string;
+          status?: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          confirmation_code?: string;
+          created_at?: string;
+          details?: Json;
+          id?: string;
+          platform?: string;
+          platform_user_id?: string;
+          status?: string;
+        };
+        Relationships: [];
+      };
       clients: {
         Row: {
           brand_color: string | null;
@@ -903,6 +989,50 @@ export type Database = {
           value_cents?: number | null;
         };
         Relationships: [];
+      };
+      editor_templates: {
+        Row: {
+          aspect: number | null;
+          client_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          grade: Json;
+          id: string;
+          layers: Json;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          aspect?: number | null;
+          client_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          grade?: Json;
+          id?: string;
+          layers?: Json;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          aspect?: number | null;
+          client_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          grade?: Json;
+          id?: string;
+          layers?: Json;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "editor_templates_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       evaluations: {
         Row: {
@@ -1447,10 +1577,13 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
+          error_kind: string | null;
           error_message: string | null;
           id: string;
+          is_ad: boolean;
           is_queued: boolean;
           media_path: string | null;
+          last_attempt_at: string | null;
           media_purged_at: string | null;
           media_type: string | null;
           notes: string | null;
@@ -1458,8 +1591,10 @@ export type Database = {
           platform: Database["public"]["Enums"]["social_platform"];
           platform_container_id: string | null;
           platform_post_id: string | null;
+          platform_verified_at: string | null;
           published_at: string | null;
           recurring_rule: Json | null;
+          retry_count: number;
           scheduled_at: string;
           status: Database["public"]["Enums"]["scheduled_post_status"];
           updated_at: string;
@@ -1470,10 +1605,13 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
+          error_kind?: string | null;
           error_message?: string | null;
           id?: string;
+          is_ad?: boolean;
           is_queued?: boolean;
           media_path?: string | null;
+          last_attempt_at?: string | null;
           media_purged_at?: string | null;
           media_type?: string | null;
           notes?: string | null;
@@ -1481,8 +1619,10 @@ export type Database = {
           platform?: Database["public"]["Enums"]["social_platform"];
           platform_container_id?: string | null;
           platform_post_id?: string | null;
+          platform_verified_at?: string | null;
           published_at?: string | null;
           recurring_rule?: Json | null;
+          retry_count?: number;
           scheduled_at: string;
           status?: Database["public"]["Enums"]["scheduled_post_status"];
           updated_at?: string;
@@ -1493,10 +1633,13 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
+          error_kind?: string | null;
           error_message?: string | null;
           id?: string;
+          is_ad?: boolean;
           is_queued?: boolean;
           media_path?: string | null;
+          last_attempt_at?: string | null;
           media_purged_at?: string | null;
           media_type?: string | null;
           notes?: string | null;
@@ -1504,8 +1647,10 @@ export type Database = {
           platform?: Database["public"]["Enums"]["social_platform"];
           platform_container_id?: string | null;
           platform_post_id?: string | null;
+          platform_verified_at?: string | null;
           published_at?: string | null;
           recurring_rule?: Json | null;
+          retry_count?: number;
           scheduled_at?: string;
           status?: Database["public"]["Enums"]["scheduled_post_status"];
           updated_at?: string;
@@ -1535,6 +1680,8 @@ export type Database = {
           meta: Json;
           platform: Database["public"]["Enums"]["social_platform"];
           postiz_integration_id: string | null;
+          never_expires: boolean;
+          refresh_expires_at: string | null;
           refresh_token: string | null;
           status: Database["public"]["Enums"]["social_connection_status"];
           token_expires_at: string | null;
@@ -1554,6 +1701,8 @@ export type Database = {
           meta?: Json;
           platform: Database["public"]["Enums"]["social_platform"];
           postiz_integration_id?: string | null;
+          never_expires?: boolean;
+          refresh_expires_at?: string | null;
           refresh_token?: string | null;
           status?: Database["public"]["Enums"]["social_connection_status"];
           token_expires_at?: string | null;
@@ -1573,6 +1722,8 @@ export type Database = {
           meta?: Json;
           platform?: Database["public"]["Enums"]["social_platform"];
           postiz_integration_id?: string | null;
+          never_expires?: boolean;
+          refresh_expires_at?: string | null;
           refresh_token?: string | null;
           status?: Database["public"]["Enums"]["social_connection_status"];
           token_expires_at?: string | null;
@@ -1727,6 +1878,7 @@ export type Database = {
           caption: string | null;
           client_id: string;
           created_at: string;
+          delivery_request_id: string | null;
           file_name: string;
           file_path: string;
           file_size: number | null;
@@ -1734,6 +1886,7 @@ export type Database = {
           folder_id: string | null;
           id: string;
           media_purged_at: string | null;
+          source_ref: string | null;
           status: string;
           uploader_id: string | null;
         };
@@ -1744,6 +1897,7 @@ export type Database = {
           caption?: string | null;
           client_id: string;
           created_at?: string;
+          delivery_request_id?: string | null;
           file_name: string;
           file_path: string;
           file_size?: number | null;
@@ -1751,6 +1905,7 @@ export type Database = {
           folder_id?: string | null;
           id?: string;
           media_purged_at?: string | null;
+          source_ref?: string | null;
           status?: string;
           uploader_id?: string | null;
         };
@@ -1761,6 +1916,7 @@ export type Database = {
           caption?: string | null;
           client_id?: string;
           created_at?: string;
+          delivery_request_id?: string | null;
           file_name?: string;
           file_path?: string;
           file_size?: number | null;
@@ -1768,6 +1924,7 @@ export type Database = {
           folder_id?: string | null;
           id?: string;
           media_purged_at?: string | null;
+          source_ref?: string | null;
           status?: string;
           uploader_id?: string | null;
         };

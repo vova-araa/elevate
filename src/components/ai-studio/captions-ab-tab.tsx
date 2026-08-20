@@ -33,7 +33,7 @@ export function CaptionsAbTab({ clients }: { clients: StudioClient[] }) {
   const [briefing, setBriefing] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
   const [tone, setTone] = useState<Tone>("professioneel");
-  const [platforms, setPlatforms] = useState<StudioPlatform[]>(["instagram", "linkedin"]);
+  const [platforms, setPlatforms] = useState<StudioPlatform[]>(["instagram", "tiktok"]);
   const [language, setLanguage] = useState<"nl" | "en">("nl");
   const [variantCount, setVariantCount] = useState<2 | 3>(2);
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());

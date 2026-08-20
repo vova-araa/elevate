@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as DataDeletionStatusRouteImport } from './routes/data-deletion-status'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -63,6 +64,7 @@ import { Route as AuthenticatedAdminClientsIndexRouteImport } from './routes/_au
 import { Route as ApiPublicV1PostsRouteImport } from './routes/api/public/v1/posts'
 import { Route as ApiPublicV1ClientsRouteImport } from './routes/api/public/v1/clients'
 import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/oauth/callback'
+import { Route as ApiPublicMetaDataDeletionRouteImport } from './routes/api/public/meta/data-deletion'
 import { Route as AuthenticatedAdminClientsNewRouteImport } from './routes/_authenticated/admin/clients.new'
 import { Route as AuthenticatedAdminClientsIntakeRouteImport } from './routes/_authenticated/admin/clients.intake'
 import { Route as AuthenticatedAdminClientsIdRouteImport } from './routes/_authenticated/admin/clients.$id'
@@ -77,6 +79,11 @@ const TermsRoute = TermsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataDeletionStatusRoute = DataDeletionStatusRouteImport.update({
+  id: '/data-deletion-status',
+  path: '/data-deletion-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataDeletionRoute = DataDeletionRouteImport.update({
@@ -368,6 +375,12 @@ const ApiPublicOauthCallbackRoute = ApiPublicOauthCallbackRouteImport.update({
   path: '/api/public/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMetaDataDeletionRoute =
+  ApiPublicMetaDataDeletionRouteImport.update({
+    id: '/api/public/meta/data-deletion',
+    path: '/api/public/meta/data-deletion',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminClientsNewRoute =
   AuthenticatedAdminClientsNewRouteImport.update({
     id: '/clients/new',
@@ -403,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/data-deletion-status': typeof DataDeletionStatusRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -452,6 +466,7 @@ export interface FileRoutesByFullPath {
   '/admin/clients/$id': typeof AuthenticatedAdminClientsIdRouteWithChildren
   '/admin/clients/intake': typeof AuthenticatedAdminClientsIntakeRoute
   '/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
+  '/api/public/meta/data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
@@ -463,6 +478,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/data-deletion-status': typeof DataDeletionStatusRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -512,6 +528,7 @@ export interface FileRoutesByTo {
   '/admin/clients/$id': typeof AuthenticatedAdminClientsIdRouteWithChildren
   '/admin/clients/intake': typeof AuthenticatedAdminClientsIntakeRoute
   '/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
+  '/api/public/meta/data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
@@ -525,6 +542,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/data-deletion-status': typeof DataDeletionStatusRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -574,6 +592,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/clients/$id': typeof AuthenticatedAdminClientsIdRouteWithChildren
   '/_authenticated/admin/clients/intake': typeof AuthenticatedAdminClientsIntakeRoute
   '/_authenticated/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
+  '/api/public/meta/data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
@@ -587,6 +606,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/data-deletion'
+    | '/data-deletion-status'
     | '/privacy'
     | '/terms'
     | '/admin'
@@ -636,6 +656,7 @@ export interface FileRouteTypes {
     | '/admin/clients/$id'
     | '/admin/clients/intake'
     | '/admin/clients/new'
+    | '/api/public/meta/data-deletion'
     | '/api/public/oauth/callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
@@ -647,6 +668,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/data-deletion'
+    | '/data-deletion-status'
     | '/privacy'
     | '/terms'
     | '/admin'
@@ -696,6 +718,7 @@ export interface FileRouteTypes {
     | '/admin/clients/$id'
     | '/admin/clients/intake'
     | '/admin/clients/new'
+    | '/api/public/meta/data-deletion'
     | '/api/public/oauth/callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
@@ -708,6 +731,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/data-deletion'
+    | '/data-deletion-status'
     | '/privacy'
     | '/terms'
     | '/_authenticated/admin'
@@ -757,6 +781,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/clients/$id'
     | '/_authenticated/admin/clients/intake'
     | '/_authenticated/admin/clients/new'
+    | '/api/public/meta/data-deletion'
     | '/api/public/oauth/callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
@@ -770,11 +795,13 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   DataDeletionRoute: typeof DataDeletionRoute
+  DataDeletionStatusRoute: typeof DataDeletionStatusRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   ApproveTokenRoute: typeof ApproveTokenRoute
   ConnectTokenRoute: typeof ConnectTokenRoute
   ApiPublicAutomationTickRoute: typeof ApiPublicAutomationTickRoute
+  ApiPublicMetaDataDeletionRoute: typeof ApiPublicMetaDataDeletionRoute
   ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
   ApiPublicV1ClientsRoute: typeof ApiPublicV1ClientsRoute
   ApiPublicV1PostsRoute: typeof ApiPublicV1PostsRoute
@@ -794,6 +821,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-deletion-status': {
+      id: '/data-deletion-status'
+      path: '/data-deletion-status'
+      fullPath: '/data-deletion-status'
+      preLoaderRoute: typeof DataDeletionStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data-deletion': {
@@ -1160,6 +1194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/meta/data-deletion': {
+      id: '/api/public/meta/data-deletion'
+      path: '/api/public/meta/data-deletion'
+      fullPath: '/api/public/meta/data-deletion'
+      preLoaderRoute: typeof ApiPublicMetaDataDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/clients/new': {
       id: '/_authenticated/admin/clients/new'
       path: '/clients/new'
@@ -1333,11 +1374,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   DataDeletionRoute: DataDeletionRoute,
+  DataDeletionStatusRoute: DataDeletionStatusRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   ApproveTokenRoute: ApproveTokenRoute,
   ConnectTokenRoute: ConnectTokenRoute,
   ApiPublicAutomationTickRoute: ApiPublicAutomationTickRoute,
+  ApiPublicMetaDataDeletionRoute: ApiPublicMetaDataDeletionRoute,
   ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
   ApiPublicV1ClientsRoute: ApiPublicV1ClientsRoute,
   ApiPublicV1PostsRoute: ApiPublicV1PostsRoute,

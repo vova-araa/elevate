@@ -4,10 +4,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck --if-present
-      - run: bun run lint --if-present
+      # Géén --if-present: dat is een npm-vlag. Bun geeft hem door aan het
+      # script zelf, waarna tsc afhaakt op "Unknown compiler option
+      # '--if-present'" — de build faalde daar altijd op, ongeacht de code.
+      # Alle vier de scripts staan in package.json, dus de vlag heeft hier
+      # sowieso geen functie.
+      - run: bun run typecheck
+      - run: bun run lint
       - run: bun run build
-      - run: bun run test --if-present
+      - run: bun run test

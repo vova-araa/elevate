@@ -96,9 +96,14 @@ export function AdminSidebar() {
     });
   };
 
-  // Selecteer automatisch de eerste klant als er nog geen actief is.
+  // Selecteer automatisch de eerste klant als er nog geen actief is — of als de
+  // actieve klant inmiddels is verwijderd (anders blijft de app tegen een
+  // niet-bestaande klant aan praten).
   useEffect(() => {
-    if (!activeClientId && clients && clients.length > 0) selectClient(clients[0]);
+    if (!clients || clients.length === 0) return;
+    if (!activeClientId || !clients.some((c) => c.id === activeClientId)) {
+      selectClient(clients[0]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClientId, clients]);
 
@@ -204,6 +209,16 @@ export function AdminSidebar() {
                   </button>
                 );
               })}
+              <Link
+                to="/admin/clients/new"
+                onClick={() => setSwitcherOpen(false)}
+                className="flex w-full items-center gap-2 rounded-lg border-t border-gold/10 px-2 py-1.5 text-left text-sm text-gold transition hover:bg-gold/10"
+              >
+                <span className="grid h-6 w-6 place-items-center rounded-full border border-dashed border-gold/40">
+                  <Plus className="h-3.5 w-3.5" />
+                </span>
+                Nieuwe klant
+              </Link>
             </div>
           )}
         </div>

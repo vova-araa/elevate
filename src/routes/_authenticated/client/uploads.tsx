@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Upload as UploadIcon, Loader2, Play } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
+import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
+import { DriveImportCard } from "@/components/drive-import-card";
 import type { Tables } from "@/integrations/supabase/types";
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
 
@@ -25,6 +27,24 @@ function ClientUploads() {
   useEffect(() => {
     if (!clientId && members && members[0]) setClientId(members[0].client_id);
   }, [members, clientId]);
+
+  // Openstaande media-verzoeken: een upload kan er direct aan gekoppeld worden,
+  // zodat de voortgang op de aanleverlijst vanzelf meeloopt.
+  const [requestId, setRequestId] = useState<string>("");
+  const { data: openRequests } = useQuery({
+    queryKey: ["delivery-requests-open", clientId],
+    enabled: !!clientId,
+    queryFn: async () =>
+      (
+        await supabase
+          .from("delivery_requests")
+          .select("id, title")
+          .eq("client_id", clientId)
+          .eq("kind", "media")
+          .neq("status", "done")
+          .order("due_date", { ascending: true, nullsFirst: false })
+      ).data ?? [],
+  });
 
   const { data: uploads } = useQuery({
     queryKey: ["uploads-client", clientId],
@@ -66,6 +86,7 @@ function ClientUploads() {
         file_size: file.size,
         uploader_id: u.user?.id ?? null,
         status: "pending",
+        delivery_request_id: requestId || null,
       });
       if (insertError) {
         toast.error(insertError.message);
@@ -74,6 +95,7 @@ function ClientUploads() {
     }
     toast.success("Geüpload — wacht op goedkeuring door je Elevate-team");
     qc.invalidateQueries({ queryKey: ["uploads-client", clientId] });
+    qc.invalidateQueries({ queryKey: ["delivery-overview", clientId] });
   }
 
   if (loadingMembers) {
@@ -119,6 +141,30 @@ function ClientUploads() {
           </select>
         )}
       </div>
+
+      {clientId && <DeliveryChecklist clientId={clientId} />}
+
+      {(openRequests?.length ?? 0) > 0 && (
+        <label className="block rounded-xl border border-gold/10 bg-card p-4">
+          <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Hoort bij aanvraag
+          </span>
+          <select
+            value={requestId}
+            onChange={(e) => setRequestId(e.target.value)}
+            className="mt-2 w-full min-h-11 rounded-lg bg-input/60 hairline px-4 py-2 text-sm"
+          >
+            <option value="">Geen — los materiaal</option>
+            {openRequests?.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {clientId && <DriveImportCard clientId={clientId} deliveryRequestId={requestId || null} />}
 
       <label className="glass-strong block rounded-2xl border-2 border-dashed border-gold/30 p-6 sm:p-10 text-center cursor-pointer hover:border-gold/60">
         <Plus className="h-6 w-6 mx-auto text-gold" />

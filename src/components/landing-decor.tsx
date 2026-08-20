@@ -50,10 +50,27 @@ export function CountUp({
   const [current, setCurrent] = useState(0);
   const done = useRef(false);
 
+  // `match` is elke render een nieuw object. Stond het in de dependencies, dan
+  // draaide dit effect bij iedere render opnieuw — en omdat `done` dan al true
+  // was, deed de opruiming wél zijn werk (cancelAnimationFrame) en de start
+  // niet. Het cijfer bleef zo op 0 of 1 hangen. Vandaar een stabiele boolean.
+  const hasMatch = !!match;
+
+  /*
+   * Kleine getallen tellen niet op.
+   *
+   * De band toont claims als "3 kanalen" en "100% in jouw huisstijl". Tijdens
+   * het optellen las dat als "0 kanalen" en "1% in jouw huisstijl" — precies het
+   * tegenovergestelde van wat er staat, en voor een socialbureau de slechtst
+   * denkbare eerste indruk. Onder de tien is er ook niets te beleven aan een
+   * teller, dus die zetten we meteen op de eindwaarde.
+   */
+  const worthAnimating = target >= 10;
+
   useEffect(() => {
-    if (!match || !inView || done.current) return;
+    if (!hasMatch || !inView || done.current) return;
     done.current = true;
-    if (prefersReducedMotion()) {
+    if (prefersReducedMotion() || !worthAnimating) {
       setCurrent(target);
       return;
     }
@@ -68,7 +85,7 @@ export function CountUp({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, match, target, duration]);
+  }, [inView, hasMatch, target, duration, worthAnimating]);
 
   if (!match) {
     return (
@@ -172,16 +189,30 @@ export function LandingStyles() {
       .lp-drift-b { animation: lp-drift-b 22s ease-in-out infinite; }
       .lp-pulse-ring { animation: lp-pulse-ring 3s ease-out infinite; }
       .lp-wordmark { animation: lp-wordmark 13s ease-in-out infinite; }
+      /*
+       * Glans over goudkleurige tekst.
+       *
+       * Deze klasse zet background-image en wint daarmee van de klasse
+       * .text-gradient-gold eronder, die color: transparent +
+       * background-clip: text gebruikt. Stond hier een verloop dat buiten de
+       * glansband dóórzichtig was, dan viel de tekst daar volledig weg — de
+       * tweede regel van de H1 was op desktop half en op mobiel helemaal
+       * onzichtbaar.
+       *
+       * Daarom loopt het verloop nu van goud naar lichter goud en terug: altijd
+       * dekkend, de beweging zit alleen in de helderheid.
+       */
       .lp-sheen {
         background-image: linear-gradient(
           100deg,
-          transparent 30%,
-          oklch(from var(--gold) l c h / 45%) 50%,
-          transparent 70%
+          var(--gold-deep) 30%,
+          oklch(from var(--gold) calc(l + 0.12) c h) 50%,
+          var(--gold-deep) 70%
         );
         background-size: 200% 100%;
         -webkit-background-clip: text;
         background-clip: text;
+        color: transparent;
         animation: lp-sheen 6s ease-in-out infinite;
       }
 

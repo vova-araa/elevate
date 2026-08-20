@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesInsert } from "@/integrations/supabase/types";
+import { invalidateClientLists } from "@/lib/client-cache";
 import { toast } from "sonner";
 import { Instagram, Music2, Linkedin, Youtube, Facebook } from "lucide-react";
 
@@ -24,6 +26,7 @@ interface ClientFormState {
 
 function NewClient() {
   const nav = useNavigate();
+  const qc = useQueryClient();
   const [f, setF] = useState<ClientFormState>({
     name: "",
     industry: "",
@@ -53,6 +56,7 @@ function NewClient() {
       .single();
     setBusy(false);
     if (error) return toast.error(error.message);
+    invalidateClientLists(qc);
     toast.success("Klant aangemaakt");
     nav({ to: "/admin/clients/$id", params: { id: data.id } });
   }

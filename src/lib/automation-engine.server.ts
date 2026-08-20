@@ -2,9 +2,17 @@
 // evaluates rules, fires outgoing webhooks.
 import { createClient } from "@supabase/supabase-js";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { publishToPlatform } from "@/lib/social-publish.server";
-import type { SocialPlatform } from "@/lib/social-oauth.server";
+import { fetchTikTokPublishStatus, publishToPlatform } from "@/lib/social-publish.server";
+import { fetchProfile, refreshAccessToken, type SocialPlatform } from "@/lib/social-oauth.server";
 import { assertSafeExternalUrl } from "@/lib/ssrf-guard.server";
+import {
+  classifyPublishError,
+  humanReason,
+  retryDelayMinutes,
+  MAX_PUBLISH_RETRIES,
+} from "@/lib/publish-errors";
+import { reconnectDeadline, shouldRefreshNow } from "@/lib/token-lifetime";
+import { interpretTikTokStatus } from "@/lib/tiktok-post";
 
 type WebhookEndpoint = Tables<"webhook_endpoints">;
 type AutomationRule = Tables<"automation_rules">;
@@ -49,6 +57,29 @@ async function hmac(secret: string, body: string): Promise<string> {
   return Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+/**
+ * Melding naar alle admins. Gebruikt de service-role client, want de
+ * enqueue_notification-RPC is bewust niet meer voor gewone gebruikers
+ * aanroepbaar (die kon eerder misbruikt worden voor phishing-meldingen).
+ */
+async function notifyAdmins(
+  sb: ReturnType<typeof admin>,
+  title: string,
+  body: string,
+  link: string | null,
+) {
+  const { data: admins } = await sb.from("user_roles").select("user_id").eq("role", "admin");
+  for (const a of admins ?? []) {
+    await sb.rpc("enqueue_notification", {
+      _user_id: a.user_id,
+      _type: "system",
+      _title: title,
+      _body: body,
+      _link: link,
+    });
+  }
 }
 
 export async function dispatchEvent(
@@ -212,7 +243,7 @@ function isDue(rule: AutomationRule, now: Date): boolean {
 export async function runTick() {
   const sb = admin();
   const now = new Date();
-  const summary = { published: 0, rules_run: 0, errors: 0, purged: 0 };
+  const summary = { published: 0, rules_run: 0, errors: 0, purged: 0, retried: 0, warnings: 0 };
 
   // 0) Verweesde posts herstellen: als een vorige tick crashte tussen "claimen"
   // (→ publishing) en de eind-update, blijft een post op "publishing" hangen.
@@ -235,6 +266,18 @@ export async function runTick() {
     .is("deleted_at", null)
     .lte("scheduled_at", now.toISOString())
     .limit(50);
+
+  // Klantnamen in één keer ophalen: een melding met "Instagram voor Uprising
+  // Studio" is bruikbaar, een melding met een uuid niet.
+  const clientNames = new Map<string, string>();
+  const dueClientIds = [...new Set((due ?? []).map((p) => p.client_id).filter(Boolean))];
+  if (dueClientIds.length) {
+    const { data: clientRows } = await sb
+      .from("clients")
+      .select("id, name")
+      .in("id", dueClientIds as string[]);
+    for (const c of clientRows ?? []) clientNames.set(c.id, c.name);
+  }
 
   for (const p of due ?? []) {
     // Atomair claimen: alleen doorgaan als deze tick de post daadwerkelijk van
@@ -269,6 +312,7 @@ export async function runTick() {
         caption: p.caption ?? "",
         mediaUrl,
         mediaType: p.media_type,
+        isAd: p.is_ad,
       });
       await sb
         .from("scheduled_posts")
@@ -283,12 +327,47 @@ export async function runTick() {
       await dispatchEvent("post.published", { post: p }, p.client_id);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Publiceren mislukt";
-      await sb
-        .from("scheduled_posts")
-        .update({ status: "failed", error_message: message })
-        .eq("id", p.id);
-      summary.errors++;
-      await dispatchEvent("post.failed", { post: p, error: message }, p.client_id);
+      const kind = classifyPublishError(message);
+      const attempt = (p.retry_count ?? 0) + 1;
+      const canRetry = kind === "transient" && attempt <= MAX_PUBLISH_RETRIES;
+
+      if (canRetry) {
+        // Terug in de wachtrij met oplopende wachttijd. De post blijft
+        // 'scheduled', dus een volgende tick pakt hem vanzelf weer op.
+        const next = new Date(Date.now() + retryDelayMinutes(attempt) * 60_000);
+        await sb
+          .from("scheduled_posts")
+          .update({
+            status: "scheduled",
+            scheduled_at: next.toISOString(),
+            error_message: message,
+            error_kind: kind,
+            retry_count: attempt,
+            last_attempt_at: new Date().toISOString(),
+          })
+          .eq("id", p.id);
+        summary.retried++;
+      } else {
+        await sb
+          .from("scheduled_posts")
+          .update({
+            status: "failed",
+            error_message: message,
+            error_kind: kind,
+            retry_count: attempt,
+            last_attempt_at: new Date().toISOString(),
+          })
+          .eq("id", p.id);
+        summary.errors++;
+        // Stil mislukken is de kern van de klacht: waarschuw actief.
+        await notifyAdmins(
+          sb,
+          "Publicatie mislukt",
+          `${p.platform} voor ${clientNames.get(p.client_id) ?? "een klant"}: ${humanReason(message, kind)}`,
+          "/admin/planner",
+        );
+      }
+      await dispatchEvent("post.failed", { post: p, error: message, kind }, p.client_id);
     }
   }
 
@@ -318,6 +397,247 @@ export async function runTick() {
     }
     await sb.from("scheduled_posts").update({ media_purged_at: now.toISOString() }).eq("id", p.id);
     summary.purged++;
+  }
+
+  // 1c) Tokenbewaking — koppelingen in leven houden in plaats van ze zien sterven.
+  //
+  // De vervaldatum van een access-token is géén maat voor de levensduur van een
+  // koppeling. TikTok geeft 24 uur, maar levert bij elke verversing een nieuw
+  // refresh-token van 365 dagen; Google-refresh-tokens verlopen helemaal niet;
+  // en het Meta page-token waarmee wij publiceren heeft geen vervaldatum, ook al
+  // verloopt het user-token na 60 dagen.
+  //
+  // Dus: op tijd verversen (kort voor het access-token verloopt, niet dagen
+  // ervoor — anders draaien we bij TikTok elke tick een verversing en roteren we
+  // het refresh-token stuk), en alleen waarschuwen wanneer er écht een mens aan
+  // te pas moet komen.
+  const WARN_WINDOW_DAYS = 5;
+  const warnWindowMs = WARN_WINDOW_DAYS * 86400000;
+
+  const { data: connections } = await sb
+    .from("social_connections")
+    .select(
+      "id, client_id, platform, refresh_token, token_expires_at, refresh_expires_at, never_expires, status, meta",
+    )
+    .eq("status", "active")
+    .eq("never_expires", false)
+    .limit(200);
+
+  if (connections?.length) {
+    const tokenClientIds = [...new Set(connections.map((c) => c.client_id))];
+    for (const id of tokenClientIds) {
+      if (!clientNames.has(id)) {
+        const { data: c } = await sb.from("clients").select("name").eq("id", id).maybeSingle();
+        if (c) clientNames.set(id, c.name);
+      }
+    }
+
+    for (const conn of connections) {
+      const meta =
+        conn.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
+          ? (conn.meta as Record<string, unknown>)
+          : {};
+
+      let refreshExpiry = conn.refresh_expires_at
+        ? new Date(conn.refresh_expires_at).getTime()
+        : null;
+      let refreshed = false;
+
+      // Verversen zodra het access-token binnen twee uur verloopt. Bij TikTok
+      // komt dat neer op eens per etmaal in plaats van elke tick.
+      if (conn.refresh_token && shouldRefreshNow(conn.token_expires_at, now)) {
+        const fresh = await refreshAccessToken(
+          conn.platform as SocialPlatform,
+          conn.refresh_token,
+        ).catch(() => null);
+        if (fresh) {
+          refreshed = true;
+          if (fresh.refreshExpiresAt !== undefined) {
+            refreshExpiry = fresh.refreshExpiresAt
+              ? new Date(fresh.refreshExpiresAt).getTime()
+              : null;
+          }
+          await sb
+            .from("social_connections")
+            .update({
+              access_token: fresh.accessToken,
+              refresh_token: fresh.refreshToken,
+              token_expires_at: fresh.expiresAt,
+              refresh_expires_at: fresh.refreshExpiresAt ?? conn.refresh_expires_at,
+              meta: { ...meta, expiry_warned_at: null },
+            })
+            .eq("id", conn.id);
+        }
+      }
+
+      /**
+       * De datum waarop een mens opnieuw moet koppelen:
+       *  - is er een refresh-token, dan die van het refresh-token (en `null`
+       *    betekent: verloopt niet, bijvoorbeeld bij Google);
+       *  - is er geen refresh-token, dan die van het access-token zelf.
+       * Zolang verversen net gelukt is, is er sowieso niets aan de hand.
+       */
+      const deadlineIso = reconnectDeadline({
+        neverExpires: conn.never_expires,
+        hasRefreshToken: !!conn.refresh_token,
+        tokenExpiresAt: conn.token_expires_at,
+        refreshExpiresAt: refreshExpiry === null ? null : new Date(refreshExpiry).toISOString(),
+      });
+      if (deadlineIso === null) continue;
+      const remaining = new Date(deadlineIso).getTime() - now.getTime();
+      if (remaining > warnWindowMs) continue;
+      if (refreshed && remaining > 0) continue;
+
+      const expired = remaining <= 0;
+      if (expired) {
+        await sb.from("social_connections").update({ status: "expired" }).eq("id", conn.id);
+      }
+
+      // Hooguit één waarschuwing per etmaal per koppeling, anders loopt het
+      // meldingencentrum vol bij een tick die elke paar minuten draait.
+      const lastWarn = typeof meta.expiry_warned_at === "string" ? meta.expiry_warned_at : null;
+      if (lastWarn && now.getTime() - new Date(lastWarn).getTime() < 86400000) continue;
+
+      const who = clientNames.get(conn.client_id) ?? "een klant";
+      await notifyAdmins(
+        sb,
+        expired ? "Koppeling verlopen" : "Koppeling verloopt binnenkort",
+        expired
+          ? `De ${conn.platform}-koppeling van ${who} is verlopen. Koppel opnieuw om te blijven publiceren.`
+          : `De ${conn.platform}-koppeling van ${who} verloopt binnen ${WARN_WINDOW_DAYS} dagen en kan niet automatisch worden vernieuwd.`,
+        "/admin/kanalen",
+      );
+      await sb
+        .from("social_connections")
+        .update({ meta: { ...meta, expiry_warned_at: now.toISOString() } })
+        .eq("id", conn.id);
+      summary.warnings++;
+    }
+  }
+
+  // 1c2) TikTok-napraat: een aangenomen upload is nog geen geplaatste video.
+  // TikTok modereert asynchroon en kan een post minuten tot uren later alsnog
+  // afkeuren — en dan stond hij bij ons al die tijd als "gepubliceerd". Daarom
+  // vragen we het eindoordeel na tot het binnen is, met een grens van 24 uur.
+  const verifyCutoff = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+  const { data: unverified } = await sb
+    .from("scheduled_posts")
+    .select("id, client_id, platform, platform_post_id, published_at")
+    .eq("platform", "tiktok")
+    .eq("status", "published")
+    .is("platform_verified_at", null)
+    .not("platform_post_id", "is", null)
+    .gte("published_at", verifyCutoff)
+    .limit(20);
+
+  for (const post of unverified ?? []) {
+    try {
+      const { status: ttStatus, failReason } = await fetchTikTokPublishStatus(
+        post.client_id,
+        post.platform_post_id!,
+      );
+      const outcome = interpretTikTokStatus(ttStatus);
+      if (outcome === "bezig") continue; // volgende tick opnieuw
+
+      if (outcome === "mislukt") {
+        const reason = failReason ?? "door TikTok afgekeurd bij verwerking";
+        await sb
+          .from("scheduled_posts")
+          .update({
+            status: "failed",
+            error_message: reason,
+            error_kind: "permanent",
+            platform_verified_at: now.toISOString(),
+          })
+          .eq("id", post.id);
+        summary.errors++;
+        await notifyAdmins(
+          sb,
+          "TikTok keurde een post af",
+          `De upload was gelukt, maar TikTok heeft de video daarna afgekeurd: ${reason}`,
+          "/admin/planner",
+        );
+        await dispatchEvent(
+          "post.failed",
+          { post, error: reason, kind: "permanent" },
+          post.client_id,
+        );
+      } else {
+        await sb
+          .from("scheduled_posts")
+          .update({ platform_verified_at: now.toISOString() })
+          .eq("id", post.id);
+      }
+    } catch {
+      // Statuscheck zelf mislukt (bv. token net ververst): volgende tick weer.
+    }
+  }
+
+  // Ouder dan 24 uur zonder oordeel: afsluiten, anders blijft de lijst groeien.
+  await sb
+    .from("scheduled_posts")
+    .update({ platform_verified_at: now.toISOString() })
+    .eq("platform", "tiktok")
+    .eq("status", "published")
+    .is("platform_verified_at", null)
+    .not("platform_post_id", "is", null)
+    .lt("published_at", verifyCutoff);
+
+  // 1d) Dagelijkse volgersmeting.
+  //
+  // Tot nu toe werd een snapshot alleen geschreven bij het koppelen en bij een
+  // handmatige ververs-actie. De groeigrafieken (dashboard, klantportaal,
+  // rapporten) tekenen dus alleen iets als iemand eraan denkt op de knop te
+  // drukken — en "volgersgroei uit echte metingen" is niets waard met twee
+  // metingen per maand. Daarom meet de tick zelf, hooguit eens per ~20 uur per
+  // koppeling, zodat er hoe dan ook een dagelijkse reeks ontstaat.
+  const SNAPSHOT_EVERY_MS = 20 * 3600 * 1000;
+  const { data: snapConns } = await sb
+    .from("social_connections")
+    .select("id, client_id, platform, access_token, refresh_token, token_expires_at, meta")
+    .eq("status", "active")
+    .limit(50);
+  for (const conn of snapConns ?? []) {
+    if (!conn.access_token) continue;
+    const meta =
+      conn.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
+        ? (conn.meta as Record<string, unknown>)
+        : {};
+    const last =
+      typeof meta.last_snapshot_at === "string" ? new Date(meta.last_snapshot_at).getTime() : 0;
+    if (now.getTime() - last < SNAPSHOT_EVERY_MS) continue;
+
+    // Stempel vóór de poging, ook als die faalt: een kapotte koppeling mag niet
+    // elke tick opnieuw tegen de platform-API aan blijven lopen. De
+    // tokenbewaking hierboven meldt kapotte koppelingen al apart.
+    await sb
+      .from("social_connections")
+      .update({ meta: { ...meta, last_snapshot_at: now.toISOString() } })
+      .eq("id", conn.id);
+
+    try {
+      const profile = await fetchProfile(conn.platform as SocialPlatform, {
+        accessToken: conn.access_token,
+        refreshToken: conn.refresh_token,
+        expiresAt: conn.token_expires_at,
+        raw: {},
+      });
+      // Zonder volgersaantal (bv. TikTok zonder user.info.stats-scope) valt er
+      // niets te meten; een rij met null zou de grafiek alleen maar vervuilen.
+      if (profile.followers !== null) {
+        await sb.from("social_metrics_snapshots").insert({
+          client_id: conn.client_id,
+          platform: conn.platform,
+          followers: profile.followers,
+        });
+        await sb
+          .from("social_connections")
+          .update({ follower_count: profile.followers })
+          .eq("id", conn.id);
+      }
+    } catch {
+      // Volgende ronde opnieuw; de koppeling zelf wordt elders bewaakt.
+    }
   }
 
   // 2) Schedule-triggered rules

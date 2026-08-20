@@ -20,7 +20,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
 
 // ── Platform helpers ─────────────────────────────────────────────────────────
 
-const studioPlatform = z.enum(["instagram", "linkedin", "tiktok", "facebook", "x", "threads"]);
+const studioPlatform = z.enum(["instagram", "linkedin", "tiktok", "facebook"]);
 export type StudioPlatform = z.infer<typeof studioPlatform>;
 
 const PLATFORM_HINTS: Record<StudioPlatform, string> = {
@@ -30,8 +30,6 @@ const PLATFORM_HINTS: Record<StudioPlatform, string> = {
     "LinkedIn: max 3000 tekens, professioneel, geen hashtags-spam (max 3), call-to-action voor reacties.",
   tiktok: "TikTok: max 300 tekens, korte energieke zin, 2-3 hashtags, trend-aware.",
   facebook: "Facebook: max 1500 tekens, conversationeel, geen hashtag-overdaad.",
-  x: "X/Twitter: max 280 tekens, krachtige hook, 1-2 hashtags max.",
-  threads: "Threads: max 500 tekens, conversationeel, geen hashtags nodig.",
 };
 
 // ── Tone-of-voice profiel (opgeslagen als strategy_notes rij) ────────────────
@@ -256,7 +254,7 @@ export const generateCaptionVariants = createServerFn({ method: "POST" })
         tone: z
           .enum(["professioneel", "informeel", "energiek", "inspirerend"])
           .default("professioneel"),
-        platforms: z.array(studioPlatform).min(1).max(6),
+        platforms: z.array(studioPlatform).min(1).max(4),
         language: z.enum(["nl", "en"]).default("nl"),
         variantCount: z.union([z.literal(2), z.literal(3)]).default(2),
       })
@@ -356,7 +354,7 @@ export const repurposeContent = createServerFn({ method: "POST" })
     z
       .object({
         source: z.string().min(20).max(20000),
-        platforms: z.array(studioPlatform).min(1).max(6),
+        platforms: z.array(studioPlatform).min(1).max(4),
         clientId: z.string().uuid().optional().nullable(),
         language: z.enum(["nl", "en"]).default("nl"),
       })

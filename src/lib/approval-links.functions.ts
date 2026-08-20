@@ -134,7 +134,9 @@ export const getApprovalQueueByToken = createServerFn({ method: "POST" })
     const items: ApprovalQueuePost[] = await Promise.all(
       (posts ?? []).map(async (p) => {
         let mediaUrl: string | null = null;
-        if (p.media_path) {
+        // Zelfde tenant-check als bij publiceren: media_path is door de klant
+        // bewerkbaar, dus alleen paden binnen de eigen klantmap signeren.
+        if (p.media_path?.startsWith(`${clientId}/`)) {
           const { data: signed } = await supabaseAdmin.storage
             .from(STORAGE_BUCKET)
             .createSignedUrl(p.media_path, 3600);

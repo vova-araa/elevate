@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Activity, ArrowRight, CheckCircle2, ListChecks, Plus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { acceptSuggestedTask, type MomentumOverview } from "@/lib/momentum.functions";
 
 /** Kleur volgt de score: rood onder de 50, amber tot 75, groen daarboven. */
@@ -19,20 +20,34 @@ function toneFor(score: number, max = 100): string {
 export function MomentumCard({
   data,
   loading,
+  error,
+  onRetry,
 }: {
   data: MomentumOverview | undefined;
   loading: boolean;
+  error?: unknown;
+  onRetry?: () => void;
 }) {
   const qc = useQueryClient();
   const accept = useServerFn(acceptSuggestedTask);
   const [adding, setAdding] = useState<string | null>(null);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="rounded-2xl border border-gold/15 bg-card p-5">
         <Skeleton className="h-6 w-40" />
         <Skeleton className="mt-4 h-24 w-full rounded-xl" />
       </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <ErrorState
+        title="Motoriek kon niet laden"
+        description="De score en openstaande taken zijn niet opgehaald."
+        onRetry={onRetry}
+      />
     );
   }
 

@@ -8,12 +8,14 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export type Effort = "low" | "medium" | "high";
 
-const DEFAULT_MODEL = "claude-opus-4-8";
+const DEFAULT_MODEL = "claude-opus-5";
 
 function getClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY ontbreekt — voeg deze toe aan je omgeving (.env)");
+    throw new Error(
+      "AI staat nog uit: ANTHROPIC_API_KEY ontbreekt. Zet hem in Render → Environment (sleutel via console.anthropic.com) en deploy opnieuw.",
+    );
   }
   return new Anthropic({ apiKey });
 }

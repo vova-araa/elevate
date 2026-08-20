@@ -38,8 +38,42 @@ export const Route = createFileRoute("/")({
         content:
           "Brand & social studio voor merken met karakter. Strategie, content en publicatie — plus een eigen portaal waarin je alles volgt, goedkeurt en meet.",
       },
+      // Deelvoorbeelden: zonder og:image toont WhatsApp/LinkedIn een kale link —
+      // voor een social-media-studio de pijnlijkst denkbare eerste indruk.
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Elevate Design" },
+      { property: "og:title", content: "Elevate Design — jouw merk, één portaal" },
+      {
+        property: "og:description",
+        content:
+          "Jij levert het materiaal — wij maken, plannen en publiceren naar Instagram, TikTok en Facebook.",
+      },
+      { property: "og:url", content: `${SITE_URL}/` },
+      { property: "og:image", content: `${SITE_URL}/og.png` },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:locale", content: "nl_NL" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Elevate Design — jouw merk, één portaal" },
+      { name: "twitter:image", content: `${SITE_URL}/og.png` },
     ],
     links: [{ rel: "canonical", href: `${SITE_URL}/` }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ProfessionalService",
+          name: "Elevate Design",
+          url: SITE_URL,
+          image: `${SITE_URL}/og.png`,
+          description:
+            "Social-media-studio: contentcreatie, planning en publicatie naar Instagram, TikTok en Facebook, met een eigen klantportaal.",
+          areaServed: "NL",
+          knowsLanguage: "nl",
+        }),
+      },
+    ],
   }),
   component: Landing,
 });
@@ -131,11 +165,16 @@ const PORTAL_POINTS = [
   "Overzichtelijke maandrapportage per merk en kanaal",
 ];
 
+/**
+ * Vier cijfers die iets zeggen. "1 portaal voor alles" en "3 gekoppelde
+ * kanalen" riepen vooral de vraag op waar het over ging — dit benoemt wat je
+ * er concreet aan hebt.
+ */
 const STATS: [string, string][] = [
-  ["1", "portaal voor alles"],
-  ["3", "gekoppelde kanalen"],
-  ["AI", "strategie & planning"],
-  ["100%", "op jouw merk"],
+  ["3", "kanalen: Instagram, Facebook en TikTok"],
+  ["1", "plek voor plannen, goedkeuren en rapporteren"],
+  ["AI", "voor strategie, captions en hashtags"],
+  ["100%", "in jouw eigen huisstijl"],
 ];
 
 function Landing() {

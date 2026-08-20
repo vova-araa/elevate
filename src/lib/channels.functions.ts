@@ -2,8 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { reconnectDeadline } from "@/lib/token-lifetime";
+import { toPublicPages, type StoredPage } from "@/lib/meta-pages";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import {
   buildAuthorizeUrl,
   signState,
@@ -137,21 +139,43 @@ export const listClientChannels = createServerFn({ method: "POST" })
     const { data: channels } = await supabaseAdmin
       .from("social_connections")
       .select(
-        "platform, account_username, follower_count, status, connected_at, token_expires_at, refresh_token",
+        "platform, account_username, follower_count, status, connected_at, token_expires_at, refresh_expires_at, never_expires, refresh_token, meta",
       )
       .eq("client_id", clientId);
 
-    // Het refresh-token zelf blijft server-side; we geven alleen door of de
-    // koppeling zichzelf kan vernieuwen. TikTok-tokens verlopen elke 24 uur,
-    // maar worden automatisch ververst — dan is een waarschuwing misleidend.
+    // Het refresh-token zelf blijft server-side. Naar buiten geven we twee
+    // dingen die er voor de gebruiker toe doen: vernieuwt de koppeling zichzelf,
+    // en wanneer moet er dan tóch een mens aan te pas komen.
+    //
+    // Dat laatste is nadrukkelijk niet `token_expires_at`: een TikTok-token
+    // verloopt elke 24 uur en wordt elke dag automatisch vernieuwd, en een Meta
+    // page-token verloopt helemaal niet. "Verloopt over 1 dag" tonen omdat het
+    // access-token morgen verloopt is dus gewoon onjuist.
     return {
       clientId,
       clientName: client?.name ?? null,
       provisioned: !!client,
-      channels: (channels ?? []).map(({ refresh_token, ...c }) => ({
-        ...c,
-        autoRefresh: !!refresh_token,
-      })),
+      channels: (channels ?? []).map(({ refresh_token, meta, ...c }) => {
+        const m =
+          meta && typeof meta === "object" && !Array.isArray(meta)
+            ? (meta as Record<string, unknown>)
+            : {};
+        return {
+          ...c,
+          // Beheerde Meta-pagina's, zónder tokens: alleen wat de UI nodig heeft
+          // om een klant met meerdere pagina's te laten wisselen.
+          pages: toPublicPages(m.pages),
+          currentPageId: typeof m.pageId === "string" ? m.pageId : null,
+          autoRefresh: !!refresh_token,
+          neverExpires: c.never_expires,
+          reconnectBefore: reconnectDeadline({
+            neverExpires: c.never_expires,
+            hasRefreshToken: !!refresh_token,
+            tokenExpiresAt: c.token_expires_at,
+            refreshExpiresAt: c.refresh_expires_at,
+          }),
+        };
+      }),
     };
   });
 
@@ -176,6 +200,92 @@ export const disconnectChannel = createServerFn({ method: "POST" })
   });
 
 /**
+ * Wissel de gekoppelde Facebook-pagina (en daarmee bij Instagram het
+ * bijbehorende Business-account) zonder opnieuw te koppelen. De paginalijst is
+ * bij het koppelen opgeslagen in `meta.pages` — inclusief page-tokens, die de
+ * client nooit te zien krijgt; hier wordt server-side alleen omgeschakeld.
+ */
+export const selectFacebookPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        clientId: z.string().uuid().optional(),
+        platform: z.enum(["facebook", "instagram"]),
+        pageId: z.string().min(1).max(64),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const clientId = data.clientId ?? (await getUserClientId(supabase, userId));
+    if (!clientId) throw new Error("Geen client gekoppeld");
+    await assertClientAccess(supabase, userId, clientId);
+
+    const { data: conn } = await supabaseAdmin
+      .from("social_connections")
+      .select("meta")
+      .eq("client_id", clientId)
+      .eq("platform", data.platform)
+      .maybeSingle();
+    const meta =
+      conn?.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
+        ? (conn.meta as Record<string, unknown>)
+        : {};
+    const pages = Array.isArray(meta.pages) ? (meta.pages as StoredPage[]) : [];
+    const page = pages.find((p) => p.id === data.pageId);
+    if (!page) throw new Error("Deze pagina hoort niet bij de koppeling");
+    if (data.platform === "instagram" && !page.igUserId) {
+      throw new Error(
+        "Deze pagina heeft geen gekoppeld Instagram Business-account — kies een andere pagina",
+      );
+    }
+
+    const update: {
+      account_username: string;
+      account_id: string | null;
+      follower_count?: number;
+      meta: Json;
+    } = {
+      account_username: page.name,
+      account_id: data.platform === "instagram" ? page.igUserId : page.id,
+      meta: JSON.parse(
+        JSON.stringify({
+          ...meta,
+          pageId: page.id,
+          pageToken: page.token,
+          ...(data.platform === "instagram" ? { igUserId: page.igUserId } : {}),
+        }),
+      ) as Json,
+    };
+
+    // Voor Instagram de echte handle en het volgersaantal van dít account
+    // ophalen; de paginanaam is niet de Instagram-naam.
+    if (data.platform === "instagram" && page.igUserId) {
+      try {
+        const res = await fetch(
+          `https://graph.facebook.com/v21.0/${page.igUserId}?fields=username,followers_count&access_token=${encodeURIComponent(page.token)}`,
+        );
+        const ig = (await res.json()) as { username?: string; followers_count?: number };
+        if (res.ok && ig.username) {
+          update.account_username = `@${ig.username}`;
+          if (typeof ig.followers_count === "number") update.follower_count = ig.followers_count;
+        }
+      } catch {
+        // Naam bijwerken is best effort; de wissel zelf slaagt gewoon.
+      }
+    }
+
+    const { error } = await supabaseAdmin
+      .from("social_connections")
+      .update(update)
+      .eq("client_id", clientId)
+      .eq("platform", data.platform);
+    if (error) throw new Error(error.message);
+    return { ok: true, pageName: page.name };
+  });
+
+/**
  * Ververs een koppeling: token vernieuwen (waar het platform dat ondersteunt)
  * en handle + volgersaantal opnieuw ophalen.
  */
@@ -192,7 +302,7 @@ export const refreshChannel = createServerFn({ method: "POST" })
 
     const { data: conn } = await supabaseAdmin
       .from("social_connections")
-      .select("access_token, refresh_token, token_expires_at, meta")
+      .select("access_token, refresh_token, token_expires_at, refresh_expires_at, meta")
       .eq("client_id", clientId)
       .eq("platform", data.platform)
       .maybeSingle();
@@ -203,15 +313,17 @@ export const refreshChannel = createServerFn({ method: "POST" })
     let accessToken = conn.access_token;
     let refreshToken = conn.refresh_token;
     let expiresAt = conn.token_expires_at;
+    let refreshExpiresAt = conn.refresh_expires_at;
 
-    const nearlyExpired =
-      !!expiresAt && new Date(expiresAt).getTime() - Date.now() < 24 * 3600 * 1000;
-    if (nearlyExpired && refreshToken) {
+    // Handmatig verversen mag altijd meteen het token vernieuwen — dat is
+    // precies waarvoor iemand op de knop drukt.
+    if (refreshToken) {
       const fresh = await refreshAccessToken(platform, refreshToken);
       if (fresh) {
         accessToken = fresh.accessToken;
         refreshToken = fresh.refreshToken;
         expiresAt = fresh.expiresAt;
+        if (fresh.refreshExpiresAt !== undefined) refreshExpiresAt = fresh.refreshExpiresAt;
       }
     }
 
@@ -232,6 +344,8 @@ export const refreshChannel = createServerFn({ method: "POST" })
           access_token: accessToken,
           refresh_token: refreshToken,
           token_expires_at: expiresAt,
+          refresh_expires_at: refreshExpiresAt,
+          never_expires: profile.neverExpires ?? false,
           account_id: profile.accountId,
           account_username: profile.handle,
           follower_count: profile.followers,

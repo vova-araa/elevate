@@ -49,7 +49,7 @@ export const publishScheduledPost = createServerFn({ method: "POST" })
 
     const { data: post, error: loadErr } = await supabaseAdmin
       .from("scheduled_posts")
-      .select("id, client_id, platform, caption, media_path, media_type, status")
+      .select("id, client_id, platform, caption, media_path, media_type, status, is_ad")
       .eq("id", data.postId)
       .maybeSingle();
     if (loadErr || !post) throw new Error("Post niet gevonden");
@@ -85,6 +85,7 @@ export const publishScheduledPost = createServerFn({ method: "POST" })
         caption: post.caption ?? "",
         mediaUrl,
         mediaType: post.media_type,
+        isAd: post.is_ad,
       });
       await supabaseAdmin
         .from("scheduled_posts")

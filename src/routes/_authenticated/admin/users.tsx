@@ -12,6 +12,7 @@ import {
   createTestAccount,
   createDemoClientAccount,
 } from "@/lib/admin.functions";
+import { invalidateClientLists } from "@/lib/client-cache";
 import { toast } from "sonner";
 import { Check, Copy, FlaskConical, Rocket, Shield } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -98,7 +99,7 @@ function UsersAdmin() {
       setDemoCreds({ email: res.email, password: res.password, clientName: res.clientName });
       toast.success(`Demo-klant "${res.clientName}" + login aangemaakt`);
       qc.invalidateQueries({ queryKey: ["all-users"] });
-      qc.invalidateQueries({ queryKey: ["clients-list"] });
+      invalidateClientLists(qc);
     } catch (e) {
       toast.error(errorMessage(e));
     }

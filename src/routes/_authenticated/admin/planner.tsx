@@ -11,6 +11,7 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
 import { publishScheduledPost } from "@/lib/publish.functions";
+import { preflightPost, hasBlocker, type PreflightIssue } from "@/lib/post-preflight";
 import { getPublishedFeed, type PublishedFeedItem } from "@/lib/feed.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import { CAPTION_LIMITS, DAY_LABELS_LONG } from "@/lib/social-constants";
 import { dutchHolidays } from "@/lib/holidays";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
 import {
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -458,7 +460,7 @@ function PlannerPage() {
         platform={feedPlatform}
         setPlatform={setFeedPlatform}
         posts={feedPosts ?? []}
-        livePosts={livePosts ?? []}
+        livePosts={livePosts?.items ?? []}
         days={feedDays}
         setDays={setFeedDays}
         open={feedOpen}
@@ -645,17 +647,20 @@ function MonthView({
 
   return (
     <div className="glass-strong rounded-2xl p-4">
-      {/* Op smalle schermen horizontaal scrollen i.p.v. samengeperste cellen. */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[720px]">
-          <div className="grid grid-cols-7 gap-1 text-[10px] uppercase tracking-[0.18em] text-gold/70 pb-2">
+      {/* De hele maand moet passen, op elk scherm. Eerder stond hier een vaste
+          minimumbreedte van 720px met horizontale scroll eromheen; daardoor viel
+          zondag buiten beeld zodra het venster of de zijkolom smaller was. De
+          cellen krimpen nu mee en de inhoud past zich aan de breedte aan. */}
+      <div>
+        <div>
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.18em] text-gold/70 pb-2">
             {["ma", "di", "wo", "do", "vr", "za", "zo"].map((d) => (
               <div key={d} className="text-center">
                 {d}
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {days.map((d, i) => {
               const k = toKey(d);
               const items = byDay[k] || [];
@@ -679,7 +684,7 @@ function MonthView({
                     }
                   }}
                   className={cn(
-                    "min-h-28 text-left rounded-lg p-2 transition border cursor-pointer",
+                    "min-h-16 sm:min-h-24 lg:min-h-28 text-left rounded-md sm:rounded-lg p-1 sm:p-2 transition border cursor-pointer overflow-hidden",
                     inMonth ? "bg-surface/50" : "bg-surface/20 opacity-50",
                     isSelected
                       ? "border-gold ring-1 ring-gold/40"
@@ -689,7 +694,7 @@ function MonthView({
                   <div className="flex items-center justify-between">
                     <span
                       className={cn(
-                        "text-xs flex items-center justify-center h-6 w-6 rounded-full",
+                        "text-[11px] sm:text-xs flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 shrink-0 rounded-full",
                         isToday
                           ? "bg-gold text-primary-foreground font-semibold"
                           : "text-muted-foreground",
@@ -699,7 +704,7 @@ function MonthView({
                     </span>
                     {holidayName && (
                       <span
-                        className="mx-1 flex-1 truncate text-center text-[9px] text-muted-foreground/60"
+                        className="mx-1 hidden flex-1 truncate text-center text-[9px] text-muted-foreground/60 sm:block"
                         title={holidayName}
                       >
                         {holidayName}
@@ -709,7 +714,18 @@ function MonthView({
                       <span className="text-[10px] text-gold/80">{items.length}</span>
                     )}
                   </div>
-                  <div className="mt-1.5 space-y-1">
+                  {/* Onder sm is er geen ruimte voor leesbare chips: dan
+                      stippen, die tikbaar blijven en de dag openen. */}
+                  <div className="mt-1 flex flex-wrap gap-0.5 sm:hidden">
+                    {items.slice(0, 4).map((p) => (
+                      <span
+                        key={p.id}
+                        className="h-1.5 w-1.5 rounded-full bg-gold/80"
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-1.5 hidden space-y-1 sm:block">
                     {items.slice(0, 3).map((p) => (
                       <PostChip
                         key={p.id}
@@ -1164,16 +1180,97 @@ function ComposeModal({
     return dates;
   }
 
-  async function save(asStatus: PostStatus, queueIt = false) {
-    if (platforms.length === 0) return toast.error("Kies minimaal 1 platform");
-    if (!queueIt && !scheduledAt) return toast.error("Kies een datum en tijd");
-    if (overHard) return toast.error(`Caption te lang voor ${limit.label} (max ${limit.hard})`);
+  /**
+   * Wat er misgaat als deze post straks de deur uit moet. Per gekozen platform,
+   * want dezelfde media kan op Instagram prima zijn en op TikTok onmogelijk.
+   */
+  const preflight: { platform: Platform; issues: PreflightIssue[] }[] = useMemo(
+    () =>
+      platforms.map((p) => ({
+        platform: p,
+        issues: preflightPost({
+          platform: p,
+          hasMedia: !!mediaPath,
+          mediaType,
+          caption,
+          connected: isConnected(p),
+          scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+        }),
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [platforms, mediaPath, mediaType, caption, scheduledAt, connectedPlatforms],
+  );
+  const blocked = preflight.some((p) => hasBlocker(p.issues));
+
+  const publishNowFn = useServerFn(publishScheduledPost);
+  const [publishing, setPublishing] = useState(false);
+
+  /**
+   * Direct plaatsen in plaats van wachten op de publiceerronde.
+   *
+   * De post wordt eerst opgeslagen met de tijd op nu — mislukt het versturen,
+   * dan staat hij als mislukte post klaar en pikt de automatische ronde hem
+   * alsnog op, in plaats van dat het werk verdwijnt.
+   */
+  async function publishNow() {
+    const now = new Date();
+    const tz = now.getTimezoneOffset();
+    setScheduledAt(new Date(now.getTime() - tz * 60000).toISOString().slice(0, 16));
+
+    const ids = await save("scheduled");
+    if (!ids?.length) return;
+
+    setPublishing(true);
+    const t = toast.loading(ids.length > 1 ? `Publiceren (${ids.length})…` : "Publiceren…");
+    const mislukt: string[] = [];
+    for (const id of ids) {
+      try {
+        await publishNowFn({ data: { postId: id } });
+      } catch (e) {
+        mislukt.push(e instanceof Error ? e.message : "onbekende fout");
+      }
+    }
+    setPublishing(false);
+
+    if (mislukt.length === 0) {
+      toast.success(ids.length > 1 ? `${ids.length} posts gepubliceerd` : "Gepubliceerd", {
+        id: t,
+      });
+    } else if (mislukt.length === ids.length) {
+      toast.error(mislukt[0], { id: t });
+    } else {
+      toast.warning(
+        `${ids.length - mislukt.length} van ${ids.length} gepubliceerd — ${mislukt[0]}`,
+        {
+          id: t,
+        },
+      );
+    }
+    onSaved();
+  }
+
+  async function save(asStatus: PostStatus, queueIt = false): Promise<string[] | null> {
+    if (platforms.length === 0) {
+      toast.error("Kies minimaal 1 platform");
+      return null;
+    }
+    if (!queueIt && !scheduledAt) {
+      toast.error("Kies een datum en tijd");
+      return null;
+    }
+    if (overHard) {
+      toast.error(`Caption te lang voor ${limit.label} (max ${limit.hard})`);
+      return null;
+    }
     setSaving(true);
     try {
       const recurringRule =
         recurring !== "none" && !editId ? { freq: recurring, count: recurringCount } : null;
 
+      let createdIds: string[] = [];
+
       if (editId) {
+        createdIds = [editId];
         const { error } = await supabase
           .from("scheduled_posts")
           .update({
@@ -1201,8 +1298,12 @@ function ComposeModal({
           is_queued: true,
           created_by: userId ?? null,
         }));
-        const { error } = await supabase.from("scheduled_posts").insert(rows);
+        const { data: inserted, error } = await supabase
+          .from("scheduled_posts")
+          .insert(rows)
+          .select("id");
         if (error) throw error;
+        createdIds = (inserted ?? []).map((r) => r.id);
       } else {
         const base = new Date(scheduledAt);
         const dates = expandRecurring(base);
@@ -1235,8 +1336,12 @@ function ComposeModal({
         }
         // Insert all without parent_recurring_id linkage (simple model)
         const insertRows = rows.map(({ _isParent, _idx, _platform, ...r }) => r);
-        const { error } = await supabase.from("scheduled_posts").insert(insertRows);
+        const { data: inserted, error } = await supabase
+          .from("scheduled_posts")
+          .insert(insertRows)
+          .select("id");
         if (error) throw error;
+        createdIds = (inserted ?? []).map((r) => r.id);
       }
       const msg = queueIt
         ? `Toegevoegd aan wachtrij`
@@ -1247,8 +1352,10 @@ function ComposeModal({
             : `${platforms.length} post${platforms.length > 1 ? "s" : ""} aangemaakt`;
       toast.success(msg);
       onSaved();
+      return createdIds;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
+      return null;
     } finally {
       setSaving(false);
     }
@@ -1603,6 +1710,46 @@ function ComposeModal({
         </div>
 
         {/* Footer */}
+        {preflight.some((p) => p.issues.length > 0) && (
+          <div className="mb-3 w-full space-y-2">
+            {preflight
+              .filter((p) => p.issues.length > 0)
+              .map(({ platform, issues }) => (
+                <div
+                  key={platform}
+                  className={cn(
+                    "rounded-xl border px-3 py-2.5 text-sm",
+                    hasBlocker(issues)
+                      ? "border-destructive/40 bg-destructive/5"
+                      : "border-amber-400/35 bg-amber-500/5",
+                  )}
+                >
+                  <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                    {hasBlocker(issues) ? (
+                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                    ) : (
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                    )}
+                    {PLATFORMS.find((x) => x.id === platform)?.label ?? platform}
+                  </div>
+                  <ul className="mt-1.5 space-y-1">
+                    {issues.map((i, n) => (
+                      <li key={n} className="leading-snug">
+                        <span
+                          className={
+                            i.level === "blokkerend" ? "text-destructive" : "text-amber-300"
+                          }
+                        >
+                          {i.message}
+                        </span>
+                        {i.fix && <span className="text-muted-foreground"> {i.fix}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2 pt-4 border-t border-border/30">
           {editId && onDelete && (
             <button
@@ -1642,8 +1789,21 @@ function ComposeModal({
             Opslaan als concept
           </button>
           <button
+            onClick={publishNow}
+            disabled={saving || publishing || overHard || blocked || platforms.length === 0}
+            title="Slaat op en plaatst meteen — niet wachten op de publiceerronde"
+            className="rounded-full border border-emerald-400/45 text-emerald-300 hover:bg-emerald-500/10 px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
+          >
+            {publishing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}{" "}
+            Nu publiceren
+          </button>
+          <button
             onClick={() => save("scheduled")}
-            disabled={saving || overHard}
+            disabled={saving || publishing || overHard || blocked}
             className="rounded-full bg-gradient-gold text-primary-foreground px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
           >
             {saving ? (

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -13,7 +13,11 @@ import {
   Heart,
   MessageCircle,
   Repeat2,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react";
+import { checkRsm, findRsmLabel, prependRsmLabel } from "@/lib/rsm";
+import { suggestPostCopy, type PostCopyAdvice } from "@/lib/compose-ai.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import { useClientStore } from "@/lib/stores/client-store";
@@ -23,6 +27,11 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
 type PostType = { id: string; label: string };
+
+/** Datum + tijd zoals een `datetime-local`-veld het wil: lokale tijd, geen UTC. */
+function localDateTimeValue(d: Date): string {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
 
 const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }[] = [
   {
@@ -89,14 +98,58 @@ function ComposePage() {
 
   const [content, setContent] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["instagram"]);
+  /** Heeft de gebruiker zelf platforms aan- of uitgezet? Dan niets meer voor hem kiezen. */
+  const [touchedPlatforms, setTouchedPlatforms] = useState(false);
   const [postTypes, setPostTypes] = useState<Record<string, string>>({ instagram: "feed" });
   const [mode, setMode] = useState<"schedule" | "now" | "draft">("schedule");
   const [scheduleAt, setScheduleAt] = useState<string>(
-    search.at ?? new Date(Date.now() + 60 * 60000).toISOString().slice(0, 16),
+    // Let op: een datetime-local-veld verwacht lokale tijd. toISOString() geeft
+    // UTC, waardoor het voorstel in de zomer twee uur te vroeg stond. Eerst het
+    // tijdzoneverschil eraf, dan pas afkappen.
+    search.at ?? localDateTimeValue(new Date(Date.now() + 60 * 60000)),
   );
   const [mediaPath, setMediaPath] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<string | null>(null);
   const [previewPlatform, setPreviewPlatform] = useState<string>("instagram");
+  /**
+   * Het voorbeeld volgt je selectie. Alleen als je meerdere platforms hebt
+   * aangevinkt mag je zelf kiezen wélke je bekijkt; kies je iets wat niet meer
+   * geselecteerd is, dan valt hij terug op het eerste. Voorheen bleef hij op
+   * Instagram staan terwijl je TikTok had aangevinkt — dan zie je een voorbeeld
+   * van een post die je niet aan het maken bent.
+   */
+  const shownPlatform = selectedPlatforms.includes(previewPlatform)
+    ? previewPlatform
+    : (selectedPlatforms[0] ?? "instagram");
+  // Reclamecode: de maker weet of er een betaalde relatie is, wij niet. Zodra
+  // dat vinkje aanstaat controleren we de caption op een geldige aanduiding.
+  const [isAd, setIsAd] = useState(false);
+
+  const rsmIssues = checkRsm({
+    caption: content,
+    isAd,
+    isVideo: (mediaType ?? "").startsWith("video"),
+  });
+
+  // AI-advies voor deze post: caption, hashtags en aanscherpingen.
+  const [briefing, setBriefing] = useState("");
+  const [advice, setAdvice] = useState<PostCopyAdvice | null>(null);
+  const suggestCopy = useServerFn(suggestPostCopy);
+  const adviceMut = useMutation({
+    mutationFn: () =>
+      suggestCopy({
+        data: {
+          clientId: activeClient?.id ?? null,
+          platform: shownPlatform,
+          briefing,
+          currentCaption: content,
+          hasMedia: !!mediaPath,
+          mediaType,
+        },
+      }),
+    onSuccess: setAdvice,
+    onError: (e: Error) => toast.error(e.message || "Advies ophalen mislukt"),
+  });
 
   useEffect(() => {
     const raw = sessionStorage.getItem("compose-pending-media");
@@ -139,6 +192,30 @@ function ComposePage() {
     ? selectedPlatforms.filter((p) => !clientConnected.has(p))
     : [];
 
+  /**
+   * Beginselectie afstemmen op de klant. Instagram stond standaard aan, ook bij
+   * een klant die alleen TikTok gekoppeld heeft — dan begin je met een
+   * waarschuwing en een voorbeeld van een kanaal waar je niet naartoe kunt
+   * posten. Dit gebeurt één keer per klant en alleen zolang je zelf nog niets
+   * hebt aangeraakt; daarna blijft je eigen keuze staan.
+   */
+  const autoPickedFor = useRef<string | null>(null);
+  useEffect(() => {
+    const clientId = activeClient?.id;
+    if (!clientId || !clientChannels || touchedPlatforms) return;
+    if (autoPickedFor.current === clientId) return;
+    autoPickedFor.current = clientId;
+
+    const connected = PLATFORMS.filter((p) => clientConnected.has(p.id)).map((p) => p.id);
+    if (connected.length === 0 || connected.includes(selectedPlatforms[0])) return;
+    const first = connected[0];
+    setSelectedPlatforms([first]);
+    setPostTypes({ [first]: PLATFORMS.find((p) => p.id === first)!.types[0].id });
+    setPreviewPlatform(first);
+    // clientConnected is elke render een nieuwe Set; clientChannels is de bron.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient?.id, clientChannels, touchedPlatforms]);
+
   const mediaUrl = useSignedUrl(mediaPath);
 
   const uploadMut = useMutation({
@@ -174,6 +251,7 @@ function ComposePage() {
         media_type: mediaType,
         scheduled_at: scheduledISO,
         status,
+        is_ad: isAd,
       }));
       const { data: inserted, error } = await supabase
         .from("scheduled_posts")
@@ -209,6 +287,7 @@ function ComposePage() {
   );
 
   const togglePlatform = (id: string) => {
+    setTouchedPlatforms(true);
     setSelectedPlatforms((prev) => {
       const on = prev.includes(id);
       const next = on ? prev.filter((x) => x !== id) : [...prev, id];
@@ -327,6 +406,126 @@ function ComposePage() {
             placeholder="Schrijf je post..."
             className="w-full min-h-[160px] rounded-lg bg-transparent border border-border p-3 text-sm outline-none focus:border-gold/50"
           />
+
+          {/* AI-advies voor precies deze post — caption, hashtags en
+              aanscherpingen, zonder naar de AI Studio te hoeven. */}
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => adviceMut.mutate()}
+                disabled={adviceMut.isPending}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-gold/40 px-3.5 text-xs text-gold hover:bg-gold/10 disabled:opacity-50"
+              >
+                {adviceMut.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {content.trim() ? "Scherp deze caption aan" : "Laat AI meedenken"}
+              </button>
+              {!content.trim() && (
+                <input
+                  value={briefing}
+                  onChange={(e) => setBriefing(e.target.value)}
+                  placeholder="Waar gaat de post over?"
+                  className="h-9 flex-1 min-w-[180px] rounded-full border border-border bg-transparent px-3.5 text-xs outline-none focus:border-gold/50"
+                />
+              )}
+            </div>
+
+            {advice && (
+              <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 p-3.5">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-gold/90">Voorstel</div>
+                <p className="mt-1.5 whitespace-pre-wrap text-sm">{advice.caption}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setContent(advice.caption)}
+                    className="rounded-full bg-gold px-3 h-7 text-xs font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    Gebruik deze caption
+                  </button>
+                  {advice.hashtags.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setContent((c) =>
+                          `${c.trimEnd()}\n\n${advice.hashtags.join(" ")}`.trimStart(),
+                        )
+                      }
+                      className="rounded-full border border-gold/40 px-3 h-7 text-xs text-gold hover:bg-gold/10"
+                    >
+                      Hashtags toevoegen
+                    </button>
+                  )}
+                </div>
+
+                {advice.hashtags.length > 0 && (
+                  <p className="mt-2.5 text-xs text-muted-foreground">
+                    {advice.hashtags.join(" ")}
+                  </p>
+                )}
+
+                {advice.tips.length > 0 && (
+                  <ul className="mt-2.5 space-y-1 text-xs text-muted-foreground">
+                    {advice.tips.map((t, i) => (
+                      <li key={i} className="flex gap-1.5">
+                        <span className="text-gold">·</span>
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Reclamecode Social Media: verplicht zodra er betaald wordt. */}
+          <label className="mt-3 flex items-start gap-2.5 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isAd}
+              onChange={(e) => setIsAd(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[var(--gold)]"
+            />
+            <span>
+              Betaalde samenwerking of advertentie
+              <span className="block text-xs text-muted-foreground">
+                Verplicht te vermelden volgens de Reclamecode Social Media.
+              </span>
+            </span>
+          </label>
+
+          {rsmIssues.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {rsmIssues.map((issue, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex items-start gap-2 rounded-lg border p-2.5 text-xs",
+                    issue.severity === "error"
+                      ? "border-destructive/40 bg-destructive/5 text-destructive"
+                      : issue.severity === "warning"
+                        ? "border-gold/40 bg-gold/5 text-gold"
+                        : "border-border bg-muted/30 text-muted-foreground",
+                  )}
+                >
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="leading-relaxed">{issue.message}</span>
+                </div>
+              ))}
+              {!findRsmLabel(content) && (
+                <button
+                  type="button"
+                  onClick={() => setContent((c) => prependRsmLabel(c))}
+                  className="rounded-full border border-gold/40 px-3 h-7 text-xs text-gold hover:bg-gold/10"
+                >
+                  #advertentie vooraan toevoegen
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Media */}
@@ -430,7 +629,7 @@ function ComposePage() {
             </div>
             {selectedPlatforms.length > 1 && (
               <select
-                value={previewPlatform}
+                value={shownPlatform}
                 onChange={(e) => setPreviewPlatform(e.target.value)}
                 className="text-[11px] bg-transparent border border-border/60 rounded px-2 h-6"
               >
@@ -446,8 +645,8 @@ function ComposePage() {
             )}
           </div>
           <PlatformPreview
-            platform={previewPlatform}
-            type={postTypes[previewPlatform]}
+            platform={shownPlatform}
+            type={postTypes[shownPlatform]}
             content={content}
             mediaUrl={mediaUrl ?? undefined}
             clientName={activeClient?.name ?? "Klant"}

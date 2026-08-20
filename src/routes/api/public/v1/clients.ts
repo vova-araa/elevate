@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { allowRequest, requestIp, tooManyRequests } from "@/lib/rate-limit.server";
 import { authenticateApiKey } from "@/lib/automation-engine.server";
 
 export const Route = createFileRoute("/api/public/v1/clients")({
@@ -12,6 +13,10 @@ export const Route = createFileRoute("/api/public/v1/clients")({
             status: 401,
             headers: { "Content-Type": "application/json" },
           });
+        // 120/min per sleutel is ruim voor legitiem gebruik en stopt een lus.
+        if (!allowRequest(`v1:${auth.key?.id ?? requestIp(request)}`, 120, 60_000)) {
+          return tooManyRequests();
+        }
         const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
           auth: { autoRefreshToken: false, persistSession: false },
         });

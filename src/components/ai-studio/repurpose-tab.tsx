@@ -23,7 +23,7 @@ import { platformLabel, STUDIO_PLATFORMS } from "./platform-meta";
 export function RepurposeTab({ clients }: { clients: StudioClient[] }) {
   const [source, setSource] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
-  const [platforms, setPlatforms] = useState<StudioPlatform[]>(["instagram", "linkedin", "x"]);
+  const [platforms, setPlatforms] = useState<StudioPlatform[]>(["instagram", "tiktok", "facebook"]);
   const [language, setLanguage] = useState<"nl" | "en">("nl");
 
   const repurposeFn = useServerFn(repurposeContent);

@@ -20,16 +20,11 @@ function AiStudioPage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-gradient-gold grid place-items-center text-primary-foreground">
-          <Bot className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="font-display text-2xl leading-tight">AI Studio</h1>
-          <p className="text-xs text-muted-foreground">
-            Assistent, caption-varianten, tone-of-voice, hergebruik en hooks & hashtags
-          </p>
-        </div>
+      <header>
+        <h1 className="font-display text-2xl leading-tight">AI Studio</h1>
+        <p className="text-xs text-muted-foreground">
+          Assistent, caption-varianten, tone-of-voice, hergebruik en hooks &amp; hashtags
+        </p>
       </header>
 
       <Tabs defaultValue="assistent">

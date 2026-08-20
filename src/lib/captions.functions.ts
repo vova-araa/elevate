@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { generateText } from "@/lib/ai-provider.server";
+import { copywriterSystem, subjectOrFallback } from "@/lib/copywriting";
 
 async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
@@ -27,17 +28,6 @@ const inputSchema = z.object({
   language: z.enum(["nl", "en"]).default("nl"),
 });
 
-const PLATFORM_HINTS: Record<string, string> = {
-  instagram:
-    "Instagram: max 2200 tekens, gebruik 3-5 relevante hashtags, emoji ok, eerste zin is een hook.",
-  linkedin:
-    "LinkedIn: max 3000 tekens, professioneel, geen hashtags-spam (max 3), call-to-action voor reacties.",
-  tiktok: "TikTok: max 300 tekens, korte energieke zin, 2-3 hashtags, trend-aware.",
-  facebook: "Facebook: max 1500 tekens, conversationeel, geen hashtag-overdaad.",
-  x: "X/Twitter: max 280 tekens, krachtige hook, 1-2 hashtags max.",
-  threads: "Threads: max 500 tekens, conversationeel, geen hashtags nodig.",
-};
-
 export const generateCaptions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => inputSchema.parse(d))
@@ -59,12 +49,21 @@ export const generateCaptions = createServerFn({ method: "POST" })
       }
     }
 
-    const lang = data.language === "en" ? "Engels" : "Nederlands";
     const results: { platform: string; text: string }[] = [];
 
     for (const platform of data.platforms) {
-      const system = `Je bent een social-media copywriter. Schrijf in het ${lang}, toon: ${data.tone}.${clientContext}${toneOfVoice}\n\n${PLATFORM_HINTS[platform]}\n\nGeef ALLEEN de caption terug, geen uitleg of label.`;
-      const text = await generateText({ system, user: data.briefing, effort: "low" });
+      const system = copywriterSystem({
+        platform,
+        tone: data.tone,
+        language: data.language,
+        context: `${clientContext}${toneOfVoice}`.trim(),
+        task: "Schrijf één caption die direct geplaatst kan worden.",
+      });
+      const text = await generateText({
+        system,
+        user: subjectOrFallback({ briefing: data.briefing }),
+        effort: "low",
+      });
       results.push({ platform, text });
 
       await supabaseAdmin.from("ai_generations").insert({
