@@ -219,6 +219,20 @@ export const importDriveBatch = createServerFn({ method: "POST" })
       }
     }
 
+    // Zelfde controle voor de doelmap. Zonder dit kan een import in de map van
+    // een andere klant belanden — de bestanden verdwijnen dan uit de eigen
+    // bibliotheek zonder dat iemand ziet waar ze heen zijn.
+    if (data.folderId) {
+      const { data: map } = await supabaseAdmin
+        .from("media_folders")
+        .select("client_id")
+        .eq("id", data.folderId)
+        .maybeSingle();
+      if (!map || map.client_id !== data.clientId) {
+        throw new Error("Deze map hoort niet bij deze klant");
+      }
+    }
+
     const listing = await listingFor(data.url);
     const existing = await importedRefs(data.clientId);
     const pending = mediaFiles(listing).filter((f) => !existing.has(`drive:${f.id}`));

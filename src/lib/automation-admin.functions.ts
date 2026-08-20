@@ -21,37 +21,6 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
   }
 }
 
-// Block SSRF: only allow public https URLs, reject localhost/private IPs
-function assertSafeWebhookUrl(raw: string) {
-  const u = new URL(raw);
-  if (u.protocol !== "https:") throw new Error("Alleen HTTPS URLs zijn toegestaan");
-  const host = u.hostname.toLowerCase();
-  if (
-    host === "localhost" ||
-    host === "0.0.0.0" ||
-    host.endsWith(".local") ||
-    host.endsWith(".internal")
-  )
-    throw new Error("Interne hostnames zijn niet toegestaan");
-  // Block IP literals to private ranges
-  const ipv4 = host.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-  if (ipv4) {
-    const [a, b] = [parseInt(ipv4[1]), parseInt(ipv4[2])];
-    if (
-      a === 10 ||
-      a === 127 ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      a === 0
-    )
-      throw new Error("Privé IP-adressen zijn niet toegestaan");
-  }
-  if (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) {
-    throw new Error("Privé IPv6-adressen zijn niet toegestaan");
-  }
-}
-
 // Generate API key — returns plain token only this once.
 export const createApiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
