@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { inviteUser, setClientMembership } from "@/lib/admin.functions";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { Copy, KeyRound, Mail, UserPlus, Users, X } from "lucide-react";
 
 /**
@@ -228,7 +229,7 @@ export function ClientAccessPanel({ clientId, clientName }: Props) {
                   </div>
                   <button
                     onClick={() => {
-                      navigator.clipboard?.writeText(value);
+                      void copyToClipboard(value, `${label} gekopieerd`);
                       toast.success(`${label} gekopieerd`);
                     }}
                     className="shrink-0 rounded-md border border-gold/20 p-1.5 text-gold hover:bg-gold/10"

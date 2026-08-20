@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { confirmDialog } from "@/components/ui/confirm";
 import {
   CheckCircle2,
@@ -104,6 +105,10 @@ function ApprovalsPage() {
         .from("scheduled_posts")
         .select("*")
         .eq("status", "draft")
+        // Zonder deze filter staan weggegooide concepten hier gewoon tussen, en
+        // zet goedkeuren ze alsnog op 'ingepland' — dan gaat een verwijderde
+        // post live. De rest van de app filtert deze wél weg.
+        .is("deleted_at", null)
         .order("scheduled_at", { ascending: true });
       return data ?? [];
     },
@@ -152,6 +157,8 @@ function ApprovalsPage() {
     );
     toast.success("Goedgekeurd");
     qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+    // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
+    qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
   }
 
   async function reject(postId: string, clientId: string) {
@@ -174,6 +181,8 @@ function ApprovalsPage() {
     );
     toast.success("Afgewezen");
     qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+    // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
+    qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
   }
 
   async function submitFeedback(postId: string, clientId: string) {
@@ -232,6 +241,8 @@ function ApprovalsPage() {
       toast.success(`${ids.length} goedgekeurd`);
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+      // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
+      qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
       qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
     } finally {
       setBulkBusy(false);
@@ -269,6 +280,8 @@ function ApprovalsPage() {
       toast.success(`${ids.length} afgewezen`);
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["approvals-posts"] });
+      // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
+      qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
       qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
     } finally {
       setBulkBusy(false);
@@ -432,7 +445,7 @@ function ApprovalsPage() {
             <button
               onClick={() => {
                 if (!shareUrl) return;
-                navigator.clipboard.writeText(shareUrl);
+                void copyToClipboard(shareUrl, "Link gekopieerd");
                 setShareCopied(true);
                 toast.success("Link gekopieerd");
               }}

@@ -1,4 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
+import { copyToClipboard } from "@/lib/clipboard";
 import { useState } from "react";
 import { Copy, RotateCw } from "lucide-react";
 
@@ -72,7 +73,8 @@ export function RouteError({ error, reset }: { error: Error; reset?: () => void 
               <button
                 type="button"
                 onClick={() => {
-                  void navigator.clipboard?.writeText(details).then(() => {
+                  void copyToClipboard(details, "Melding gekopieerd").then((ok) => {
+                    if (!ok) return;
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   });

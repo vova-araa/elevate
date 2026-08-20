@@ -1229,9 +1229,12 @@ function ComposeModal({
   async function publishNow() {
     const now = new Date();
     const tz = now.getTimezoneOffset();
-    setScheduledAt(new Date(now.getTime() - tz * 60000).toISOString().slice(0, 16));
+    const nuLokaal = new Date(now.getTime() - tz * 60000).toISOString().slice(0, 16);
+    setScheduledAt(nuLokaal);
 
-    const ids = await save("scheduled");
+    // Expliciet meegeven: de state hierboven is pas bij de volgende render
+    // beschikbaar, dus save() zou anders de eerder gekozen datum opslaan.
+    const ids = await save("scheduled", false, nuLokaal);
     if (!ids?.length) return;
 
     setPublishing(true);
@@ -1263,12 +1266,22 @@ function ComposeModal({
     onSaved();
   }
 
-  async function save(asStatus: PostStatus, queueIt = false): Promise<string[] | null> {
+  /**
+   * `overrideAt` bestaat omdat setScheduledAt() pas bij de volgende render
+   * doorwerkt: wie hier de state zet en meteen save() aanroept, slaat nog de
+   * óude tijd op. "Nu publiceren" deed precies dat.
+   */
+  async function save(
+    asStatus: PostStatus,
+    queueIt = false,
+    overrideAt?: string,
+  ): Promise<string[] | null> {
+    const when = overrideAt ?? scheduledAt;
     if (platforms.length === 0) {
       toast.error("Kies minimaal 1 platform");
       return null;
     }
-    if (!queueIt && !scheduledAt) {
+    if (!queueIt && !when) {
       toast.error("Kies een datum en tijd");
       return null;
     }
@@ -1292,14 +1305,14 @@ function ComposeModal({
             notes: notes || null,
             media_path: mediaPath,
             media_type: mediaType,
-            scheduled_at: new Date(scheduledAt).toISOString(),
+            scheduled_at: new Date(when).toISOString(),
             status: asStatus,
           })
           .eq("id", editId);
         if (error) throw error;
       } else if (queueIt) {
         // Add to queue — queue dispatcher assigns real time later
-        const placeholder = new Date(scheduledAt || Date.now()).toISOString();
+        const placeholder = new Date(when || Date.now()).toISOString();
         const rows: TablesInsert<"scheduled_posts">[] = platforms.map((p) => ({
           client_id: clientId,
           platform: p,
@@ -1319,7 +1332,7 @@ function ComposeModal({
         if (error) throw error;
         createdIds = (inserted ?? []).map((r) => r.id);
       } else {
-        const base = new Date(scheduledAt);
+        const base = new Date(when);
         const dates = expandRecurring(base);
         // For each platform × each date
         const rows: (TablesInsert<"scheduled_posts"> & {

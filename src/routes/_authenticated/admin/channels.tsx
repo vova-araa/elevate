@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { z } from "zod";
 import { differenceInCalendarDays, formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -285,7 +286,7 @@ function AdminChannels() {
   const redirectUri =
     typeof window !== "undefined" ? `${window.location.origin}/api/public/oauth/callback` : "";
   const copyRedirect = async () => {
-    await navigator.clipboard.writeText(redirectUri);
+    await copyToClipboard(redirectUri, "Redirect-URI gekopieerd");
     toast.success("Redirect-URI gekopieerd");
   };
 
@@ -548,7 +549,7 @@ function AdminChannels() {
             <button
               onClick={() => {
                 if (!inviteUrl) return;
-                navigator.clipboard.writeText(inviteUrl);
+                void copyToClipboard(inviteUrl, "Uitnodigingslink gekopieerd");
                 setInviteCopied(true);
                 toast.success("Link gekopieerd");
               }}

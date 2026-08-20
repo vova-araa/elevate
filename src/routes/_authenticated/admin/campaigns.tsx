@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Sparkles, Loader2, CalendarPlus, Copy, Check, Wand2 } from "lucide-react";
@@ -139,7 +140,7 @@ function CampaignsPage() {
   }
   async function copyCaption(p: PreviewPost) {
     const tags = p.hashtags.length ? "\n\n" + p.hashtags.map((h) => `#${h}`).join(" ") : "";
-    await navigator.clipboard.writeText(p.caption + tags);
+    await copyToClipboard(p.caption + tags);
     setCopied(p.id);
     setTimeout(() => setCopied((c) => (c === p.id ? null : c)), 1500);
   }

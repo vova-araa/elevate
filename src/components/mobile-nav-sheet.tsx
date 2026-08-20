@@ -47,12 +47,19 @@ export function MobileNavSheet() {
           .from("scheduled_posts")
           .select("id", { count: "exact", head: true })
           .eq("status", "scheduled")
+          // Zonder deze twee filters telt de badge weggegooide posts en de
+          // wachtrij mee, terwijl de planner ze wegfiltert — dan zegt de
+          // sidebar 12 en toont de planner er 9.
+          .is("deleted_at", null)
+          .eq("is_queued", false)
           .gte("scheduled_at", now)
           .lte("scheduled_at", in7),
         supabase
           .from("scheduled_posts")
           .select("id", { count: "exact", head: true })
-          .eq("status", "draft"),
+          .eq("status", "draft")
+          .is("deleted_at", null)
+          .eq("is_queued", false),
         supabase
           .from("notifications")
           .select("id", { count: "exact", head: true })
