@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
 import { DriveImportCard } from "@/components/drive-import-card";
 import type { Tables } from "@/integrations/supabase/types";
-import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
+import { uploadMedia, resetFileInput } from "@/lib/upload-media";
 
 type ClientMember = { client_id: string; clients: { id: string; name: string } | null };
 
@@ -60,22 +60,18 @@ function ClientUploads() {
   });
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!clientId) return;
     const files = Array.from(e.target.files ?? []);
+    resetFileInput(e.target);
+    if (!clientId || !files.length) return;
     const { data: u } = await supabase.auth.getUser();
     for (const file of files) {
-      // Bestanden groter dan de per-bestand limiet overslaan (geen compressie —
-      // originelen blijven vol kwaliteit).
-      if (file.size > MAX_UPLOAD_BYTES) {
-        toast.error(tooLargeMessage(file.name));
-        continue;
-      }
-      // Sanitize bestandsnaam zodat er nooit buiten de map van deze klant geschreven kan worden.
-      const safeName = file.name.replace(/[\\/]/g, "_");
-      const path = `${clientId}/${Date.now()}-${safeName}`;
-      const { error } = await supabase.storage.from("client-uploads").upload(path, file);
-      if (error) {
-        toast.error(error.message);
+      // Groottecontrole, veilige naam en tijdslimiet zitten in uploadMedia;
+      // originelen blijven vol kwaliteit, er wordt niets gecomprimeerd.
+      let path: string;
+      try {
+        ({ path } = await uploadMedia(file, { clientId }));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : String(err));
         continue;
       }
       const { error: insertError } = await supabase.from("uploads").insert({

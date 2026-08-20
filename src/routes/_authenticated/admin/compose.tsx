@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import { useClientStore } from "@/lib/stores/client-store";
 import { publishScheduledPost } from "@/lib/publish.functions";
+import { uploadMedia } from "@/lib/upload-media";
 import type { Platform } from "@/components/planner/planner-shared";
 import type { TablesInsert } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
@@ -221,12 +222,8 @@ function ComposePage() {
   const uploadMut = useMutation({
     mutationFn: async (file: File) => {
       if (!activeClient) throw new Error("Selecteer een klant in de sidebar");
-      const path = `${activeClient.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage
-        .from("client-uploads")
-        .upload(path, file, { contentType: file.type });
-      if (error) throw error;
-      return { path, type: file.type };
+      const { path, mediaType } = await uploadMedia(file, { clientId: activeClient.id });
+      return { path, type: mediaType };
     },
     onSuccess: ({ path, type }) => {
       setMediaPath(path);

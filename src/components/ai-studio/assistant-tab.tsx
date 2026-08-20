@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { aiAssistant } from "@/lib/ai.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadMedia } from "@/lib/upload-media";
 import { useClientStore } from "@/lib/stores/client-store";
 import { cn } from "@/lib/utils";
 import type { JsonValue } from "@/lib/ai-provider.server";
@@ -78,9 +79,7 @@ export function AssistantTab() {
       if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
         throw new Error("Alleen afbeeldingen of video's");
       }
-      const path = `${activeClient.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("client-uploads").upload(path, file);
-      if (error) throw error;
+      const { path } = await uploadMedia(file, { clientId: activeClient.id, folder: "assistent" });
       const { data: signed } = await supabase.storage
         .from("client-uploads")
         .createSignedUrl(path, 3600);

@@ -2,6 +2,7 @@ import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadMedia, resetFileInput } from "@/lib/upload-media";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import { toast } from "sonner";
 import {
@@ -1776,19 +1777,18 @@ function UploadsView({ clientId }: { clientId: string }) {
   });
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
+    resetFileInput(e.target);
     if (!files.length) return;
     setBusy(true);
     setProgress({ done: 0, total: files.length });
     const { data: u } = await supabase.auth.getUser();
     let ok = 0;
     for (const file of files) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `${clientId}/${Date.now()}-${safeName}`;
-      const { error: upErr } = await supabase.storage
-        .from("client-uploads")
-        .upload(path, file, { cacheControl: "3600", upsert: false });
-      if (upErr) {
-        toast.error(`${file.name}: ${upErr.message}`);
+      let path: string;
+      try {
+        ({ path } = await uploadMedia(file, { clientId }));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : String(err));
         setProgress((p) => p && { ...p, done: p.done + 1 });
         continue;
       }

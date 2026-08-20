@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth-context";
 import { generateCaption } from "@/lib/planner.functions";
 import { publishScheduledPost } from "@/lib/publish.functions";
 import { preflightPost, hasBlocker, type PreflightIssue } from "@/lib/post-preflight";
+import { uploadMedia, resetFileInput, UploadError } from "@/lib/upload-media";
 import { getPublishedFeed, type PublishedFeedItem } from "@/lib/feed.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -1125,19 +1126,17 @@ function ComposeModal({
   async function onPickFile(file: File) {
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() ?? "bin";
-      // Binnen de klantmap houden: alle storage-policies isoleren op het
-      // eerste pad-segment (client-id).
-      const path = `${clientId}/planner/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("client-uploads")
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
+      const { path, mediaType: type } = await uploadMedia(file, {
+        clientId,
+        folder: "planner",
+      });
       setMediaPath(path);
-      setMediaType(file.type);
+      setMediaType(type);
       toast.success("Media geüpload");
     } catch (e) {
-      toast.error("Upload mislukt: " + (e instanceof Error ? e.message : String(e)));
+      // UploadError draagt al een uitlegbare tekst; de rest tonen we ruw zodat
+      // een onverwachte fout niet stilletjes verdwijnt.
+      toast.error(e instanceof UploadError ? e.message : String(e));
     } finally {
       setUploading(false);
     }
@@ -1454,6 +1453,10 @@ function ComposeModal({
                 hidden
                 onChange={(e) => {
                   const f = e.target.files?.[0];
+                  // Veld meteen legen: anders vuurt change niet als je na een
+                  // mislukte poging hetzelfde bestand nog eens kiest, en lijkt
+                  // de knop kapot.
+                  resetFileInput(e.target);
                   if (f) onPickFile(f);
                 }}
               />
