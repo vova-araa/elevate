@@ -418,6 +418,7 @@ function MeetingsPanel({ clientId }: { clientId: string }) {
             <option value="other">Anders</option>
           </select>
           <input
+            aria-label="Datum en tijd van het gesprek"
             type="datetime-local"
             className={inp}
             value={f.scheduled_at}
@@ -616,6 +617,7 @@ function DealsPanel({ clientId }: { clientId: string }) {
             onChange={(e) => setF({ ...f, probability: Number(e.target.value) })}
           />
           <input
+            aria-label="Verwachte sluitingsdatum"
             type="date"
             className={inp}
             value={f.expected_close_date}
@@ -752,12 +754,14 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
             <option value="other">Anders</option>
           </select>
           <input
+            aria-label="Periode vanaf"
             type="date"
             className={inp}
             value={f.period_start}
             onChange={(e) => setF({ ...f, period_start: e.target.value })}
           />
           <input
+            aria-label="Periode tot"
             type="date"
             className={inp}
             value={f.period_end}
@@ -1025,6 +1029,7 @@ function ContentPanel({ clientId }: { clientId: string }) {
             ))}
           </select>
           <input
+            aria-label="Datum en tijd van het kalenderitem"
             type="datetime-local"
             className={inp}
             value={f.scheduled_at}
@@ -1161,6 +1166,7 @@ function EvaluationPanel({ clientId }: { clientId: string }) {
         <div className="flex items-center gap-3">
           <label className="text-xs uppercase tracking-wider text-gold/80">Score</label>
           <input
+            aria-label="Score van 1 tot 10"
             type="range"
             min={1}
             max={10}
@@ -1533,6 +1539,7 @@ function RoadmapStepRow({
             placeholder="Titel"
           />
           <input
+            aria-label="Streefdatum"
             type="date"
             className={inp}
             value={draft.due_date}
@@ -1668,7 +1675,13 @@ function AddStepForm({
           placeholder="Titel stap"
           className={inp}
         />
-        <input type="date" value={d} onChange={(e) => setD(e.target.value)} className={inp} />
+        <input
+          aria-label="Datum van de stap"
+          type="date"
+          value={d}
+          onChange={(e) => setD(e.target.value)}
+          className={inp}
+        />
       </div>
       <textarea
         value={desc}
@@ -1736,6 +1749,7 @@ function CalendarAdmin({ clientId }: { clientId: string }) {
       <div className="glass rounded-2xl p-5 grid gap-2 md:grid-cols-4">
         <input
           type="date"
+          aria-label="Datum van het kalenderitem"
           value={f.date}
           onChange={(e) => setF({ ...f, date: e.target.value })}
           className={inp}
