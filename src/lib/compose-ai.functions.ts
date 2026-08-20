@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { generateJson } from "@/lib/ai-provider.server";
+import { copywriterSystem, subjectOrFallback } from "@/lib/copywriting";
 
 /**
  * Advies bij het schrijven van een post: caption, hashtags en een paar concrete
@@ -13,15 +14,6 @@ import { generateJson } from "@/lib/ai-provider.server";
  * Bewust apart van de AI Studio: daar kies je platforms en varianten, hier wil
  * je alleen snel iets bruikbaars voor de post die je nu aan het maken bent.
  */
-
-const PLATFORM_HINTS: Record<string, string> = {
-  instagram:
-    "Instagram: max 2200 tekens, eerste zin is de hook (de rest valt achter 'meer lezen'), 3-5 relevante hashtags.",
-  facebook: "Facebook: max 1500 tekens, conversationeel, hooguit een paar hashtags.",
-  tiktok: "TikTok: max 300 tekens, korte energieke zin, 2-4 hashtags, spreektaal.",
-  linkedin: "LinkedIn: max 3000 tekens, professioneel, max 3 hashtags, eindig met een vraag.",
-  youtube: "YouTube: pakkende titelzin, daarna context; hashtags onderaan.",
-};
 
 async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
@@ -86,26 +78,31 @@ export const suggestPostCopy = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<PostCopyAdvice> => {
     await assertAdmin(context);
 
-    const subject = data.briefing.trim() || data.currentCaption.trim();
-    if (!subject) {
-      throw new Error("Schrijf eerst kort waar de post over gaat, dan denk ik mee.");
-    }
+    // Bewust géén blokkade meer op een lege briefing: wie op "denk mee" drukt
+    // met alleen een foto erbij verwacht een voorstel, geen instructie om eerst
+    // zelf iets te typen.
+    const subject = subjectOrFallback({
+      briefing: data.briefing,
+      currentCaption: data.currentCaption,
+      hasMedia: data.hasMedia,
+      mediaType: data.mediaType,
+    });
 
-    const rules = PLATFORM_HINTS[data.platform] ?? `${data.platform}: houd het kort en concreet.`;
     const mediaNote = data.hasMedia
-      ? `Er hangt ${data.mediaType?.startsWith("video") ? "een video" : "een afbeelding"} aan deze post; verwijs daar natuurlijk naar.`
+      ? `Er hangt ${data.mediaType?.startsWith("video") ? "een video" : "een afbeelding"} aan deze post; verwijs daar natuurlijk naar zonder te beschrijven wat je niet kunt zien.`
       : "Er zit nog geen media bij deze post.";
 
-    const system = `Je bent een senior social-media copywriter die voor een Nederlands bureau werkt. Schrijf in het Nederlands.${await clientContext(data.clientId)}
-
-Platform-richtlijn:
-${rules}
-${mediaNote}
-
-Lever drie dingen:
-1. "caption": één afgeronde caption die direct geplaatst kan worden. Eerste zin is de hook. Geen hashtags in de caption zelf.
-2. "hashtags": 5 tot 12 hashtags die echt bij dit onderwerp en deze branche passen — geen generieke vulling als #love of #instagood, en geen hashtags die niets met het merk te maken hebben.
-3. "tips": 2 tot 4 korte, concrete aanscherpingen voor deze specifieke post (bijvoorbeeld over de hook, de call-to-action of het beste moment). Geen algemene socialmedia-adviezen.`;
+    const system = copywriterSystem({
+      platform: data.platform,
+      context: `${await clientContext(data.clientId)}\n${mediaNote}`.trim(),
+      task:
+        "Lever drie dingen als JSON.\n" +
+        '1. "caption": één afgeronde caption die direct geplaatst kan worden. De eerste zin draagt de kern. Geen hashtags in de caption zelf.\n' +
+        '2. "hashtags": 5 tot 12 hashtags die echt bij dit onderwerp en deze branche passen. Geen vulling als #love of #instagood, niets dat losstaat van het merk.\n' +
+        '3. "tips": 2 tot 4 concrete aanscherpingen voor déze post — over de openingszin, de call-to-action of het moment van plaatsen. Geen algemene socialmedia-adviezen.',
+      extra:
+        'De regel "geef alleen de tekst" geldt hier per veld: in "caption" staat alleen de caption, geen uitleg.',
+    });
 
     const user = data.currentCaption.trim()
       ? `Dit staat er nu: "${data.currentCaption.slice(0, 2000)}"\n\nScherp dit aan tot een betere caption en geef passende hashtags.`

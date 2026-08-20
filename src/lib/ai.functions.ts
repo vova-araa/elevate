@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database, Enums } from "@/integrations/supabase/types";
 import { generateText, runToolLoop, type JsonValue, type ToolArgs } from "@/lib/ai-provider.server";
+import { copywriterSystem, subjectOrFallback } from "@/lib/copywriting";
 
 async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data: roles } = await ctx.supabase
@@ -114,15 +115,6 @@ const tools: Anthropic.Tool[] = [
   },
 ];
 
-const CAPTION_PLATFORM_HINTS: Record<string, string> = {
-  instagram: "Instagram: max 2200 tekens, 3-5 hashtags, hook in eerste zin.",
-  linkedin: "LinkedIn: professioneel, max 3000 tekens, max 3 hashtags.",
-  tiktok: "TikTok: max 300 tekens, energiek, 2-3 hashtags.",
-  facebook: "Facebook: conversationeel, max 1500 tekens.",
-  x: "X: max 280 tekens, krachtige hook.",
-  threads: "Threads: max 500 tekens, conversationeel.",
-};
-
 interface CreateTaskArgs {
   client_id: string;
   title: string;
@@ -216,8 +208,16 @@ async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
     try {
       const results: { platform: string; text: string }[] = [];
       for (const platform of args.platforms ?? []) {
-        const system = `Je bent een social-media copywriter. Toon: ${args.tone ?? "professioneel"}. ${CAPTION_PLATFORM_HINTS[platform] ?? ""} Geef ALLEEN de caption, geen uitleg.`;
-        const text = await generateText({ system, user: args.briefing, effort: "low" });
+        const system = copywriterSystem({
+          platform,
+          tone: args.tone ?? "professioneel",
+          task: "Schrijf één caption die direct geplaatst kan worden.",
+        });
+        const text = await generateText({
+          system,
+          user: subjectOrFallback({ briefing: args.briefing }),
+          effort: "low",
+        });
         results.push({ platform, text });
         await supabaseAdmin.from("ai_generations").insert({
           client_id: args.client_id ?? null,

@@ -98,7 +98,9 @@ export function ClientAccessPanel({ clientId, clientName }: Props) {
           Deze accounts kunnen inloggen op het klantportaal van {clientName}.
         </p>
         {error && (
-          <p className="mt-4 text-sm text-destructive">Kon de lijst niet laden — probeer opnieuw.</p>
+          <p className="mt-4 text-sm text-destructive">
+            Kon de lijst niet laden — probeer opnieuw.
+          </p>
         )}
         <div className="mt-4 space-y-2">
           {(data?.linked ?? []).map((p) => (
@@ -168,8 +170,8 @@ export function ClientAccessPanel({ clientId, clientName }: Props) {
           <h3 className="font-display text-2xl">Login uitnodigen</h3>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Maakt een account aan dat direct aan {clientName} hangt. De klant krijgt een e-mail, of
-          je krijgt hier een tijdelijk wachtwoord om door te geven.
+          Maakt een account aan dat direct aan {clientName} hangt. De klant krijgt een e-mail, of je
+          krijgt hier een tijdelijk wachtwoord om door te geven.
         </p>
         <form onSubmit={sendInvite} className="mt-4 space-y-3">
           <div className="relative">

@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { generateJson } from "@/lib/ai-provider.server";
+import { copywriterSystem, subjectOrFallback } from "@/lib/copywriting";
 
 /**
  * AI-aanroepen kosten geld op de sleutel van het bureau, dus ze zijn
@@ -34,22 +35,16 @@ export const generateCaption = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
-    const platformGuide: Record<string, string> = {
-      instagram: "Max 2200 tekens, hook eerste regel, 5-10 relevante hashtags onderaan.",
-      tiktok: "Korte hook, max 150 tekens caption, 3-5 hashtags, trending taal.",
-      linkedin: "Professioneel, 1-3 alinea's, max 3 hashtags.",
-      youtube: "Titel + beschrijving stijl, eerste 2 regels = hook.",
-      facebook: "Conversationeel, 1-2 alinea's, geen hashtag-spam.",
-    };
-
-    const system = `Je schrijft social captions in het Nederlands voor ${data.platform}.
-Richtlijn: ${platformGuide[data.platform]}
-${data.brand ? `Brand: ${data.brand}` : ""}
-${data.tone ? `Tone-of-voice: ${data.tone}` : ""}`;
+    const system = copywriterSystem({
+      platform: data.platform,
+      tone: data.tone,
+      context: data.brand ? `Merk: ${data.brand}` : undefined,
+      task: 'Lever JSON met "caption" (direct plaatsbaar, zonder hashtags erin) en "hashtags".',
+    });
 
     const result = await generateJson<{ caption: string; hashtags: string[] }>({
       system,
-      user: data.brief,
+      user: subjectOrFallback({ briefing: data.brief }),
       effort: "low",
       schema: {
         type: "object",
