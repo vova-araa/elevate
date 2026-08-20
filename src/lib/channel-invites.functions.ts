@@ -24,7 +24,14 @@ import {
  * admins/klanten.
  */
 
-const TOKEN_TTL_DAYS = 30;
+// Zeven dagen in plaats van dertig. De link geeft wie hem heeft het recht om
+// namens deze klant een social-account te koppelen, en een nieuwe koppeling
+// overschrijft de bestaande (upsert op client_id+platform). Hij is bovendien
+// herbruikbaar zolang hij geldig is — nodig om achter elkaar Instagram én
+// Facebook te koppelen — dus de geldigheidsduur is de enige rem. Een week is
+// ruim genoeg om een klant zover te krijgen, en scheelt drie weken blootstelling
+// voor een doorgestuurde mail.
+const TOKEN_TTL_DAYS = 7;
 const PLATFORM = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
 
 // ── Auth (zelfde patroon als approval-links.functions.ts) ────────────────────
