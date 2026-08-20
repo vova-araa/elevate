@@ -347,7 +347,11 @@ function SectionForm({
       }}
       className="glass-strong rounded-2xl p-5"
     >
-      <fieldset disabled={busy} className="space-y-3 border-0 p-0 m-0 disabled:opacity-60">
+      <fieldset
+        disabled={busy} // min-w-0 omdat een fieldset standaard min-inline-size: min-content erft en
+        // dan niet meekrimpt op smalle schermen.
+        className="min-w-0 space-y-3 border-0 p-0 m-0 disabled:opacity-60"
+      >
         <div className="text-xs uppercase tracking-[0.2em] text-gold/80">{title}</div>
         {children}
       </fieldset>

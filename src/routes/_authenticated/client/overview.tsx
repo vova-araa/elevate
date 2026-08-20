@@ -77,7 +77,11 @@ function ClientOverview() {
     error: membershipError,
     refetch: refetchMembership,
   } = useQuery({
-    queryKey: ["my-client", user?.id, previewId],
+    // Alleen de meekijk-modus krijgt een eigen sleutel. Met previewId als vaste
+    // derde waarde week deze af van de andere klantpagina's (["my-client", id]),
+    // waardoor elke navigatie naar het overzicht opnieuw de membership ophaalde
+    // en het volledige skelet toonde.
+    queryKey: previewId ? ["my-client", user?.id, previewId] : ["my-client", user?.id],
     enabled: !!user,
     queryFn: async () => {
       if (previewId) {

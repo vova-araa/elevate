@@ -183,11 +183,25 @@ export const actOnPostByToken = createServerFn({ method: "POST" })
     }
 
     if (data.action === "approve") {
-      const { error } = await supabaseAdmin
+      // Alleen een concept mag via de deelbare link worden goedgekeurd. De
+      // status werd hierboven wél opgehaald maar niet gebruikt, waardoor een
+      // al gepubliceerde post terug naar 'scheduled' ging en de publiceerronde
+      // hem opníeuw plaatste — herhaalbaar, met de link die het bureau zelf
+      // gemaild had. Ook posts die bewust op 'failed' staan bleven zo bereikbaar.
+      if (post.status !== "draft") {
+        throw new Error("Deze post staat niet meer open voor goedkeuring");
+      }
+      // Voorwaarde in de update zelf, zodat twee gelijktijdige klikken elkaar
+      // niet overschrijven: de tweede raakt dan 0 rijen.
+      const { data: updated, error } = await supabaseAdmin
         .from("scheduled_posts")
         .update({ status: "scheduled" })
-        .eq("id", data.postId);
+        .eq("id", data.postId)
+        .eq("status", "draft")
+        .select("id")
+        .maybeSingle();
       if (error) throw new Error(error.message);
+      if (!updated) throw new Error("Deze post is inmiddels al verwerkt");
       return { status: "approved" as const };
     }
 

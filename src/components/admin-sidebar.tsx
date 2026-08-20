@@ -52,7 +52,10 @@ export function AdminSidebar() {
           .select("id", { count: "exact", head: true })
           .eq("status", "draft")
           .is("deleted_at", null)
-          .eq("is_queued", false),
+          // Deze badge hangt aan /admin/queue, en díe pagina toont juist de
+          // wachtrij (is_queued = true). Op false filteren gaf precies de
+          // complementaire verzameling: drie posts in de wachtrij, badge op 0.
+          .eq("is_queued", true),
         supabase
           .from("notifications")
           .select("id", { count: "exact", head: true })

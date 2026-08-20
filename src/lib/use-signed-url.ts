@@ -41,6 +41,9 @@ export function useSignedUrlState(
     refetchInterval: 55 * 60 * 1000,
     refetchIntervalInBackground: false,
     retry: 1,
+    // Geen app-brede "Kon niet laden"-melding: één ontbrekend beeld in een
+    // raster van twaalf is geen storing. De aanroeper toont het per tegel.
+    meta: { silent: true },
     queryFn: async () => {
       const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path!, 3600);
       // Doorgooien in plaats van null teruggeven: anders kan de aanroeper een

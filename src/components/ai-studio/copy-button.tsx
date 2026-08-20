@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 

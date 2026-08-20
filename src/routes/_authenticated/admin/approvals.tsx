@@ -254,7 +254,6 @@ function ApprovalsPage() {
       qc.invalidateQueries({ queryKey: ["approvals-posts"] });
       // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
       qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
-      qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
     } finally {
       setBulkBusy(false);
     }
@@ -292,7 +291,6 @@ function ApprovalsPage() {
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["approvals-posts"] });
       // Ook de sidebar: anders blijft het aantal daar op het oude getal staan.
-      qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
       qc.invalidateQueries({ queryKey: ["admin-sidebar-counts"] });
     } finally {
       setBulkBusy(false);
@@ -456,9 +454,9 @@ function ApprovalsPage() {
             <button
               onClick={() => {
                 if (!shareUrl) return;
-                void copyToClipboard(shareUrl, "Link gekopieerd");
-                setShareCopied(true);
-                toast.success("Link gekopieerd");
+                void copyToClipboard(shareUrl, "Link gekopieerd").then((ok) => {
+                  if (ok) setShareCopied(true);
+                });
               }}
               className="shrink-0 min-h-11 min-w-11 rounded-lg border border-gold/20 inline-flex items-center justify-center hover:bg-gold/10"
               title="Kopieer link"

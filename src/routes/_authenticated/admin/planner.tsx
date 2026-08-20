@@ -17,6 +17,7 @@ import {
   uploadMedia,
   resetFileInput,
   UploadError,
+  UploadCancelled,
   formatBytes,
   type UploadProgress,
 } from "@/lib/upload-media";
@@ -1178,6 +1179,8 @@ function ComposeModal({
       setMediaType(type);
       toast.success("Media geüpload");
     } catch (e) {
+      // Zelf annuleren is geen fout — daar hoort geen rode melding bij.
+      if (e instanceof UploadCancelled) return;
       // UploadError draagt al een uitlegbare tekst; de rest tonen we ruw zodat
       // een onverwachte fout niet stilletjes verdwijnt.
       toast.error(e instanceof UploadError ? e.message : String(e));

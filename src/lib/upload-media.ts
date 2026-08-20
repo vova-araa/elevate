@@ -68,6 +68,9 @@ export function safeFileName(name: string): string {
 
 export class UploadError extends Error {}
 
+/** Door de gebruiker zelf afgebroken — geen fout om rood te melden. */
+export class UploadCancelled extends UploadError {}
+
 export async function uploadMedia(file: File, opts: UploadOptions): Promise<UploadResult> {
   if (!opts.clientId) {
     throw new UploadError("Geen klant geselecteerd — kies eerst een klant.");
@@ -145,21 +148,25 @@ function sendWithProgress(o: SendOptions): Promise<void> {
     // het verzoek blijft simpelweg staan. Zonder dit blijft de balk hangen.
     const watchdog = setInterval(() => {
       if (Date.now() - lastActivity > STALL_TIMEOUT_MS) {
-        xhr.abort();
+        // Eerst de reden vastleggen, dán afbreken: xhr.abort() vuurt het
+        // abort-event synchroon af, en die generieke listener zou anders deze
+        // diagnose overschrijven met "is afgebroken".
         fail(
           `Uploaden van ${o.fileName} is gestopt: er kwam een minuut lang geen data door. Controleer je verbinding en probeer opnieuw.`,
         );
+        xhr.abort();
       }
     }, 5_000);
 
     const hardStop = setTimeout(() => {
-      xhr.abort();
       fail(`Uploaden van ${o.fileName} duurde te lang en is afgebroken.`);
+      xhr.abort();
     }, o.timeoutMs);
 
+    // Zelf annuleren is geen fout: netjes afsluiten zonder rode melding.
     const onExternalAbort = () => {
+      finish(() => reject(new UploadCancelled(`Uploaden van ${o.fileName} is geannuleerd.`)));
       xhr.abort();
-      fail(`Uploaden van ${o.fileName} is geannuleerd.`);
     };
     o.signal?.addEventListener("abort", onExternalAbort);
 

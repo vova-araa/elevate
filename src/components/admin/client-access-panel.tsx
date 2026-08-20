@@ -230,7 +230,6 @@ export function ClientAccessPanel({ clientId, clientName }: Props) {
                   <button
                     onClick={() => {
                       void copyToClipboard(value, `${label} gekopieerd`);
-                      toast.success(`${label} gekopieerd`);
                     }}
                     className="shrink-0 rounded-md border border-gold/20 p-1.5 text-gold hover:bg-gold/10"
                     aria-label={`${label} kopiëren`}

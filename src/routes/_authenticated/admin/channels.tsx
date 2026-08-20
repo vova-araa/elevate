@@ -287,7 +287,6 @@ function AdminChannels() {
     typeof window !== "undefined" ? `${window.location.origin}/api/public/oauth/callback` : "";
   const copyRedirect = async () => {
     await copyToClipboard(redirectUri, "Redirect-URI gekopieerd");
-    toast.success("Redirect-URI gekopieerd");
   };
 
   const channelsByPlatform = new Map((data?.channels ?? []).map((c) => [c.platform, c]));
@@ -549,9 +548,10 @@ function AdminChannels() {
             <button
               onClick={() => {
                 if (!inviteUrl) return;
-                void copyToClipboard(inviteUrl, "Uitnodigingslink gekopieerd");
-                setInviteCopied(true);
-                toast.success("Link gekopieerd");
+                // Alleen als het écht lukte de knop op "gekopieerd" zetten.
+                void copyToClipboard(inviteUrl, "Uitnodigingslink gekopieerd").then((ok) => {
+                  if (ok) setInviteCopied(true);
+                });
               }}
               className="shrink-0 min-h-11 min-w-11 rounded-lg border border-gold/20 inline-flex items-center justify-center hover:bg-gold/10"
               title="Kopieer link"
