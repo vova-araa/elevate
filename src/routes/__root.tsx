@@ -7,6 +7,7 @@ import {
   Scripts,
   Link,
   useRouter,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
@@ -144,6 +145,32 @@ function ThemedToaster() {
   return <Toaster theme={theme} position="top-right" />;
 }
 
+/**
+ * Plausible (S04) — cookieloos, dus geen cookiebanner nodig. Alleen op de
+ * publieke pagina's: /admin en /client zijn een privé-portaal
+ * (noindex/nofollow) en horen niet in bezoekersanalytics mee te tellen.
+ * Zonder VITE_PLAUSIBLE_DOMAIN gebeurt er niets — geen nulmeting voordat het
+ * domein bekend is.
+ */
+function PlausibleAnalytics() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isPrivatePortal = pathname.startsWith("/admin") || pathname.startsWith("/client");
+  const domain = import.meta.env.VITE_PLAUSIBLE_DOMAIN as string | undefined;
+
+  useEffect(() => {
+    if (!domain || isPrivatePortal) return;
+    if (document.querySelector("script[data-plausible-loader]")) return;
+    const script = document.createElement("script");
+    script.defer = true;
+    script.dataset.domain = domain;
+    script.dataset.plausibleLoader = "true";
+    script.src = "https://plausible.io/js/script.js";
+    document.head.appendChild(script);
+  }, [domain, isPrivatePortal]);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
@@ -169,6 +196,7 @@ function RootComponent() {
           <Outlet />
           <ThemedToaster />
           <ConfirmHost />
+          <PlausibleAnalytics />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

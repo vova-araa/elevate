@@ -32,12 +32,14 @@ export default defineConfig({
             // omdat we signed URLs van Supabase Storage en platform-CDN's tonen.
             "Content-Security-Policy": [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              // plausible.io: cookieloze analytics (S04) — geen tracking-cookies,
+              // dus geen cookiebanner nodig.
+              "script-src 'self' 'unsafe-inline' https://plausible.io",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: blob: https:",
               "media-src 'self' blob: https:",
-              "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co",
+              "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://plausible.io",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

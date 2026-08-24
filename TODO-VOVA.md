@@ -37,6 +37,35 @@ Tot die tijd komt elke aanvraag gewoon in de database (`leads`-tabel) — je
 mist alleen de directe melding. Er is nog **geen scherm in het admin-paneel**
 om die lijst te bekijken; dat vraagt een aparte kleine build als je dat wilt.
 
+## Analytics en Search Console (S04)
+
+De site had 0 externe scripts — geen nulmeting, dus ook niets hierboven is
+bewijsbaar totdat dit aan staat.
+
+**Plausible (bezoekersanalytics, cookieloos):**
+1. Account op [plausible.io](https://plausible.io), site toevoegen:
+   `elevatedesign.nl`.
+2. Zet in Render: `VITE_PLAUSIBLE_DOMAIN="elevatedesign.nl"`.
+3. Het script laadt dan vanzelf op de publieke pagina's (niet in
+   /admin of /client — dat blijft een privé-portaal). De events
+   `lead_form_start`, `lead_form_submit`, `cta_click` en
+   `portal_login_click` staan al klaar in de code.
+
+**Google Search Console (domeinverificatie via DNS):**
+1. Ga naar [search.google.com/search-console](https://search.google.com/search-console),
+   kies "Domeinresource" (niet "URL-voorvoegsel" — dat dekt alleen www, een
+   domeinresource dekt ook non-www en subdomeinen), vul `elevatedesign.nl` in.
+2. Google toont een TXT-record in de vorm
+   `google-site-verification=<lange-code>`.
+3. Zet dat record bij je DNS-provider op de domeinnaam zelf (host `@`, type
+   `TXT`), niet op een subdomein.
+4. Terug in Search Console op "Verifiëren" klikken — DNS-wijzigingen kunnen
+   tot enkele uren nodig hebben om door te komen.
+5. Zodra geverifieerd: sitemap indienen op `https://www.elevatedesign.nl/sitemap.xml`.
+
+Ik kan dit niet namens jou uitvoeren — de TXT-waarde komt pas na stap 1/2 uit
+jouw eigen Search Console-account.
+
 ## Uploadlimiet (open sinds launch-overzicht)
 
 - [ ] Supabase → Storage → Settings → Upload file size limit
