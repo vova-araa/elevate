@@ -71,6 +71,26 @@ jouw eigen Search Console-account.
 - [ ] Supabase → Storage → Settings → Upload file size limit
 - [ ] Render → `VITE_MAX_UPLOAD_MB` (zelfde waarde als hierboven)
 
+## Non-www → www redirect (S07) — incident, actie nodig
+
+Ik bouwde eerst een apex→www-redirect in de app zelf (`src/server.ts`).
+Live bleek dat te botsen met een redirect die al op Render-niveau stond
+ingesteld — die ging blijkbaar de andere kant op (www → apex). Samen gaven
+ze een oneindige 301-lus: de site opende niet meer voor bezoekers. Ik heb
+de app-code direct teruggedraaid (hotfix, live) zodat de site weer werkt,
+maar de eigenlijke S07-taak (non-www → www redirecten) staat daarmee weer
+open.
+
+- [ ] Check in Render → **elevate-design-r547** → Settings → Custom Domains
+  welke van de twee domeinen (`elevatedesign.nl` / `www.elevatedesign.nl`)
+  een "redirect to"-instelling heeft staan, en in welke richting.
+- [ ] Zet die redirect goed (non-www → www, met behoud van pad/querystring)
+  via die Render-instelling zelf — niet nogmaals in de app-code, anders
+  ontstaat dezelfde lus opnieuw.
+- Supabase ↔ Render-koppeling zelf is gecheckt en in orde (Supabase-project
+  "Elevate design" staat op ACTIVE_HEALTHY); dit incident had daar niets
+  mee te maken.
+
 ## Overig nog openstaand uit eerdere rondes
 
 - ANTHROPIC_API_KEY vervangen (de oude staat in een chatgesprek)
