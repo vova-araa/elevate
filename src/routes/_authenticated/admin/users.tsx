@@ -188,7 +188,18 @@ function UsersAdmin() {
   }
 
   async function handleDelete(userId: string, label: string) {
-    if (!(await confirmDialog(`Verwijder ${label}? Dit kan niet ongedaan worden gemaakt.`))) return;
+    // A09: naam/e-mail exact laten overtypen — dit verwijdert een account
+    // inclusief alle rollen en klantkoppelingen, definitief.
+    if (
+      !(await confirmDialog({
+        title: "Gebruiker definitief verwijderen",
+        description: `${label} en al zijn rollen en klantkoppelingen worden blijvend verwijderd. Dit kan niet ongedaan worden gemaakt.`,
+        confirmLabel: "Definitief verwijderen",
+        destructive: true,
+        confirmValue: label,
+      }))
+    )
+      return;
     try {
       await removeUser({ data: { userId } });
       toast.success("Gebruiker verwijderd");
@@ -449,11 +460,16 @@ function UsersAdmin() {
                     {isSuper ? "Super admin intrekken" : "Maak super admin"}
                   </button>
                 )}
+              </div>
+
+              {/* A09: eigen regel + rand, weg van de rolknoppen — dit
+                  verwijdert het account definitief, geen rol-toggle. */}
+              <div className="flex justify-end border-t border-border/40 pt-3">
                 <button
                   onClick={() => handleDelete(u.id, u.email || u.full_name || u.id)}
-                  className="rounded-full px-3 py-1.5 hairline bg-destructive/15 text-destructive hover:bg-destructive/25 ml-auto"
+                  className="rounded-full px-3 py-1.5 text-xs hairline bg-destructive/15 text-destructive hover:bg-destructive/25"
                 >
-                  Verwijder
+                  Definitief verwijderen
                 </button>
               </div>
 

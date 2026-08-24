@@ -33,8 +33,21 @@ function TrashPage() {
     qc.invalidateQueries({ queryKey: ["trash-posts"] });
   }
 
-  async function purge(id: string) {
-    if (!(await confirmDialog("Definitief verwijderen? Dit kan niet ongedaan gemaakt worden.")))
+  async function purge(
+    id: string,
+    clientName: string | null,
+    platform: string,
+    caption: string | null,
+  ) {
+    const preview = caption?.trim() ? `"${caption.trim().slice(0, 80)}"` : "(geen caption)";
+    if (
+      !(await confirmDialog({
+        title: "Definitief verwijderen",
+        description: `De ${platform}-post ${preview}${clientName ? ` voor ${clientName}` : ""} verdwijnt hiermee blijvend — dit kan niet ongedaan gemaakt worden.`,
+        confirmLabel: "Definitief verwijderen",
+        destructive: true,
+      }))
+    )
       return;
     // Haal eerst het media-pad op zodat we het bijbehorende bestand uit storage
     // kunnen opruimen — anders blijft het bestand achter (opslag-lek).
@@ -110,18 +123,20 @@ function TrashPage() {
                   {p.caption || <span className="text-muted-foreground italic">Geen caption</span>}
                 </p>
               </div>
-              <div className="flex flex-col gap-1.5 shrink-0">
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
                 <button
                   onClick={() => restore(p.id)}
                   className="text-xs rounded-full border border-gold/40 text-gold hover:bg-gold/10 px-3 py-1.5 inline-flex items-center gap-1.5"
                 >
                   <RotateCcw className="h-3 w-3" /> Herstel
                 </button>
+                {/* Ruimte + eigen rand houdt deze knop visueel weg van
+                    Herstel — een misklik hier is niet ongedaan te maken. */}
                 <button
-                  onClick={() => purge(p.id)}
-                  className="text-xs rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 px-3 py-1.5 inline-flex items-center gap-1.5"
+                  onClick={() => purge(p.id, p.clients?.name ?? null, p.platform, p.caption)}
+                  className="mt-3 text-xs rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 px-3 py-1.5 inline-flex items-center gap-1.5"
                 >
-                  <Trash2 className="h-3 w-3" /> Voor altijd
+                  <Trash2 className="h-3 w-3" /> Definitief verwijderen
                 </button>
               </div>
             </div>
