@@ -3,6 +3,16 @@
 Dingen die ik niet kon afronden omdat de gegevens ontbreken, of die bewust
 bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026.
 
+## Migratie voor handmatig koppelen (Meta App Review) — actie nodig
+
+`supabase/migrations/20260824200000_social_connection_manual_status.sql`
+staat klaar maar is nog niet op de live database toegepast (geen
+DB-toegang in deze sessie) — zet 'm via `supabase db push` of plak de
+inhoud in de SQL-editor van het Supabase-dashboard, net als bij de
+Drive-migratie hieronder. Zonder deze migratie geeft "Koppel handmatig"
+op /admin/channels, /client/channels en /connect/$token een
+database-foutmelding (de status-waarde 'manual' bestaat dan nog niet).
+
 ## Google Drive-koppeling (/admin/drive) — actie nodig
 
 Nieuwe bureau-brede Drive-koppeling: op /admin/drive kun je alles
@@ -131,7 +141,15 @@ open.
 - ANTHROPIC_API_KEY vervangen (de oude staat in een chatgesprek)
 - CRON_SECRET genereren + publiceerronde aanzetten
 - TikTok-audit: scopes ophogen na goedkeuring, opnieuw koppelen
-- Meta App Review: zes permissions + bedrijfsverificatie
+- Meta App Review: zes permissions + bedrijfsverificatie. Tot die goedgekeurd
+  is, staat Instagram/Facebook op /admin/channels, /client/channels en de
+  publieke koppel-link (/connect/$token) op "handmatig koppelen" — de echte
+  OAuth-knop is gepauzeerd zodat hij niet doodloopt voor iedereen buiten de
+  Meta-app-testers. Zet na goedkeuring `VITE_META_REVIEW_PENDING=false` in
+  Render en de OAuth-knop komt vanzelf terug (zie src/config/feature-flags.ts).
+  Handmatige koppelingen (status 'manual' in social_connections) hebben geen
+  token en kunnen dus niet gebruikt worden om te publiceren — vervang ze na
+  goedkeuring gewoon door een echte koppeling via "Ontkoppel" + "Koppelen".
 - Leaked password protection aanzetten in Supabase
 - `best_time_benchmarks`-tabel is niet meer in gebruik (zie A03) — kan
   verwijderd worden met een aparte, expliciet bevestigde migratie. Ik laat

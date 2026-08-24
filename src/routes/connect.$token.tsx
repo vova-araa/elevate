@@ -22,8 +22,11 @@ import elevateLogoUrl from "@/assets/elevate-logo.png";
 import {
   getConnectContext,
   startConnectByToken,
+  connectManuallyByToken,
   type ConnectPlatformStatus,
 } from "@/lib/channel-invites.functions";
+import { META_REVIEW_PENDING, META_GATED_PLATFORMS } from "@/config/feature-flags";
+import { ManualConnectForm } from "@/components/manual-connect-form";
 
 const searchSchema = z.object({
   connected: z.string().optional(),
@@ -172,7 +175,14 @@ function ConnectPage() {
 
       <div className="space-y-3 pb-8">
         {platforms.map((p) => (
-          <PlatformCard key={p.platform} platform={p} token={token} />
+          <PlatformCard
+            key={p.platform}
+            platform={p}
+            token={token}
+            onManuallyConnected={() =>
+              qc.invalidateQueries({ queryKey: ["connect-context", token] })
+            }
+          />
         ))}
       </div>
 
@@ -183,10 +193,21 @@ function ConnectPage() {
   );
 }
 
-function PlatformCard({ platform, token }: { platform: ConnectPlatformStatus; token: string }) {
+function PlatformCard({
+  platform,
+  token,
+  onManuallyConnected,
+}: {
+  platform: ConnectPlatformStatus;
+  token: string;
+  onManuallyConnected: () => void;
+}) {
   const start = useServerFn(startConnectByToken);
+  const connectManually = useServerFn(connectManuallyByToken);
   const pm = PLATFORM_META[platform.platform] ?? PLATFORM_META.instagram;
   const [busy, setBusy] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualBusy, setManualBusy] = useState(false);
 
   async function connect() {
     setBusy(true);
@@ -200,6 +221,32 @@ function PlatformCard({ platform, token }: { platform: ConnectPlatformStatus; to
       setBusy(false);
     }
   }
+
+  async function connectManuallySubmit(values: {
+    accountUsername: string;
+    followerCount?: number;
+  }) {
+    setManualBusy(true);
+    try {
+      await connectManually({ data: { token, platform: platform.platform, ...values } });
+      toast.success("Handmatig gekoppeld");
+      setManualOpen(false);
+      onManuallyConnected();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Koppelen mislukt");
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
+  // Meta App Review loopt nog — zie admin/channels.tsx voor dezelfde
+  // toelichting. Pauzeert de OAuth-knop voor Instagram/Facebook hier ook,
+  // zodat de eigenaar niet op een doodlopende koppel-knop stuit.
+  const manual = platform.status === "manual";
+  const pausedForReview =
+    META_REVIEW_PENDING &&
+    (META_GATED_PLATFORMS as readonly string[]).includes(platform.platform) &&
+    !platform.connected;
 
   return (
     <div className="glass-strong rounded-2xl p-4 sm:p-5">
@@ -228,10 +275,22 @@ function PlatformCard({ platform, token }: { platform: ConnectPlatformStatus; to
             <div className="text-xs text-muted-foreground">Nog niet beschikbaar</div>
           )}
         </div>
-        {platform.connected ? (
+        {manual ? (
+          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gold bg-gold/10 border border-gold/30 rounded-full px-2 py-1">
+            <Link2 className="h-3 w-3" /> Handmatig
+          </span>
+        ) : platform.connected ? (
           <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-400/30 rounded-full px-2 py-1">
             <CheckCircle2 className="h-3 w-3" /> Gekoppeld
           </span>
+        ) : pausedForReview ? (
+          <button
+            onClick={() => setManualOpen((v) => !v)}
+            className="shrink-0 min-h-11 rounded-lg border border-gold/30 bg-gold/5 px-4 text-sm font-medium text-gold inline-flex items-center justify-center gap-1.5"
+          >
+            <Link2 className="h-4 w-4" />
+            Koppel handmatig
+          </button>
         ) : platform.available ? (
           <button
             onClick={connect}
@@ -245,6 +304,14 @@ function PlatformCard({ platform, token }: { platform: ConnectPlatformStatus; to
           <span className="shrink-0 text-[10px] text-muted-foreground/70">binnenkort</span>
         )}
       </div>
+      {manualOpen && (
+        <ManualConnectForm
+          platformLabel={pm.label}
+          busy={manualBusy}
+          onCancel={() => setManualOpen(false)}
+          onSubmit={connectManuallySubmit}
+        />
+      )}
     </div>
   );
 }

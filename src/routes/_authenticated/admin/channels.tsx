@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
 import { PLATFORMS as PLATFORM_CONFIG, type Platform } from "@/config/platforms";
+import { META_REVIEW_PENDING, META_GATED_PLATFORMS } from "@/config/feature-flags";
 import {
   listClientChannels,
   startSocialConnect,
@@ -32,8 +33,10 @@ import {
   refreshChannel,
   selectFacebookPage,
   getSocialSetupStatus,
+  connectChannelManually,
 } from "@/lib/channels.functions";
 import { createChannelInvite } from "@/lib/channel-invites.functions";
+import { ManualConnectForm } from "@/components/manual-connect-form";
 import {
   Dialog,
   DialogContent,
@@ -155,7 +158,9 @@ function AdminChannels() {
   const refresh = useServerFn(refreshChannel);
   const selectPage = useServerFn(selectFacebookPage);
   const createInvite = useServerFn(createChannelInvite);
+  const connectManually = useServerFn(connectChannelManually);
 
+  const [manualFormOpen, setManualFormOpen] = useState<Platform | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [inviteBusy, setInviteBusy] = useState(false);
@@ -264,6 +269,19 @@ function AdminChannels() {
     onError: (e: Error) => toast.error(e.message ?? "Ontkoppelen mislukt"),
   });
 
+  const connectManuallyMut = useMutation({
+    mutationFn: (vars: { platform: Platform; accountUsername: string; followerCount?: number }) => {
+      if (!clientId) throw new Error("Geen klant geselecteerd");
+      return connectManually({ data: { clientId, ...vars } });
+    },
+    onSuccess: () => {
+      toast.success("Handmatig gekoppeld");
+      setManualFormOpen(null);
+      refetch();
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Koppelen mislukt"),
+  });
+
   const setupFn = useServerFn(getSocialSetupStatus);
   const { data: setup } = useQuery({
     queryKey: ["social-setup-status"],
@@ -334,7 +352,18 @@ function AdminChannels() {
           const ch = channelsByPlatform.get(id);
           const connectedActive = !!ch && ch.status === "active";
           const expired = !!ch && ch.status === "expired";
+          const manual = !!ch && ch.status === "manual";
           const warn = tokenExpiryWarning(ch?.reconnectBefore);
+          // Meta App Review loopt nog — de echte OAuth-knop voor Instagram/
+          // Facebook werkt alleen voor testers op de Meta-app. Zolang dat zo
+          // is, pauzeren we die knop voor deze twee platforms en maken we
+          // ruimte voor de handmatige overbrugging (ManualConnectForm)
+          // i.p.v. twee half-werkende opties door elkaar te tonen.
+          const pausedForReview =
+            META_REVIEW_PENDING &&
+            (META_GATED_PLATFORMS as readonly string[]).includes(id) &&
+            !connectedActive &&
+            !manual;
           return (
             <div
               key={id}
@@ -351,6 +380,11 @@ function AdminChannels() {
               {expired && (
                 <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-full px-2 py-0.5">
                   <AlertTriangle className="h-3 w-3" /> Verlopen — koppel opnieuw
+                </span>
+              )}
+              {manual && (
+                <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gold bg-gold/10 border border-gold/30 rounded-full px-2 py-0.5">
+                  <Plug className="h-3 w-3" /> Handmatig (tijdelijk)
                 </span>
               )}
               <div className="flex items-center gap-3">
@@ -451,6 +485,46 @@ function AdminChannels() {
                       </select>
                     )}
                   </>
+                ) : manual ? (
+                  <div className="w-full space-y-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      Handmatig ingevuld, geen echte koppeling — publiceren naar {label} kan hier
+                      nog niet mee. Vervang zodra Meta akkoord is.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        if (await confirmDialog(`${label} ontkoppelen?`)) {
+                          disconnectMut.mutate(id);
+                        }
+                      }}
+                      disabled={disconnectMut.isPending}
+                      className="text-xs h-8 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
+                    >
+                      {disconnectMut.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <X className="h-3.5 w-3.5" />
+                      )}
+                      Ontkoppel
+                    </button>
+                  </div>
+                ) : pausedForReview ? (
+                  manualFormOpen === id ? (
+                    <ManualConnectForm
+                      platformLabel={label}
+                      busy={connectManuallyMut.isPending}
+                      onCancel={() => setManualFormOpen(null)}
+                      onSubmit={(values) => connectManuallyMut.mutate({ platform: id, ...values })}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setManualFormOpen(id)}
+                      className="text-xs h-8 px-3 rounded-lg border border-gold/30 bg-gold/5 text-gold font-medium inline-flex items-center gap-1.5 hover:bg-gold/10"
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                      Koppel handmatig (tijdelijk)
+                    </button>
+                  )
                 ) : setup && !setup.platforms[id]?.configured ? (
                   <details className="w-full text-xs">
                     <summary className="cursor-pointer inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-amber-400/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium">
@@ -512,6 +586,8 @@ function AdminChannels() {
       <p className="text-xs text-muted-foreground">
         Koppelen stuurt je naar het platform om te autoriseren; daarna kom je automatisch hier
         terug.
+        {META_REVIEW_PENDING &&
+          " Instagram en Facebook staan tijdelijk op handmatig koppelen zolang Meta App Review nog loopt."}
       </p>
 
       <Dialog

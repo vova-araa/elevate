@@ -14,11 +14,14 @@ import {
   startSocialConnect,
   disconnectChannel,
   getSocialSetupStatus,
+  connectChannelManually,
 } from "@/lib/channels.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveClient } from "@/hooks/use-active-client";
 import { PLATFORMS as PLATFORM_CONFIG, type Platform } from "@/config/platforms";
+import { META_REVIEW_PENDING, META_GATED_PLATFORMS } from "@/config/feature-flags";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ManualConnectForm } from "@/components/manual-connect-form";
 
 const searchSchema = z.object({
   connected: z.string().optional(),
@@ -85,6 +88,7 @@ function ChannelsPage() {
   const list = useServerFn(listClientChannels);
   const connect = useServerFn(startSocialConnect);
   const disc = useServerFn(disconnectChannel);
+  const connectManually = useServerFn(connectChannelManually);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["client-channels", clientId],
@@ -137,6 +141,7 @@ function ChannelsPage() {
   }, [data?.clientId, qc]);
 
   const [confirm, setConfirm] = useState<Platform | null>(null);
+  const [manualFormOpen, setManualFormOpen] = useState<Platform | null>(null);
 
   const connectMut = useMutation({
     mutationFn: async (platform: Platform) => {
@@ -158,6 +163,17 @@ function ChannelsPage() {
       refetch();
     },
     onError: (e: Error) => toast.error(e.message ?? "Mislukt"),
+  });
+
+  const connectManuallyMut = useMutation({
+    mutationFn: (vars: { platform: Platform; accountUsername: string; followerCount?: number }) =>
+      connectManually({ data: vars }),
+    onSuccess: () => {
+      toast.success("Handmatig gekoppeld");
+      setManualFormOpen(null);
+      refetch();
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Koppelen mislukt"),
   });
 
   const channelsByPlatform = new Map((data?.channels ?? []).map((c) => [c.platform, c]));
@@ -186,10 +202,19 @@ function ChannelsPage() {
             const ch = channelsByPlatform.get(id);
             const connectedActive = !!ch && ch.status === "active";
             const expired = !!ch && ch.status === "expired";
+            const manual = !!ch && ch.status === "manual";
             const warn = tokenExpiryWarning(ch?.reconnectBefore);
             // Alleen tonen als "Koppelen" wanneer het platform in de omgeving is
             // ingesteld. Zonder setup-status (nog aan het laden) niet blokkeren.
             const available = !setup || !!setup.platforms[id]?.configured;
+            // Meta App Review loopt nog — zie admin/channels.tsx voor dezelfde
+            // toelichting. Pauzeert de OAuth-knop voor Instagram/Facebook en
+            // maakt ruimte voor de handmatige overbrugging.
+            const pausedForReview =
+              META_REVIEW_PENDING &&
+              (META_GATED_PLATFORMS as readonly string[]).includes(id) &&
+              !connectedActive &&
+              !manual;
             return (
               <div
                 key={id}
@@ -207,6 +232,11 @@ function ChannelsPage() {
                 {expired && (
                   <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-full px-2 py-0.5">
                     <AlertTriangle className="h-3 w-3" /> Verlopen — koppel opnieuw
+                  </span>
+                )}
+                {manual && (
+                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gold bg-gold/10 border border-gold/30 rounded-full px-2 py-0.5">
+                    <Link2 className="h-3 w-3" /> Handmatig (tijdelijk)
                   </span>
                 )}
                 <div className="flex items-center gap-3">
@@ -263,6 +293,45 @@ function ChannelsPage() {
                         "Ontkoppelen"
                       )}
                     </button>
+                  ) : manual ? (
+                    <div className="w-full space-y-2">
+                      <p className="text-[11px] text-muted-foreground">
+                        Handmatig ingevuld, geen echte koppeling — publiceren kan hier nog niet mee.
+                      </p>
+                      <button
+                        onClick={async () => {
+                          if (await confirmDialog(`${label} ontkoppelen?`)) {
+                            disconnectMut.mutate(id);
+                          }
+                        }}
+                        disabled={disconnectMut.isPending}
+                        className="text-xs min-h-11 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
+                      >
+                        {disconnectMut.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Ontkoppelen"
+                        )}
+                      </button>
+                    </div>
+                  ) : pausedForReview ? (
+                    manualFormOpen === id ? (
+                      <ManualConnectForm
+                        platformLabel={label}
+                        busy={connectManuallyMut.isPending}
+                        onCancel={() => setManualFormOpen(null)}
+                        onSubmit={(values) =>
+                          connectManuallyMut.mutate({ platform: id, ...values })
+                        }
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setManualFormOpen(id)}
+                        className="text-xs min-h-11 px-3 rounded-lg border border-gold/30 bg-gold/5 text-gold font-medium inline-flex items-center gap-1.5"
+                      >
+                        <Link2 className="h-3.5 w-3.5" /> Koppel handmatig (tijdelijk)
+                      </button>
+                    )
                   ) : available ? (
                     <button
                       onClick={() => setConfirm(id)}
