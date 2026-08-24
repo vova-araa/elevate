@@ -184,7 +184,7 @@ export const getMomentum = createServerFn({ method: "POST" })
         detail:
           failed.length + stale + expired.length === 0
             ? "Niets blijft liggen."
-            : `${failed.length} mislukt · ${stale} oude concepten · ${expired.length} verlopen koppeling(en).`,
+            : `${failed.length} mislukt · ${stale} oude concepten · ${expired.length} verlopen koppeling${expired.length === 1 ? "" : "en"}.`,
       },
     ];
 

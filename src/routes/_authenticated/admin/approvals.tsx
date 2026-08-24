@@ -244,7 +244,10 @@ function ApprovalsPage() {
           notifyTeam(
             clientId,
             "Posts goedgekeurd",
-            `${targets.filter((p) => p.client_id === clientId).length} post(s) staan klaar om te publiceren.`,
+            (() => {
+              const n = targets.filter((p) => p.client_id === clientId).length;
+              return `${n} post${n === 1 ? "" : "s"} staa${n === 1 ? "t" : "n"} klaar om te publiceren.`;
+            })(),
             `/admin/planner?clientId=${clientId}`,
           ),
         ),
@@ -264,7 +267,7 @@ function ApprovalsPage() {
     if (ids.length === 0) return;
     if (
       !(await confirmDialog({
-        title: `${ids.length} post(s) afwijzen?`,
+        title: `${ids.length} post${ids.length === 1 ? "" : "s"} afwijzen?`,
         description: "De geselecteerde posts worden afgewezen en verwijderd.",
         confirmLabel: "Afwijzen",
         destructive: true,
@@ -302,7 +305,7 @@ function ApprovalsPage() {
       <PageTabs tabs={PLANNER_TABS} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Module 5</div>
+          <div className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Planner</div>
           <h1 className="font-display text-3xl sm:text-4xl text-gold mt-1">Goedkeuringen</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Posts die wachten op goedkeuring. Bekijk, keur goed of geef feedback.

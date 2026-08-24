@@ -220,7 +220,8 @@ async function buildClientOverview(clientId: string, clientName: string): Promis
         }
       : null;
   if (stepsTotal === 0) missing.push("Geen stappenplan (roadmap) aangemaakt");
-  else if (stepsOpen > 0) missing.push(`${stepsOpen} openstaande stappenplan-stap(pen)`);
+  else if (stepsOpen > 0)
+    missing.push(`${stepsOpen} openstaande stappenplan-stap${stepsOpen === 1 ? "" : "pen"}`);
 
   // ── Intake ──
   const intakeRow = intakeRes.data;
@@ -285,7 +286,10 @@ async function buildClientOverview(clientId: string, clientName: string): Promis
       .map((c) => ({ platform: c.platform, volgers: c.follower_count })),
   };
   if (connectedPlatforms.length === 0) missing.push("Geen enkel kanaal gekoppeld");
-  if (expiringSoon.length) missing.push(`${expiringSoon.length} koppeling(en) verlopen binnenkort`);
+  if (expiringSoon.length)
+    missing.push(
+      `${expiringSoon.length} koppeling${expiringSoon.length === 1 ? "" : "en"} verlopen binnenkort`,
+    );
 
   // ── Posts ──
   const posts = postsRes.data ?? [];
@@ -315,7 +319,10 @@ async function buildClientOverview(clientId: string, clientName: string): Promis
 
   if (scheduledFuture.length === 0) missing.push("Geen posts ingepland voor de toekomst");
   else if (plannedNext7 === 0) missing.push("Niets gepland de komende 7 dagen");
-  if (overdue.length) missing.push(`${overdue.length} post(s) staan te laat (overdue)`);
+  if (overdue.length)
+    missing.push(
+      `${overdue.length} post${overdue.length === 1 ? "" : "s"} staa${overdue.length === 1 ? "t" : "n"} te laat`,
+    );
 
   // ── Publicatie-timing ──
   // Verwachting: minstens ~1 post per gekoppeld platform per week, of de cadans

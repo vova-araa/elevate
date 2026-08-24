@@ -287,7 +287,7 @@ function drawPostsList(
     y = ensureSpace(doc, y, 6);
     doc.setFont("helvetica", "italic").setFontSize(7.5).setTextColor(140);
     doc.text(
-      `… en nog ${rows.length - MAX_PDF_POST_ROWS} post(s), zie het klantportaal.`,
+      `… en nog ${rows.length - MAX_PDF_POST_ROWS} post${rows.length - MAX_PDF_POST_ROWS === 1 ? "" : "s"}, zie het klantportaal.`,
       marginX,
       y,
     );

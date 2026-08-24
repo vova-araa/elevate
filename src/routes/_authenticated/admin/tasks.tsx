@@ -93,7 +93,7 @@ function AdminTasks() {
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Werklijst</p>
         <h1 className="font-display text-4xl md:text-5xl mt-2">Taken</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          ClickUp-stijl overzicht van alle klantentaken.
+          Alle klantentaken in één bord, gesorteerd op status.
         </p>
       </div>
 
