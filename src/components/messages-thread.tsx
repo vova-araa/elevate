@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Send, AlertCircle, CalendarClock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 type Props = {
@@ -192,10 +193,9 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
                   </option>
                 ))}
               </select>
-              <input
-                type="date"
+              <DatePicker
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={setDueDate}
                 className="rounded-lg bg-background/60 hairline px-3 py-2 text-sm"
               />
             </>

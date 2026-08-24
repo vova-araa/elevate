@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia, resetFileInput } from "@/lib/upload-media";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import { clientAvatarStyle } from "@/lib/client-avatar";
+import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import {
   Plus,
@@ -625,12 +626,11 @@ function DealsPanel({ clientId }: { clientId: string }) {
             value={f.probability}
             onChange={(e) => setF({ ...f, probability: Number(e.target.value) })}
           />
-          <input
-            aria-label="Verwachte sluitingsdatum"
-            type="date"
+          <DatePicker
+            ariaLabel="Verwachte sluitingsdatum"
             className={inp}
             value={f.expected_close_date}
-            onChange={(e) => setF({ ...f, expected_close_date: e.target.value })}
+            onChange={(v) => setF({ ...f, expected_close_date: v })}
           />
         </div>
         <textarea
@@ -762,19 +762,17 @@ function ReportsPanel({ clientId, clientName }: { clientId: string; clientName: 
             <option value="audit">Audit</option>
             <option value="other">Anders</option>
           </select>
-          <input
-            aria-label="Periode vanaf"
-            type="date"
+          <DatePicker
+            ariaLabel="Periode vanaf"
             className={inp}
             value={f.period_start}
-            onChange={(e) => setF({ ...f, period_start: e.target.value })}
+            onChange={(v) => setF({ ...f, period_start: v })}
           />
-          <input
-            aria-label="Periode tot"
-            type="date"
+          <DatePicker
+            ariaLabel="Periode tot"
             className={inp}
             value={f.period_end}
-            onChange={(e) => setF({ ...f, period_end: e.target.value })}
+            onChange={(v) => setF({ ...f, period_end: v })}
           />
         </div>
         <textarea
@@ -1547,12 +1545,11 @@ function RoadmapStepRow({
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
             placeholder="Titel"
           />
-          <input
-            aria-label="Streefdatum"
-            type="date"
+          <DatePicker
+            ariaLabel="Streefdatum"
             className={inp}
             value={draft.due_date}
-            onChange={(e) => setDraft({ ...draft, due_date: e.target.value })}
+            onChange={(v) => setDraft({ ...draft, due_date: v })}
           />
         </div>
         <textarea
@@ -1684,13 +1681,7 @@ function AddStepForm({
           placeholder="Titel stap"
           className={inp}
         />
-        <input
-          aria-label="Datum van de stap"
-          type="date"
-          value={d}
-          onChange={(e) => setD(e.target.value)}
-          className={inp}
-        />
+        <DatePicker ariaLabel="Datum van de stap" value={d} onChange={setD} className={inp} />
       </div>
       <textarea
         value={desc}
@@ -1756,11 +1747,10 @@ function CalendarAdmin({ clientId }: { clientId: string }) {
   return (
     <div className="space-y-4">
       <div className="glass rounded-2xl p-5 grid gap-2 md:grid-cols-4">
-        <input
-          type="date"
-          aria-label="Datum van het kalenderitem"
+        <DatePicker
+          ariaLabel="Datum van het kalenderitem"
           value={f.date}
-          onChange={(e) => setF({ ...f, date: e.target.value })}
+          onChange={(v) => setF({ ...f, date: v })}
           className={inp}
         />
         <input

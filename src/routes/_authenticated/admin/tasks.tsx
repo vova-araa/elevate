@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Trash2, Flag, Calendar, ListChecks, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/tasks")({ component: AdminTasks });
@@ -129,10 +130,9 @@ function AdminTasks() {
             <option value="high">Hoog</option>
             <option value="urgent">Urgent</option>
           </select>
-          <input
-            type="date"
+          <DatePicker
             value={quickDue}
-            onChange={(e) => setQuickDue(e.target.value)}
+            onChange={setQuickDue}
             className="rounded-lg bg-input/60 hairline px-3 py-2.5 text-sm"
           />
           <button

@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Sparkles, Loader2, CalendarPlus, Copy, Check, Wand2 } from "lucide-react";
 import { PLATFORMS } from "@/components/planner/planner-shared";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   generateContentPlan,
   createPlanPosts,
@@ -180,10 +181,9 @@ function CampaignsPage() {
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Startdatum</label>
-          <input
-            type="date"
+          <DatePicker
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
             className="mt-1 w-full rounded-lg border border-gold/15 bg-background/60 px-3 h-10 text-sm"
           />
         </div>

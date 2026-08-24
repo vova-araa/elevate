@@ -14,6 +14,7 @@ import {
   type DeliveryKind,
 } from "@/lib/deliverables.functions";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 
 /**
  * Aanleververzoeken beheren vanuit de klantpagina. Wat je hier aanmaakt komt bij
@@ -160,10 +161,9 @@ export function DeliveryRequestsPanel({ clientId }: { clientId: string }) {
               </option>
             ))}
           </select>
-          <input
-            type="date"
+          <DatePicker
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            onChange={setDueDate}
             className="min-h-11 rounded-lg bg-input/60 hairline px-4 text-sm"
           />
           {kind === "media" && (

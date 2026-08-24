@@ -22,6 +22,7 @@ import { useClientStore } from "@/lib/stores/client-store";
 import { PLATFORMS } from "@/components/planner/planner-shared";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import {
   getIntake,
@@ -277,12 +278,7 @@ function StrategyPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={weekStart}
-                onChange={(e) => setWeekStart(e.target.value)}
-                className="h-9 w-40 text-sm"
-              />
+              <DatePicker value={weekStart} onChange={setWeekStart} className="h-9 w-40 text-sm" />
               <Button
                 onClick={() => weekPlanMutation.mutate()}
                 disabled={weekPlanMutation.isPending}
