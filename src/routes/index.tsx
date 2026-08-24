@@ -234,7 +234,7 @@ function Landing() {
                   Elevate
                 </span>{" "}
                 <span className="lp-line" style={{ animationDelay: "220ms" }}>
-                  <span className="lp-sheen block text-gradient-gold font-light italic">
+                  <span className="lp-sheen italic-accent block text-gradient-gold font-light italic">
                     your brand
                   </span>
                 </span>
@@ -323,8 +323,8 @@ function Landing() {
               eyebrow="Wat we voor je doen"
               title={
                 <>
-                  Een studio die met je <span className="italic text-gradient-gold">merk</span>{" "}
-                  meebeweegt
+                  Een studio die met je{" "}
+                  <span className="italic-accent italic text-gradient-gold">merk</span> meebeweegt
                 </>
               }
               body="Van strategie tot groei — schuif door de kern van wat samenwerken met Elevate oplevert."
@@ -361,9 +361,10 @@ function Landing() {
               <Quote className="relative mx-auto h-9 w-9 text-gold/70" aria-hidden />
               <blockquote className="relative mx-auto mt-7 max-w-3xl font-display text-3xl leading-[1.15] tracking-tight md:text-[3.25rem]">
                 Een merk is geen logo. Het is het{" "}
-                <span className="italic text-gradient-gold">gevoel</span> dat achterblijft — en dat
-                bouwen we op met strategie, ambacht en{" "}
-                <span className="italic text-gradient-gold">rust</span> in de uitvoering.
+                <span className="italic-accent italic text-gradient-gold">gevoel</span> dat
+                achterblijft — en dat bouwen we op met strategie, ambacht en{" "}
+                <span className="italic-accent italic text-gradient-gold">rust</span> in de
+                uitvoering.
               </blockquote>
               <figcaption className="relative mt-9 text-[11px] uppercase tracking-[0.28em] text-gold/60">
                 Het handschrift van Elevate Design
@@ -379,8 +380,8 @@ function Landing() {
               eyebrow="Diensten"
               title={
                 <>
-                  Alles wat je merk online <span className="italic text-gradient-gold">sterk</span>{" "}
-                  maakt
+                  Alles wat je merk online{" "}
+                  <span className="italic-accent italic text-gradient-gold">sterk</span> maakt
                 </>
               }
               body="Van eerste strategie tot dagelijkse publicatie — vier vakgebieden, één vloeiend proces."
@@ -402,7 +403,8 @@ function Landing() {
                   eyebrow="Werkwijze"
                   title={
                     <>
-                      Van intake tot <span className="italic text-gradient-gold">meetbare</span>{" "}
+                      Van intake tot{" "}
+                      <span className="italic-accent italic text-gradient-gold">meetbare</span>{" "}
                       groei
                     </>
                   }
@@ -473,7 +475,8 @@ function Landing() {
                 <Layers className="h-3 w-3" /> Het portaal
               </div>
               <h2 className="mt-5 font-display text-4xl leading-tight md:text-5xl">
-                Één plek waar <span className="italic text-gradient-gold">alles</span> samenkomt
+                Één plek waar <span className="italic-accent italic text-gradient-gold">alles</span>{" "}
+                samenkomt
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                 Geen losse mailtjes en verspreide bestanden meer. In het Elevate-portaal zie je de
@@ -515,7 +518,8 @@ function Landing() {
               aria-hidden
             />
             <h2 className="relative font-display text-4xl leading-tight md:text-6xl">
-              Klaar voor de <span className="italic text-gradient-gold">volgende stap</span>?
+              Klaar voor de{" "}
+              <span className="italic-accent italic text-gradient-gold">volgende stap</span>?
             </h2>
             <p className="relative mx-auto mt-5 max-w-xl text-base text-muted-foreground">
               Plan een vrijblijvende merkscan en ervaar hoe overzichtelijk samenwerken aan je merk
@@ -551,7 +555,7 @@ function ServiceVisualBlock({ kind }: { kind: ServiceVisual }) {
   if (kind === "tags") {
     return (
       <div className="flex flex-wrap gap-2" aria-hidden>
-        {["Positionering", "Doelgroep", "Content-pijlers", "Toon of voice", "Merkverhaal"].map(
+        {["Positionering", "Doelgroep", "Content-pijlers", "Tone of voice", "Merkverhaal"].map(
           (t) => (
             <span
               key={t}

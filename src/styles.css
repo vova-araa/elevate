@@ -294,6 +294,14 @@
     background-clip: text;
     color: transparent;
   }
+  /* S11: cursieve accentwoorden (font-display, italic) staan vaak in een
+     overflow:hidden-ouder (bv. het donkere quoteblok). Schuine glyphs steken
+     rechts net buiten hun eigen tekst-bounding-box — zonder deze ruimte werd
+     de laatste letter afgeknipt ("gevoe|"). Ruimte, niet een kleinere
+     fontgrootte, lost dat op. */
+  .italic-accent {
+    padding-right: 0.12em;
+  }
   .bg-luxe {
     background-image: var(--gradient-luxe);
   }
