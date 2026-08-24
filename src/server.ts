@@ -37,26 +37,8 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
-// S07: canonical en sitemap wijzen naar www, maar het kale domein gaf een
-// volledige 200 in plaats van door te verwijzen — twee versies van dezelfde
-// site voor zoekmachines. Alleen de exacte apex van het productiedomein
-// redirect (niet elk niet-www host): Render's PR-previews en *.onrender.com
-// draaien op hun eigen hostnaam en mogen niet worden omgeleid.
-const APEX_HOST = "elevatedesign.nl";
-const WWW_HOST = "www.elevatedesign.nl";
-
-function apexToWwwRedirect(request: Request): Response | null {
-  const url = new URL(request.url);
-  if (url.hostname !== APEX_HOST) return null;
-  url.hostname = WWW_HOST;
-  url.protocol = "https:";
-  return Response.redirect(url.toString(), 301);
-}
-
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    const redirect = apexToWwwRedirect(request);
-    if (redirect) return redirect;
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
