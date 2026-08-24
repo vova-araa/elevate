@@ -56,9 +56,10 @@ function AuthLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Admins mogen het klantportaal bekijken zolang ze expliciet een klant
   // meegeven (?asClient=…) — dat is de "bekijk als klant"-preview.
-  const previewingClient = useRouterState({
-    select: (s) => !!(s.location.search as { asClient?: string })?.asClient,
+  const asClientParam = useRouterState({
+    select: (s) => (s.location.search as { asClient?: string })?.asClient,
   });
+  const previewingClient = !!asClientParam;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -71,12 +72,11 @@ function AuthLayout() {
     if (role === "client" && pathname.startsWith("/admin")) {
       navigate({ to: "/dashboard", replace: true });
     }
-    // Admin hoort niet in de klant-weergave — tenzij hij bewust meekijkt via
-    // de "bekijk als klant"-preview (?asClient=…).
-    if (role === "admin" && pathname.startsWith("/client") && !previewingClient) {
-      navigate({ to: "/admin/dashboard", replace: true });
-    }
-  }, [role, loading, pathname, navigate, previewingClient]);
+    // Een admin zónder ?asClient wordt hier NIET meer stil teruggestuurd (A17)
+    // — de /client-route zelf toont dan een klantkiezer i.p.v. een klant te
+    // laten denken dat hij "vergeten" is toen hij eigenlijk gewoon in het
+    // verkeerde scherm zat.
+  }, [role, loading, pathname, navigate]);
 
   if (loading || !role) {
     return (
@@ -95,6 +95,7 @@ function AuthLayout() {
   return (
     <div className="flex min-h-screen bg-luxe">
       <Sidebar
+        asClient={asClientParam}
         onLogout={async () => {
           await signOut();
           navigate({ to: "/auth" });
@@ -116,6 +117,7 @@ function AuthLayout() {
               <X className="h-5 w-5" />
             </button>
             <SidebarContent
+              asClient={asClientParam}
               onLogout={async () => {
                 await signOut();
                 navigate({ to: "/auth" });
@@ -161,17 +163,17 @@ function ClientPreviewBanner() {
   );
 }
 
-function Sidebar({ onLogout }: { onLogout: () => void }) {
+function Sidebar({ onLogout, asClient }: { onLogout: () => void; asClient?: string }) {
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-gold/10 bg-sidebar/60 backdrop-blur p-5">
-      <SidebarContent onLogout={onLogout} />
+      <SidebarContent onLogout={onLogout} asClient={asClient} />
     </aside>
   );
 }
 
 // Deze layout wordt uitsluitend voor klanten gerenderd; admins draaien via
 // admin/route.tsx → AdminSidebar en short-circuiten hierboven naar <Outlet/>.
-function SidebarContent({ onLogout }: { onLogout: () => void }) {
+function SidebarContent({ onLogout, asClient }: { onLogout: () => void; asClient?: string }) {
   const groups = [
     {
       label: "Overzicht",
@@ -220,6 +222,7 @@ function SidebarContent({ onLogout }: { onLogout: () => void }) {
                   <Link
                     key={l.to}
                     to={l.to}
+                    search={asClient ? { asClient } : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
                       active

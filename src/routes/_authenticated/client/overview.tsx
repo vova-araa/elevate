@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
+import { useActiveClient } from "@/hooks/use-active-client";
 import {
   Area,
   AreaChart,
@@ -33,10 +34,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
 import { listClientChannels } from "@/lib/channels.functions";
 import { EmptyState } from "@/components/empty-state";
-import { ErrorState } from "@/components/error-state";
 import { ReportCard } from "@/components/client-portal/report-card";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,10 +43,6 @@ import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/client/overview")({
-  // Admins kunnen dit scherm openen namens een klant ("bekijk als klant").
-  validateSearch: (s: Record<string, unknown>): { asClient?: string } => ({
-    asClient: typeof s.asClient === "string" ? s.asClient : undefined,
-  }),
   component: ClientOverview,
 });
 
@@ -64,62 +59,19 @@ const PLATFORM_META: Record<Platform, { label: string; Icon: LucideIcon; tint: s
 const PLATFORM_ORDER: Platform[] = ["instagram", "tiktok", "linkedin", "youtube", "facebook"];
 
 function ClientOverview() {
-  const { user, role } = useAuth();
-  const { asClient } = Route.useSearch();
+  const { clientId, clientName, previewing } = useActiveClient();
   const listChannels = useServerFn(listClientChannels);
-  // Alleen een admin mag een andere klant bekijken; RLS bewaakt dit alsnog
-  // server-side, dit voorkomt slechts een zinloze query voor gewone klanten.
-  const previewId = role === "admin" ? asClient : undefined;
-
-  const {
-    data: membership,
-    isLoading: loadingMembership,
-    error: membershipError,
-    refetch: refetchMembership,
-  } = useQuery({
-    // Alleen de meekijk-modus krijgt een eigen sleutel. Met previewId als vaste
-    // derde waarde week deze af van de andere klantpagina's (["my-client", id]),
-    // waardoor elke navigatie naar het overzicht opnieuw de membership ophaalde
-    // en het volledige skelet toonde.
-    queryKey: previewId ? ["my-client", user?.id, previewId] : ["my-client", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      if (previewId) {
-        const { data, error } = await supabase
-          .from("clients")
-          .select("id, name")
-          .eq("id", previewId)
-          .maybeSingle();
-        if (error) throw error;
-        return data ? { client_id: data.id, clients: { name: data.name } } : null;
-      }
-      const { data, error } = await supabase
-        .from("client_members")
-        .select("client_id, clients(name)")
-        .eq("user_id", user!.id)
-        .order("client_id")
-        .limit(1)
-        .maybeSingle();
-      // Bewust doorgooien: supabase-js gooit zelf niet, het geeft { data: null,
-      // error } terug. Slikken we die, dan ziet een gekoppelde klant bij een
-      // netwerk- of RLS-fout "Nog geen bedrijf gekoppeld" — alsof het bureau
-      // hem vergeten is.
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const clientId = (membership as { client_id?: string } | null)?.client_id;
-  const clientName =
-    (membership as { clients?: { name?: string | null } | null } | null)?.clients?.name ?? null;
+  // In preview-modus (admin bekijkt als klant) moet elke interne navigatie
+  // ?asClient meenemen — anders valt de preview terug op "geen klant" zodra
+  // je bijvoorbeeld op "Kalender" klikt.
+  const previewSearch = previewing ? { asClient: clientId } : undefined;
 
   // Kanalen + volgers (client-safe server function)
   const { data: channelData, isLoading: loadingChannels } = useQuery({
     queryKey: ["overview-channels", clientId],
-    enabled: !!clientId,
     // In admin-preview expliciet de bekeken klant meegeven; de server
     // controleert die toegang alsnog via user_has_client_access.
-    queryFn: () => listChannels({ data: previewId ? { clientId: previewId } : {} }),
+    queryFn: () => listChannels({ data: previewing ? { clientId } : {} }),
   });
 
   // Volgersgroei: echte metingen uit social_metrics_snapshots (klant mag zijn
@@ -250,35 +202,6 @@ function ClientOverview() {
     return { total, completed, pct };
   }, [roadmaps]);
 
-  // --- Laad-/lege staten ---
-  if (loadingMembership) {
-    return <OverviewSkeleton />;
-  }
-
-  if (membershipError) {
-    return (
-      <div className="max-w-2xl">
-        <ErrorState
-          title="Je gegevens konden niet geladen worden"
-          description="Dit ligt niet aan je account — de verbinding met de server gaf geen antwoord."
-          onRetry={() => void refetchMembership()}
-        />
-      </div>
-    );
-  }
-
-  if (!membership) {
-    return (
-      <div className="max-w-2xl">
-        <EmptyState
-          icon={<Users className="h-5 w-5" />}
-          title="Nog geen bedrijf gekoppeld"
-          description="Zodra je Elevate-team je aan een bedrijf koppelt, verschijnt hier je persoonlijke dashboard met kanalen, planning en resultaten."
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       {/* Kop */}
@@ -296,6 +219,7 @@ function ClientOverview() {
       {/* Stat-tegelband */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatTile
+          search={previewSearch}
           to="/client/channels"
           Icon={Users}
           label="Volgers totaal"
@@ -308,18 +232,21 @@ function ClientOverview() {
           }
         />
         <StatTile
+          search={previewSearch}
           to="/client/channels"
           Icon={Share2}
           label="Gekoppelde kanalen"
           value={loadingChannels ? null : connectedChannels.toLocaleString("nl-NL")}
         />
         <StatTile
+          search={previewSearch}
           to="/client/calendar"
           Icon={CalendarClock}
           label="Geplande posts"
           value={loadingScheduledCount ? null : (scheduledCount ?? 0).toLocaleString("nl-NL")}
         />
         <StatTile
+          search={previewSearch}
           to="/client/calendar"
           Icon={Inbox}
           label="Wacht op akkoord"
@@ -327,6 +254,7 @@ function ClientOverview() {
           accent={(approvalCount ?? 0) > 0}
         />
         <StatTile
+          search={previewSearch}
           to="/client/tasks"
           Icon={ListChecks}
           label="Open taken"
@@ -352,6 +280,7 @@ function ClientOverview() {
             </div>
             <Link
               to="/client/calendar"
+              search={previewSearch}
               className="text-xs text-gold hover:underline inline-flex items-center gap-1"
             >
               Kalender <ArrowRight className="h-3 w-3" />
@@ -428,6 +357,7 @@ function ClientOverview() {
 
           <Link
             to="/client/roadmap"
+            search={previewSearch}
             className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gold/15 px-4 py-2.5 text-sm font-medium text-gold hover:bg-gold/25"
           >
             Bekijk stappenplan <ArrowRight className="h-3.5 w-3.5" />
@@ -444,6 +374,7 @@ function ClientOverview() {
           </div>
           <Link
             to="/client/channels"
+            search={previewSearch}
             className="text-xs text-gold hover:underline inline-flex items-center gap-1"
           >
             Beheren <ArrowRight className="h-3 w-3" />
@@ -499,6 +430,7 @@ function ClientOverview() {
           </div>
           <Link
             to="/client/reports"
+            search={previewSearch}
             className="text-xs text-gold hover:underline inline-flex items-center gap-1"
           >
             Alle rapporten <ArrowRight className="h-3 w-3" />
@@ -632,12 +564,14 @@ function FollowerGrowthCard({
 
 function StatTile({
   to,
+  search,
   Icon,
   label,
   value,
   accent = false,
 }: {
   to: string;
+  search?: { asClient?: string };
   Icon: LucideIcon;
   label: string;
   value: string | null;
@@ -646,6 +580,7 @@ function StatTile({
   return (
     <Link
       to={to}
+      search={search}
       className={cn(
         "card-lift group rounded-xl border bg-card p-4",
         accent ? "border-gold/40 gold-ring" : "border-gold/10",
@@ -710,26 +645,6 @@ function ProgressRing({ pct }: { pct: number }) {
       </svg>
       <div className="absolute inset-0 grid place-items-center">
         <span className="font-display text-4xl tabular-nums text-gold">{clamped}%</span>
-      </div>
-    </div>
-  );
-}
-
-function OverviewSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div>
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="mt-3 h-12 w-64" />
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 w-full rounded-xl" />
-        ))}
-      </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Skeleton className="h-64 w-full rounded-xl lg:col-span-2" />
-        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     </div>
   );

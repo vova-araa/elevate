@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
+import { useActiveClient } from "@/hooks/use-active-client";
 import { EmptyState } from "@/components/empty-state";
 import type { Tables } from "@/integrations/supabase/types";
 import {
@@ -41,40 +41,22 @@ function guessKind(path: string, mime: string | null | undefined): Kind {
 }
 
 function ClientMedia() {
-  const { user } = useAuth();
-
-  const { data: membership, isLoading: loadingMembership } = useQuery({
-    queryKey: ["my-client", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("client_members")
-        .select("client_id, clients(name)")
-        .eq("user_id", user!.id)
-        .order("client_id")
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  const clientId = (membership as { client_id?: string } | null)?.client_id;
+  const { clientId } = useActiveClient();
 
   const { data: items, isLoading: loadingMedia } = useQuery({
     queryKey: ["client-media", clientId],
-    enabled: !!clientId,
     queryFn: async () => {
       const [{ data: uploads }, { data: posts }] = await Promise.all([
         supabase
           .from("uploads")
           .select("id, file_path, file_name, file_type, created_at")
-          .eq("client_id", clientId!)
+          .eq("client_id", clientId)
           .eq("status", "approved")
           .order("created_at", { ascending: false }),
         supabase
           .from("scheduled_posts")
           .select("id, media_path, media_type, caption, created_at")
-          .eq("client_id", clientId!)
+          .eq("client_id", clientId)
           .not("media_path", "is", null)
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
@@ -112,13 +94,12 @@ function ClientMedia() {
 
   const { data: pendingUploads } = useQuery({
     queryKey: ["client-media-pending", clientId],
-    enabled: !!clientId,
     queryFn: async () =>
       (
         await supabase
           .from("uploads")
           .select("id, file_path, file_name, file_type, created_at")
-          .eq("client_id", clientId!)
+          .eq("client_id", clientId)
           .eq("status", "pending")
           .order("created_at", { ascending: false })
       ).data ?? [],
@@ -130,21 +111,11 @@ function ClientMedia() {
     [items, filter],
   );
 
-  if (loadingMembership || (clientId && loadingMedia)) {
+  if (loadingMedia) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-gold" />
       </div>
-    );
-  }
-
-  if (!membership) {
-    return (
-      <EmptyState
-        icon={<ImageIcon className="h-5 w-5" />}
-        title="Geen actieve klantkoppeling"
-        description="Zodra je gekoppeld bent aan een bedrijf verschijnt hier je mediabibliotheek."
-      />
     );
   }
 

@@ -29,6 +29,7 @@ import {
   getSocialSetupStatus,
 } from "@/lib/channels.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveClient } from "@/hooks/use-active-client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const searchSchema = z.object({
@@ -125,13 +126,16 @@ function ChannelsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { connected, handle, error } = Route.useSearch();
+  const { clientId, previewing } = useActiveClient();
   const list = useServerFn(listClientChannels);
   const connect = useServerFn(startSocialConnect);
   const disc = useServerFn(disconnectChannel);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["client-channels"],
-    queryFn: () => list({ data: {} }),
+    queryKey: ["client-channels", clientId],
+    // In admin-preview expliciet de bekeken klant meegeven; de server
+    // controleert die toegang alsnog via user_has_client_access.
+    queryFn: () => list({ data: previewing ? { clientId } : {} }),
   });
 
   // Setup-status: welke platforms zijn in de omgeving geconfigureerd. Zo tonen
@@ -149,8 +153,12 @@ function ChannelsPage() {
     if (!connected && !error) return;
     if (error) toast.error(error);
     else if (connected) toast.success(`${handle ?? "Account"} gekoppeld via ${connected}`);
-    navigate({ to: "/client/channels", search: {}, replace: true });
-  }, [connected, handle, error, navigate]);
+    navigate({
+      to: "/client/channels",
+      search: previewing ? { asClient: clientId } : {},
+      replace: true,
+    });
+  }, [connected, handle, error, navigate, previewing, clientId]);
 
   // Realtime: refetch wanneer er iets verandert in social_connections van deze klant
   useEffect(() => {
@@ -208,12 +216,6 @@ function ChannelsPage() {
           Koppel je social-accounts. Dit duurt ongeveer 30 seconden per platform.
         </p>
       </header>
-
-      {data && !data.clientId && (
-        <div className="rounded-xl border border-amber-400/30 bg-amber-500/5 text-amber-200 p-4 text-sm">
-          Geen client gekoppeld aan jouw account. Vraag een admin om je toe te voegen.
-        </div>
-      )}
 
       {isLoading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">

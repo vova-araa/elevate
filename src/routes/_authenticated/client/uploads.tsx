@@ -3,14 +3,13 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Upload as UploadIcon, Loader2, Play } from "lucide-react";
+import { Plus, Upload as UploadIcon, Play } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
 import { DriveImportCard } from "@/components/drive-import-card";
 import type { Tables } from "@/integrations/supabase/types";
 import { uploadMedia, resetFileInput } from "@/lib/upload-media";
-
-type ClientMember = { client_id: string; clients: { id: string; name: string } | null };
+import { useActiveClient } from "@/hooks/use-active-client";
 
 export const Route = createFileRoute("/_authenticated/client/uploads")({
   component: ClientUploads,
@@ -18,15 +17,7 @@ export const Route = createFileRoute("/_authenticated/client/uploads")({
 
 function ClientUploads() {
   const qc = useQueryClient();
-  const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: ["my-clients"],
-    queryFn: async () =>
-      (await supabase.from("client_members").select("client_id, clients(id,name)")).data ?? [],
-  });
-  const [clientId, setClientId] = useState<string>("");
-  useEffect(() => {
-    if (!clientId && members && members[0]) setClientId(members[0].client_id);
-  }, [members, clientId]);
+  const { clientId } = useActiveClient();
 
   // Openstaande media-verzoeken: een upload kan er direct aan gekoppeld worden,
   // zodat de voortgang op de aanleverlijst vanzelf meeloopt.
@@ -94,51 +85,18 @@ function ClientUploads() {
     qc.invalidateQueries({ queryKey: ["delivery-overview", clientId] });
   }
 
-  if (loadingMembers) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-gold" />
-      </div>
-    );
-  }
-
-  if (!members || members.length === 0) {
-    return (
-      <EmptyState
-        icon={<UploadIcon className="h-5 w-5" />}
-        title="Geen actieve klantkoppeling"
-        description="Zodra je gekoppeld bent aan een bedrijf kun je hier beeld en video aanleveren."
-      />
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Beeld & video</p>
-          <h1 className="font-display text-4xl sm:text-5xl mt-2">Uploads</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Deel je materiaal met je Elevate-team — je upload wacht op goedkeuring voordat hij in de
-            mediabibliotheek verschijnt.
-          </p>
-        </div>
-        {members.length > 1 && (
-          <select
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            className="w-full sm:w-auto min-h-11 rounded-lg bg-input/60 hairline px-4 py-2 text-sm"
-          >
-            {members.map((m: ClientMember) => (
-              <option key={m.client_id} value={m.client_id}>
-                {m.clients?.name}
-              </option>
-            ))}
-          </select>
-        )}
+      <div>
+        <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Beeld & video</p>
+        <h1 className="font-display text-4xl sm:text-5xl mt-2">Uploads</h1>
+        <p className="text-sm text-muted-foreground mt-2">
+          Deel je materiaal met je Elevate-team — je upload wacht op goedkeuring voordat hij in de
+          mediabibliotheek verschijnt.
+        </p>
       </div>
 
-      {clientId && <DeliveryChecklist clientId={clientId} />}
+      <DeliveryChecklist clientId={clientId} />
 
       {(openRequests?.length ?? 0) > 0 && (
         <label className="block rounded-xl border border-gold/10 bg-card p-4">

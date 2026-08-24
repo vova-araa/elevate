@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
+import { useActiveClient } from "@/hooks/use-active-client";
 import { Compass, Clock, CheckCircle2, Circle, ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
@@ -50,39 +50,21 @@ const DELIVERABLE_LABELS: Record<string, string> = {
 };
 
 function ClientRoadmap() {
-  const { user } = useAuth();
-
-  const { data: membership, isLoading: loadingMembership } = useQuery({
-    queryKey: ["my-client", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("client_members")
-        .select("client_id, clients(name)")
-        .eq("user_id", user!.id)
-        .order("client_id")
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  const clientId = (membership as { client_id?: string } | null)?.client_id;
+  const { clientId } = useActiveClient();
 
   const { data, isLoading: loadingRoadmaps } = useQuery({
     queryKey: ["client-roadmaps", clientId],
-    enabled: !!clientId,
     queryFn: async () =>
       (
         await supabase
           .from("roadmaps")
           .select("*, roadmap_steps(*)")
-          .eq("client_id", clientId!)
+          .eq("client_id", clientId)
           .order("created_at")
       ).data ?? [],
   });
 
-  if (loadingMembership || (clientId && loadingRoadmaps)) {
+  if (loadingRoadmaps) {
     return (
       <div className="space-y-8">
         <div>
@@ -105,16 +87,6 @@ function ClientRoadmap() {
           </div>
         </div>
       </div>
-    );
-  }
-
-  if (!membership) {
-    return (
-      <EmptyState
-        icon={<Compass className="h-5 w-5" />}
-        title="Geen actieve klantkoppeling"
-        description="Zodra je gekoppeld bent aan een bedrijf verschijnt hier je stappenplan."
-      />
     );
   }
 

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
+import { useActiveClient } from "@/hooks/use-active-client";
 import { ReportCard } from "@/components/client-portal/report-card";
 import { EmptyState } from "@/components/empty-state";
 import { FileBarChart, Loader2 } from "lucide-react";
@@ -13,34 +13,16 @@ export const Route = createFileRoute("/_authenticated/client/reports")({
 });
 
 function ClientReports() {
-  const { user } = useAuth();
-
-  const { data: membership, isLoading: loadingMembership } = useQuery({
-    queryKey: ["my-client", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("client_members")
-        .select("client_id, clients(name)")
-        .eq("user_id", user!.id)
-        .order("client_id")
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  const clientId = (membership as { client_id?: string } | null)?.client_id;
+  const { clientId } = useActiveClient();
 
   const { data: reports, isLoading: loadingReports } = useQuery({
     queryKey: ["client-reports", clientId],
-    enabled: !!clientId,
     queryFn: async () =>
       (
         await supabase
           .from("reports")
           .select("*")
-          .eq("client_id", clientId!)
+          .eq("client_id", clientId)
           .order("created_at", { ascending: false })
       ).data ?? [],
   });
@@ -56,21 +38,11 @@ function ClientReports() {
     return [...groups.entries()].sort((a, b) => b[0] - a[0]);
   }, [reports]);
 
-  if (loadingMembership || (clientId && loadingReports)) {
+  if (loadingReports) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-gold" />
       </div>
-    );
-  }
-
-  if (!membership) {
-    return (
-      <EmptyState
-        icon={<FileBarChart className="h-5 w-5" />}
-        title="Geen actieve klantkoppeling"
-        description="Zodra je gekoppeld bent aan een bedrijf verschijnen hier je maandrapporten."
-      />
     );
   }
 

@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConnectTokenRouteImport } from './routes/connect.$token'
 import { Route as ApproveTokenRouteImport } from './routes/approve.$token'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedClientRouteRouteImport } from './routes/_authenticated/client/route'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as ApiPublicAutomationTickRouteImport } from './routes/api/public/automation-tick'
 import { Route as AuthenticatedClientUploadsRouteImport } from './routes/_authenticated/client/uploads'
@@ -120,6 +121,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedClientRouteRoute =
+  AuthenticatedClientRouteRouteImport.update({
+    id: '/client',
+    path: '/client',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -132,57 +139,57 @@ const ApiPublicAutomationTickRoute = ApiPublicAutomationTickRouteImport.update({
 } as any)
 const AuthenticatedClientUploadsRoute =
   AuthenticatedClientUploadsRouteImport.update({
-    id: '/client/uploads',
-    path: '/client/uploads',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/uploads',
+    path: '/uploads',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientTasksRoute =
   AuthenticatedClientTasksRouteImport.update({
-    id: '/client/tasks',
-    path: '/client/tasks',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/tasks',
+    path: '/tasks',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientRoadmapRoute =
   AuthenticatedClientRoadmapRouteImport.update({
-    id: '/client/roadmap',
-    path: '/client/roadmap',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/roadmap',
+    path: '/roadmap',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientReportsRoute =
   AuthenticatedClientReportsRouteImport.update({
-    id: '/client/reports',
-    path: '/client/reports',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientOverviewRoute =
   AuthenticatedClientOverviewRouteImport.update({
-    id: '/client/overview',
-    path: '/client/overview',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientMessagesRoute =
   AuthenticatedClientMessagesRouteImport.update({
-    id: '/client/messages',
-    path: '/client/messages',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/messages',
+    path: '/messages',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientMediaRoute =
   AuthenticatedClientMediaRouteImport.update({
-    id: '/client/media',
-    path: '/client/media',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/media',
+    path: '/media',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientChannelsRoute =
   AuthenticatedClientChannelsRouteImport.update({
-    id: '/client/channels',
-    path: '/client/channels',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/channels',
+    path: '/channels',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientCalendarRoute =
   AuthenticatedClientCalendarRouteImport.update({
-    id: '/client/calendar',
-    path: '/client/calendar',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedAdminWebhooksRoute =
   AuthenticatedAdminWebhooksRouteImport.update({
@@ -420,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/client': typeof AuthenticatedClientRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -482,6 +490,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/client': typeof AuthenticatedClientRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -546,6 +555,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/_authenticated/client': typeof AuthenticatedClientRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
   '/connect/$token': typeof ConnectTokenRoute
@@ -610,6 +620,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin'
+    | '/client'
     | '/dashboard'
     | '/approve/$token'
     | '/connect/$token'
@@ -672,6 +683,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin'
+    | '/client'
     | '/dashboard'
     | '/approve/$token'
     | '/connect/$token'
@@ -735,6 +747,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/_authenticated/admin'
+    | '/_authenticated/client'
     | '/_authenticated/dashboard'
     | '/approve/$token'
     | '/connect/$token'
@@ -879,6 +892,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/client': {
+      id: '/_authenticated/client'
+      path: '/client'
+      fullPath: '/client'
+      preLoaderRoute: typeof AuthenticatedClientRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -895,66 +915,66 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/client/uploads': {
       id: '/_authenticated/client/uploads'
-      path: '/client/uploads'
+      path: '/uploads'
       fullPath: '/client/uploads'
       preLoaderRoute: typeof AuthenticatedClientUploadsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/tasks': {
       id: '/_authenticated/client/tasks'
-      path: '/client/tasks'
+      path: '/tasks'
       fullPath: '/client/tasks'
       preLoaderRoute: typeof AuthenticatedClientTasksRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/roadmap': {
       id: '/_authenticated/client/roadmap'
-      path: '/client/roadmap'
+      path: '/roadmap'
       fullPath: '/client/roadmap'
       preLoaderRoute: typeof AuthenticatedClientRoadmapRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/reports': {
       id: '/_authenticated/client/reports'
-      path: '/client/reports'
+      path: '/reports'
       fullPath: '/client/reports'
       preLoaderRoute: typeof AuthenticatedClientReportsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/overview': {
       id: '/_authenticated/client/overview'
-      path: '/client/overview'
+      path: '/overview'
       fullPath: '/client/overview'
       preLoaderRoute: typeof AuthenticatedClientOverviewRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/messages': {
       id: '/_authenticated/client/messages'
-      path: '/client/messages'
+      path: '/messages'
       fullPath: '/client/messages'
       preLoaderRoute: typeof AuthenticatedClientMessagesRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/media': {
       id: '/_authenticated/client/media'
-      path: '/client/media'
+      path: '/media'
       fullPath: '/client/media'
       preLoaderRoute: typeof AuthenticatedClientMediaRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/channels': {
       id: '/_authenticated/client/channels'
-      path: '/client/channels'
+      path: '/channels'
       fullPath: '/client/channels'
       preLoaderRoute: typeof AuthenticatedClientChannelsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/calendar': {
       id: '/_authenticated/client/calendar'
-      path: '/client/calendar'
+      path: '/calendar'
       fullPath: '/client/calendar'
       preLoaderRoute: typeof AuthenticatedClientCalendarRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/admin/webhooks': {
       id: '/_authenticated/admin/webhooks'
@@ -1337,9 +1357,7 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
-interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+interface AuthenticatedClientRouteRouteChildren {
   AuthenticatedClientCalendarRoute: typeof AuthenticatedClientCalendarRoute
   AuthenticatedClientChannelsRoute: typeof AuthenticatedClientChannelsRoute
   AuthenticatedClientMediaRoute: typeof AuthenticatedClientMediaRoute
@@ -1351,18 +1369,34 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClientUploadsRoute: typeof AuthenticatedClientUploadsRoute
 }
 
+const AuthenticatedClientRouteRouteChildren: AuthenticatedClientRouteRouteChildren =
+  {
+    AuthenticatedClientCalendarRoute: AuthenticatedClientCalendarRoute,
+    AuthenticatedClientChannelsRoute: AuthenticatedClientChannelsRoute,
+    AuthenticatedClientMediaRoute: AuthenticatedClientMediaRoute,
+    AuthenticatedClientMessagesRoute: AuthenticatedClientMessagesRoute,
+    AuthenticatedClientOverviewRoute: AuthenticatedClientOverviewRoute,
+    AuthenticatedClientReportsRoute: AuthenticatedClientReportsRoute,
+    AuthenticatedClientRoadmapRoute: AuthenticatedClientRoadmapRoute,
+    AuthenticatedClientTasksRoute: AuthenticatedClientTasksRoute,
+    AuthenticatedClientUploadsRoute: AuthenticatedClientUploadsRoute,
+  }
+
+const AuthenticatedClientRouteRouteWithChildren =
+  AuthenticatedClientRouteRoute._addFileChildren(
+    AuthenticatedClientRouteRouteChildren,
+  )
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
+  AuthenticatedClientRouteRoute: typeof AuthenticatedClientRouteRouteWithChildren
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+}
+
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
+  AuthenticatedClientRouteRoute: AuthenticatedClientRouteRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedClientCalendarRoute: AuthenticatedClientCalendarRoute,
-  AuthenticatedClientChannelsRoute: AuthenticatedClientChannelsRoute,
-  AuthenticatedClientMediaRoute: AuthenticatedClientMediaRoute,
-  AuthenticatedClientMessagesRoute: AuthenticatedClientMessagesRoute,
-  AuthenticatedClientOverviewRoute: AuthenticatedClientOverviewRoute,
-  AuthenticatedClientReportsRoute: AuthenticatedClientReportsRoute,
-  AuthenticatedClientRoadmapRoute: AuthenticatedClientRoadmapRoute,
-  AuthenticatedClientTasksRoute: AuthenticatedClientTasksRoute,
-  AuthenticatedClientUploadsRoute: AuthenticatedClientUploadsRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

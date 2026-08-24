@@ -1,55 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
+import { useActiveClient } from "@/hooks/use-active-client";
 import { MessagesThread } from "@/components/messages-thread";
-import { MessageSquare, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/client/messages")({
   component: ClientMessages,
 });
 
 function ClientMessages() {
-  const { user } = useAuth();
-
-  const { data: membership, isLoading } = useQuery({
-    queryKey: ["my-client", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("client_members")
-        .select("client_id, clients(name)")
-        .eq("user_id", user!.id)
-        .order("client_id")
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-gold" />
-      </div>
-    );
-  }
-
-  if (!membership) {
-    return (
-      <div className="glass rounded-2xl p-10 text-center">
-        <MessageSquare className="h-8 w-8 text-gold mx-auto mb-3" />
-        <h2 className="font-display text-2xl">Geen actieve klantkoppeling</h2>
-        <p className="text-sm text-muted-foreground mt-2">
-          Zodra je gekoppeld bent aan een bedrijf verschijnen hier berichten van je Elevate-team.
-        </p>
-      </div>
-    );
-  }
-
-  const m = membership as { client_id: string; clients?: { name?: string } | null };
-  const clientId = m.client_id;
-  const clientName = m.clients?.name;
+  const { clientId, clientName } = useActiveClient();
 
   return (
     <div className="space-y-6 max-w-3xl">

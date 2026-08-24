@@ -3,7 +3,7 @@ import { confirmDialog } from "@/components/ui/confirm";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
+import { useActiveClient } from "@/hooks/use-active-client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -88,8 +88,7 @@ const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
 function ClientCalendar() {
   const qc = useQueryClient();
-  const { user, role } = useAuth();
-  const isAdmin = role === "admin";
+  const { clientId, isAdmin } = useActiveClient();
   const [month, setMonth] = useState(() => {
     const n = new Date();
     n.setDate(1);
@@ -101,50 +100,31 @@ function ClientCalendar() {
 
   const [adding, setAdding] = useState(false);
 
-  // Klantkoppeling van de ingelogde gebruiker (voor de approval-flow)
-  const { data: membership } = useQuery({
-    queryKey: ["my-client", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("client_members")
-        .select("client_id, clients(name)")
-        .eq("user_id", user!.id)
-        .order("client_id")
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
-  const myClientId = membership?.client_id;
-
   const { data: draftCount } = useQuery({
-    queryKey: ["client-draft-count", myClientId],
-    enabled: !!myClientId,
+    queryKey: ["client-draft-count", clientId],
     queryFn: async () => {
       const { count } = await supabase
         .from("scheduled_posts")
         .select("id", { count: "exact", head: true })
-        .eq("client_id", myClientId!)
+        .eq("client_id", clientId)
         .eq("status", "draft")
         .is("deleted_at", null);
       return count ?? 0;
     },
   });
 
-  // Admin ziet (net als op deze pagina van oudsher) de kalender van alle klanten;
-  // een klant ziet expliciet alléén de eigen klant (defense-in-depth naast RLS).
+  // Altijd geschaald op de actieve klant (A01) — ook voor een admin die
+  // meekijkt via ?asClient. Geen "alle klanten door elkaar"-modus meer.
   const { data } = useQuery({
-    queryKey: ["client-cal", isAdmin ? "all" : myClientId],
-    enabled: isAdmin || !!myClientId,
-    queryFn: async () => {
-      let query = supabase
-        .from("calendar_items")
-        .select("*, clients(id,name,brand_color)")
-        .order("date");
-      if (!isAdmin) query = query.eq("client_id", myClientId!);
-      return (await query).data ?? [];
-    },
+    queryKey: ["client-cal", clientId],
+    queryFn: async () =>
+      (
+        await supabase
+          .from("calendar_items")
+          .select("*, clients(id,name,brand_color)")
+          .eq("client_id", clientId)
+          .order("date")
+      ).data ?? [],
   });
 
   const { data: clients } = useQuery({
@@ -303,7 +283,7 @@ function ClientCalendar() {
       </div>
 
       {/* Tabs: kalender / ter goedkeuring */}
-      {myClientId && (
+      {clientId && (
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setView("calendar")}
@@ -335,8 +315,8 @@ function ClientCalendar() {
         </div>
       )}
 
-      {view === "approvals" && myClientId ? (
-        <ApprovalQueue clientId={myClientId} />
+      {view === "approvals" && clientId ? (
+        <ApprovalQueue clientId={clientId} />
       ) : (
         <>
           {/* KPI row */}
