@@ -35,6 +35,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ReportCard } from "@/components/client-portal/report-card";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Reveal } from "@/components/reveal";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -267,12 +268,14 @@ function ClientOverview() {
       {clientId && <DeliveryChecklist clientId={clientId} compact />}
 
       {/* Volgersgroei — echte metingen uit snapshots */}
-      <FollowerGrowthCard series={followerGrowth ?? []} loading={loadingGrowth} />
+      <Reveal>
+        <FollowerGrowthCard series={followerGrowth ?? []} loading={loadingGrowth} />
+      </Reveal>
 
       {/* Twee kolommen: eerstvolgende posts + stappenplan */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <Reveal className="grid gap-4 lg:grid-cols-3" delay={80}>
         {/* Eerstvolgende posts */}
-        <div className="lg:col-span-2 rounded-xl border border-gold/10 bg-card p-5 sm:p-6">
+        <div className="lg:col-span-2 card-surface bg-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Send className="h-4 w-4 text-gold" />
@@ -332,7 +335,7 @@ function ClientOverview() {
         </div>
 
         {/* Stappenplan-voortgang */}
-        <div className="rounded-xl border border-gold/10 bg-card p-5 sm:p-6 flex flex-col">
+        <div className="card-surface bg-card p-5 sm:p-6 flex flex-col">
           <div className="flex items-center gap-2">
             <Compass className="h-4 w-4 text-gold" />
             <h2 className="font-display text-xl">Stappenplan</h2>
@@ -363,10 +366,10 @@ function ClientOverview() {
             Bekijk stappenplan <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-      </div>
+      </Reveal>
 
       {/* Kanalen-statusrij */}
-      <div className="rounded-xl border border-gold/10 bg-card p-5 sm:p-6">
+      <Reveal className="card-surface bg-card p-5 sm:p-6" delay={80}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Share2 className="h-4 w-4 text-gold" />
@@ -419,10 +422,10 @@ function ClientOverview() {
                 );
               })}
         </div>
-      </div>
+      </Reveal>
 
       {/* Laatste rapport */}
-      <div className="space-y-3">
+      <Reveal className="space-y-3" delay={80}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <FileBarChart className="h-4 w-4 text-gold" />
@@ -448,7 +451,7 @@ function ClientOverview() {
             className="py-8"
           />
         )}
-      </div>
+      </Reveal>
     </div>
   );
 }
@@ -491,7 +494,7 @@ function FollowerGrowthCard({
   loading: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-5 sm:p-6">
+    <div className="card-surface bg-card p-5 sm:p-6">
       <div className="flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-gold" />
         <h2 className="font-display text-xl">Volgersgroei</h2>

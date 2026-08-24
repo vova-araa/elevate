@@ -98,7 +98,7 @@ function AdminAssistant() {
         {/* Chat */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto rounded-2xl border border-gold/15 bg-card p-4 space-y-4"
+          className="flex-1 overflow-y-auto card-surface-lg bg-card p-4 space-y-4"
         >
           {messages.map((m, i) => (
             <div key={i} className={cn("flex gap-3", m.role === "user" ? "flex-row-reverse" : "")}>
@@ -170,7 +170,7 @@ function AdminAssistant() {
         </div>
 
         {/* Composer */}
-        <div className="mt-3 rounded-2xl border border-gold/15 bg-card p-2 flex items-end gap-2">
+        <div className="mt-3 card-surface-lg bg-card p-2 flex items-end gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

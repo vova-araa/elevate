@@ -207,7 +207,7 @@ function Landing() {
 
           <div className="relative grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr]">
             <div>
-              <div className="fade-in-up inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-xs uppercase tracking-[0.22em] text-gold/90 backdrop-blur-sm">
+              <div className="fade-in-up inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-background/40 px-3.5 py-1 text-xs uppercase tracking-[0.22em] text-gold/90 backdrop-blur-sm">
                 <Sparkles className="h-3 w-3" /> Brand &amp; social studio
               </div>
 
@@ -240,14 +240,14 @@ function Landing() {
                 <Link
                   to="/contact"
                   onClick={() => track("cta_click", { location: "hero" })}
-                  className="group glow-gold inline-flex items-center gap-1.5 rounded-full bg-gradient-gold px-6 py-3 text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
+                  className="group glow-gold inline-flex items-center gap-1.5 rounded-full border border-gold-deep/30 bg-gradient-gold px-6 py-3 text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
                 >
                   Plan een merkscan{" "}
                   <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </Link>
                 <a
                   href="#diensten"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-gold/25 px-6 py-3 text-xs font-medium uppercase tracking-[0.18em] text-foreground/80 transition-colors hover:border-gold/45 hover:text-foreground"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-gold/35 px-6 py-3 text-xs font-medium uppercase tracking-[0.18em] text-foreground/80 transition-colors hover:border-gold/55 hover:text-foreground"
                 >
                   Bekijk wat we doen
                 </a>
@@ -272,7 +272,7 @@ function Landing() {
                   {SOCIALS.map((Icon, i) => (
                     <span
                       key={i}
-                      className="grid h-8 w-8 place-items-center rounded-lg border border-gold/10 bg-card/60 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
+                      className="grid h-8 w-8 place-items-center card-surface-sm bg-card/60 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
                     >
                       <Icon className="h-4 w-4" />
                     </span>
@@ -569,7 +569,7 @@ function ServiceVisualBlock({ kind }: { kind: ServiceVisual }) {
 
   // chart
   return (
-    <div className="rounded-xl border border-gold/10 bg-card/70 p-3" aria-hidden>
+    <div className="card-surface bg-card/70 p-3" aria-hidden>
       <svg viewBox="0 0 200 44" className="h-12 w-full" preserveAspectRatio="none">
         <defs>
           <linearGradient id="svc-chart" x1="0" y1="0" x2="0" y2="1">
@@ -598,9 +598,9 @@ function ServiceVisualBlock({ kind }: { kind: ServiceVisual }) {
 function PortalPreview() {
   return (
     <div className="lg:scale-105">
-      <div className="glass-strong shadow-elegant relative rounded-2xl border border-gold/15 p-4 md:p-5">
+      <div className="glass-strong shadow-elegant relative rounded-2xl border border-gold/25 p-4 md:p-5">
         {/* Topbar */}
-        <div className="flex items-center justify-between border-b border-gold/10 pb-3">
+        <div className="flex items-center justify-between border-b border-gold/15 pb-3">
           <div className="flex items-center gap-2">
             <span className="h-6 w-6 rounded-md bg-gradient-gold" />
             <span className="font-display text-sm">Dashboard</span>
@@ -618,14 +618,14 @@ function PortalPreview() {
             ["4", "akkoord"],
             ["+8%", "groei"],
           ].map(([n, l]) => (
-            <div key={l} className="rounded-lg border border-gold/10 bg-card/70 p-2.5">
+            <div key={l} className="card-surface-sm bg-card/70 p-2.5">
               <div className="font-display text-lg text-gold">{n}</div>
               <div className="text-xs uppercase tracking-wider text-muted-foreground">{l}</div>
             </div>
           ))}
         </div>
         {/* Mini-grafiek */}
-        <div className="mt-3 rounded-lg border border-gold/10 bg-card/70 p-3">
+        <div className="mt-3 card-surface-sm bg-card/70 p-3">
           <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
             Bereik — 30 dagen
           </div>
@@ -653,10 +653,7 @@ function PortalPreview() {
         {/* Rijtjes */}
         <div className="mt-3 space-y-2">
           {[Instagram, Music2, Facebook].map((Icon, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2.5 rounded-lg border border-gold/10 bg-card/70 px-3 py-2"
-            >
+            <div key={i} className="flex items-center gap-2.5 card-surface-sm bg-card/70 px-3 py-2">
               <Icon className="h-3.5 w-3.5 text-gold" aria-hidden />
               <span className="h-2 flex-1 rounded-full bg-gold/10" />
               <span className="text-xs uppercase tracking-wider text-gold/70">gepland</span>
@@ -751,7 +748,7 @@ function ServiceCard({ service, index }: { service: (typeof SERVICES)[number]; i
       ref={ref}
       className={
         className +
-        " group relative overflow-hidden rounded-2xl border border-gold/10 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant " +
+        " group relative overflow-hidden card-surface-lg bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant " +
         (service.wide ? "lg:col-span-4" : "lg:col-span-2")
       }
       style={style}
@@ -792,7 +789,7 @@ function TimelineStep({ step, index }: { step: (typeof STEPS)[number]; index: nu
       >
         <span className="h-1.5 w-1.5 rounded-full bg-gradient-gold" />
       </span>
-      <div className="group rounded-2xl border border-gold/10 bg-card/60 p-5 transition-all duration-300 hover:border-gold/25 hover:bg-card hover:shadow-elegant">
+      <div className="group card-surface-lg bg-card/60 p-5 transition-all duration-300 hover:border-gold/25 hover:bg-card hover:shadow-elegant">
         <div className="flex items-baseline gap-3">
           <span className="font-display text-3xl text-gold/30 transition-colors group-hover:text-gold/60">
             {step.n}

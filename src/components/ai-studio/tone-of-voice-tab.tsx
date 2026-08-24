@@ -65,7 +65,7 @@ export function ToneOfVoiceTab({ clients }: { clients: StudioClient[] }) {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-2">
+      <div className="card-surface bg-card p-5 space-y-2">
         <Label>Klant</Label>
         <ClientSelect clients={clients} value={clientId} onChange={setClientId} />
         <p className="text-[11px] text-muted-foreground">
@@ -84,7 +84,7 @@ export function ToneOfVoiceTab({ clients }: { clients: StudioClient[] }) {
       )}
 
       {clientId && profileQuery.isLoading && (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 grid place-items-center">
+        <div className="card-surface bg-card p-10 grid place-items-center">
           <Loader2 className="h-6 w-6 animate-spin text-gold" />
         </div>
       )}
@@ -92,7 +92,7 @@ export function ToneOfVoiceTab({ clients }: { clients: StudioClient[] }) {
       {clientId && !profileQuery.isLoading && (
         <>
           {/* AI-voorstel */}
-          <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-3">
+          <div className="card-surface bg-card p-5 space-y-3">
             <div>
               <h3 className="font-display text-base">Genereer voorstel met AI</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -122,7 +122,7 @@ export function ToneOfVoiceTab({ clients }: { clients: StudioClient[] }) {
           </div>
 
           {/* Profiel */}
-          <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-4">
+          <div className="card-surface bg-card p-5 space-y-4">
             <h3 className="font-display text-base">
               Profiel — {selectedClient?.name ?? ""}
               {!profileQuery.data?.profile && (

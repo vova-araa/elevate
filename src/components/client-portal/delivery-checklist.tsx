@@ -84,7 +84,7 @@ export function DeliveryChecklist({
   const visible = compact ? data.items.filter((i) => i.status !== "done") : data.items;
 
   return (
-    <section className="rounded-2xl border border-gold/10 bg-card p-5">
+    <section className="card-surface-lg bg-card p-5">
       <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.22em] text-gold/80">Aanleverlijst</p>

@@ -34,7 +34,7 @@ export function MomentumCard({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-gold/15 bg-card p-5">
+      <div className="card-surface-lg bg-card p-5">
         <Skeleton className="h-6 w-40" />
         <Skeleton className="mt-4 h-24 w-full rounded-xl" />
       </div>
@@ -75,7 +75,7 @@ export function MomentumCard({
   }
 
   return (
-    <div className="rounded-2xl border border-gold/15 bg-card p-5">
+    <div className="card-surface-lg bg-card p-5">
       <div className="mb-4 flex items-center gap-2.5">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold/12 text-gold">
           <Activity className="h-4 w-4" />

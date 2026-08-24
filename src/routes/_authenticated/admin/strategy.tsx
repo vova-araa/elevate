@@ -166,7 +166,7 @@ function StrategyPage() {
     return (
       <div className="max-w-4xl">
         <Header />
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center">
+        <div className="card-surface bg-card p-10 text-center">
           <Target className="h-8 w-8 text-gold mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
             Selecteer eerst een klant (⌘K of via Klanten) om diens strategie te bekijken of te
@@ -183,7 +183,7 @@ function StrategyPage() {
     return (
       <div className="max-w-4xl space-y-6">
         <Header client={activeClient?.name} />
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center space-y-4">
+        <div className="card-surface bg-card p-10 text-center space-y-4">
           <ClipboardList className="h-8 w-8 text-gold mx-auto" />
           <div>
             <h2 className="font-display text-2xl">Nog geen intake ingevuld</h2>
@@ -231,7 +231,7 @@ function StrategyPage() {
       </div>
 
       {strategyLoading ? (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center text-sm text-muted-foreground">
+        <div className="card-surface bg-card p-10 text-center text-sm text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
           Strategie laden…
         </div>
@@ -262,13 +262,13 @@ function StrategyPage() {
       ) : hasStrategy ? (
         <StrategyOverview strategy={form} />
       ) : (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center text-sm text-muted-foreground">
+        <div className="card-surface bg-card p-10 text-center text-sm text-muted-foreground">
           Nog geen strategie ingesteld. Genereer er één met AI of stel hem handmatig in.
         </div>
       )}
 
       {hasStrategy && !editing && (
-        <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-4">
+        <div className="card-surface bg-card p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-xs uppercase tracking-[0.2em] text-gold/80">Weekplanning</div>
@@ -372,7 +372,7 @@ function StrategyOverview({ strategy }: { strategy: StrategyForm }) {
         <InfoCard title="Doelen" body={strategy.goals} />
       </div>
 
-      <div className="rounded-xl border border-gold/10 bg-card p-5">
+      <div className="card-surface bg-card p-5">
         <div className="text-xs uppercase tracking-[0.2em] text-gold/80 mb-3">Content-pijlers</div>
         <div className="flex flex-wrap gap-2">
           {strategy.pillars.length ? (
@@ -390,7 +390,7 @@ function StrategyOverview({ strategy }: { strategy: StrategyForm }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gold/10 bg-card p-5">
+      <div className="card-surface bg-card p-5">
         <div className="text-xs uppercase tracking-[0.2em] text-gold/80 mb-3">
           Cadans — posts per week
         </div>
@@ -422,7 +422,7 @@ function StrategyOverview({ strategy }: { strategy: StrategyForm }) {
 
 function InfoCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-5">
+    <div className="card-surface bg-card p-5">
       <div className="text-xs uppercase tracking-[0.2em] text-gold/80">{title}</div>
       <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{body || "—"}</p>
     </div>
@@ -439,7 +439,7 @@ function ListCard({
   tone: "good" | "warn";
 }) {
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-5">
+    <div className="card-surface bg-card p-5">
       <div
         className={
           "text-xs uppercase tracking-[0.2em] " +
@@ -478,7 +478,7 @@ function StrategyEditForm({
 }) {
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-4">
+      <div className="card-surface bg-card p-5 space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Positionering">
             <Textarea
@@ -511,7 +511,7 @@ function StrategyEditForm({
         </div>
       </div>
 
-      <div className="rounded-xl border border-gold/10 bg-card p-5">
+      <div className="card-surface bg-card p-5">
         <TagListEditor
           label="Content-pijlers"
           values={form.pillars}
@@ -520,7 +520,7 @@ function StrategyEditForm({
         />
       </div>
 
-      <div className="rounded-xl border border-gold/10 bg-card p-5">
+      <div className="card-surface bg-card p-5">
         <label className="text-xs text-muted-foreground">Cadans — posts per week</label>
         <div className="mt-2 grid gap-2 sm:grid-cols-3">
           {PLATFORMS.map(({ id: p, label, Icon }) => (
@@ -552,7 +552,7 @@ function StrategyEditForm({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-gold/10 bg-card p-5">
+        <div className="card-surface bg-card p-5">
           <TagListEditor
             label="Wel doen"
             values={form.dos}
@@ -560,7 +560,7 @@ function StrategyEditForm({
             placeholder="bv. Altijd ondertitels toevoegen"
           />
         </div>
-        <div className="rounded-xl border border-gold/10 bg-card p-5">
+        <div className="card-surface bg-card p-5">
           <TagListEditor
             label="Niet doen"
             values={form.donts}

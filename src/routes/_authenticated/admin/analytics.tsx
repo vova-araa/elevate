@@ -15,14 +15,16 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   CartesianGrid,
   PieChart,
   Pie,
   Cell,
   Legend,
 } from "recharts";
+import { formatDateRange } from "@/lib/date-range";
+import { Reveal } from "@/components/reveal";
 import {
   TrendingUp,
   TrendingDown,
@@ -195,6 +197,7 @@ function AnalyticsPage() {
           </div>
         </div>
       </div>
+      <p className="text-xs text-muted-foreground -mt-4">{formatDateRange(days)}</p>
 
       {isLoading ? (
         <AnalyticsSkeleton />
@@ -288,61 +291,101 @@ function AnalyticsPage() {
 
           {/* Time series */}
           <div className="glass-strong rounded-xl p-5">
-            <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
-              Activiteit over tijd
+            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <div className="text-sm uppercase tracking-[0.2em] text-gold/70">
+                Activiteit over tijd
+              </div>
+              <div className="text-xs text-muted-foreground">{formatDateRange(days)}</div>
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timeSeries}>
-                  <CartesianGrid stroke="rgba(212,185,122,0.08)" />
+                <AreaChart data={timeSeries}>
+                  <defs>
+                    <linearGradient id="activity-published" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10B981" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="activity-scheduled" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="activity-failed" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#EF4444" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#EF4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(212,185,122,0.08)" vertical={false} />
                   <XAxis
                     dataKey="date"
                     stroke="#9ca3af"
                     fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={Math.max(0, Math.ceil(timeSeries.length / 9) - 1)}
                     tickFormatter={(d) =>
                       new Date(d).toLocaleDateString("nl-NL", { month: "short", day: "numeric" })
                     }
                   />
-                  <YAxis stroke="#9ca3af" fontSize={11} allowDecimals={false} />
+                  <YAxis
+                    stroke="#9ca3af"
+                    fontSize={11}
+                    allowDecimals={false}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <Tooltip
+                    labelFormatter={(d) =>
+                      new Date(d).toLocaleDateString("nl-NL", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })
+                    }
                     contentStyle={{
                       background: "var(--card)",
                       border: "1px solid var(--border)",
                       borderRadius: 8,
                       color: "var(--foreground)",
+                      fontSize: 12,
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="published"
                     stroke="#10B981"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
+                    fill="url(#activity-published)"
                     name="Gepubliceerd"
                     dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)" }}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="scheduled"
-                    stroke="#D4B97A"
-                    strokeWidth={2}
+                    stroke="var(--gold)"
+                    strokeWidth={2.5}
+                    fill="url(#activity-scheduled)"
                     name="Gepland"
                     dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)" }}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="failed"
                     stroke="#EF4444"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
+                    fill="url(#activity-failed)"
                     name="Mislukt"
                     dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)" }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-4">
+          <Reveal className="grid lg:grid-cols-2 gap-4">
             {/* Platform breakdown */}
             <div className="glass-strong rounded-xl p-5">
               <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
@@ -439,10 +482,10 @@ function AnalyticsPage() {
                 </div>
               )}
             </div>
-          </div>
+          </Reveal>
 
           {/* Recent published */}
-          <div className="glass-strong rounded-xl p-5">
+          <Reveal className="glass-strong rounded-xl p-5" delay={80}>
             <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
               Recent gepubliceerd
             </div>
@@ -472,7 +515,7 @@ function AnalyticsPage() {
                 </p>
               )}
             </div>
-          </div>
+          </Reveal>
 
           {/* A14: geen API-koppeling — dit blok blijft verborgen tot dat er is. */}
           {FEATURE_PAID_ADS && (

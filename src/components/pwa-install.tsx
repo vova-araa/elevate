@@ -16,7 +16,7 @@ export function PwaInstall() {
     <>
       {/* md:hidden = uitsluitend op telefoon/tablet */}
       <div className="fixed inset-x-3 bottom-[76px] z-40 md:hidden">
-        <div className="flex items-center gap-3 rounded-2xl border border-gold/25 bg-card/95 p-3 shadow-elegant backdrop-blur">
+        <div className="flex items-center gap-3 card-surface-lg bg-card/95 p-3 shadow-elegant backdrop-blur">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold">
             <Download className="h-5 w-5" />
           </span>

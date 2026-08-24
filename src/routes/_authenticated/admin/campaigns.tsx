@@ -13,6 +13,7 @@ import { nl } from "date-fns/locale";
 import { Sparkles, Loader2, CalendarPlus, Copy, Check, Wand2 } from "lucide-react";
 import { PLATFORMS } from "@/components/planner/planner-shared";
 import { DatePicker } from "@/components/ui/date-picker";
+import { formatForwardDateRange } from "@/lib/date-range";
 import {
   generateContentPlan,
   createPlanPosts,
@@ -163,7 +164,7 @@ function CampaignsPage() {
       </div>
 
       {/* Instellingen */}
-      <div className="rounded-xl border border-gold/10 bg-card p-5 grid gap-4 md:grid-cols-2">
+      <div className="card-surface bg-card p-5 grid gap-4 md:grid-cols-2">
         <div>
           <label className="text-xs text-muted-foreground">Klant</label>
           <select
@@ -233,6 +234,9 @@ function CampaignsPage() {
               <option value={14}>14 dagen</option>
               <option value={30}>30 dagen</option>
             </select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatForwardDateRange(startDate, days)}
+            </p>
           </div>
           <div>
             <label className="text-xs text-muted-foreground">Per platform</label>

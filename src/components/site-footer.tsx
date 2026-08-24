@@ -54,7 +54,7 @@ export function SiteFooter() {
                 rel="noopener noreferrer"
                 aria-label={s.label}
                 title={s.label}
-                className="grid h-8 w-8 place-items-center rounded-lg border border-gold/10 bg-card/60 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
+                className="grid h-8 w-8 place-items-center card-surface-sm bg-card/60 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
               >
                 <s.icon className="h-4 w-4" />
               </a>

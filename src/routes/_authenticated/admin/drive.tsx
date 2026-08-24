@@ -243,7 +243,7 @@ function DrivePage() {
     return (
       <div className="max-w-2xl">
         <Header />
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center">
+        <div className="card-surface bg-card p-10 text-center">
           <p className="text-sm text-muted-foreground">
             GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET zijn nog niet ingesteld — zonder die
             omgevingsvariabelen kan er geen Drive-koppeling gemaakt worden.
@@ -257,7 +257,7 @@ function DrivePage() {
     return (
       <div className="max-w-2xl">
         <Header />
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center space-y-4">
+        <div className="card-surface bg-card p-10 text-center space-y-4">
           <HardDrive className="h-8 w-8 text-gold mx-auto" />
           <div>
             <h2 className="font-display text-2xl">Nog geen Drive-koppeling</h2>
@@ -307,7 +307,7 @@ function DrivePage() {
       )}
 
       {/* Zoeken / bladeren */}
-      <div className="rounded-xl border border-gold/10 bg-card p-4">
+      <div className="card-surface bg-card p-4">
         <div className="flex items-center gap-2">
           {currentFolder ? (
             <button
@@ -422,7 +422,7 @@ function DrivePage() {
               const date = new Date(`${startDate}T00:00:00`);
               date.setDate(date.getDate() + p.dayOffset);
               return (
-                <div key={p.id} className="rounded-xl border border-gold/20 bg-card p-4">
+                <div key={p.id} className="card-surface bg-card p-4">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="inline-flex items-center gap-2 text-sm">
                       <Icon className="h-4 w-4 text-gold" />

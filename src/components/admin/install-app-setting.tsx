@@ -15,7 +15,7 @@ export function InstallAppSetting() {
   const [done, setDone] = useState(false);
 
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-5">
+    <div className="card-surface bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 font-display text-lg">

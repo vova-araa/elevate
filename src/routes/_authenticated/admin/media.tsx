@@ -551,7 +551,7 @@ function MediaLibrary() {
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gold/10 bg-card p-3">
+        <div className="flex flex-wrap items-center gap-3 card-surface bg-card p-3">
           <span className="text-sm text-muted-foreground">{selectedIds.size} geselecteerd</span>
           <button
             onClick={purgeSelected}
@@ -698,7 +698,7 @@ function MediaLibrary() {
           )}
 
           {/* Losse link van buiten Drive (bv. WeTransfer, eigen server). */}
-          <div className="rounded-xl border border-gold/10 bg-card p-4">
+          <div className="card-surface bg-card p-4">
             <h3 className="font-display text-lg">Andere directe link</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Eén bestand van een andere plek — de URL moet direct naar het bestand wijzen.
@@ -760,7 +760,7 @@ function StorageCard({
   }
   if (isLoading || !storage) {
     return (
-      <div className="rounded-xl border border-gold/10 bg-card p-5">
+      <div className="card-surface bg-card p-5">
         <div className="animate-pulse space-y-4">
           <div className="h-3 w-24 rounded bg-muted-foreground/15" />
           <div className="h-8 w-40 rounded bg-muted-foreground/15" />
@@ -778,7 +778,7 @@ function StorageCard({
   const topClients = storage.perClient.slice(0, 5);
 
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-5">
+    <div className="card-surface bg-card p-5">
       <div className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-gold/80">
         <HardDrive className="h-3.5 w-3.5" />
         Opslag

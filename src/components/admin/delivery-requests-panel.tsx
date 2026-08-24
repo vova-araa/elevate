@@ -113,7 +113,7 @@ export function DeliveryRequestsPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-gold/10 bg-card p-5">
+      <div className="card-surface bg-card p-5">
         <h3 className="font-display text-xl">Nieuw aanleververzoek</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Wat heb je van deze klant nodig? Het verschijnt meteen op zijn aanleverlijst.

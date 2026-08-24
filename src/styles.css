@@ -58,7 +58,9 @@
 }
 
 :root {
-  --radius: 0.75rem;
+  /* Richting A: iets minder rond dan de oorspronkelijke 0.75rem — een tikje
+     "vaster" zonder de afgeronde, luxe identiteit te verliezen. */
+  --radius: 0.625rem;
 
   /* Light warm cream foundation */
   --background: oklch(0.985 0.008 85);
@@ -117,6 +119,17 @@
   --shadow-gold:
     0 8px 24px -12px oklch(0.72 0.13 75 / 35%), 0 20px 60px -20px oklch(0.72 0.13 75 / 28%);
   --shadow-elegant: 0 20px 50px -25px oklch(0.4 0.02 60 / 25%);
+
+  /* Richting A — "stevige randen & diepte": gekozen ontwerprichting (design-
+     canvas, augustus 2026) na verkenning van dikkere randen/schaduwen t.o.v.
+     de oorspronkelijke iele/luchtige stijl. Twee gelaagde schaduw-tokens voor
+     kaarten (grondtoon + gouden gloed + contactschaduw), plus een iets
+     kleinere basisradius app-breed (via --radius hieronder). */
+  --shadow-tile:
+    0 1px 2px oklch(0.4 0.02 60 / 6%), 0 10px 24px -14px oklch(0.72 0.13 75 / 30%),
+    0 24px 48px -28px oklch(0.4 0.02 60 / 22%);
+  --shadow-tile-sm:
+    0 1px 2px oklch(0.4 0.02 60 / 5%), 0 6px 14px -10px oklch(0.72 0.13 75 / 26%);
 }
 
 .dark {
@@ -162,6 +175,10 @@
   --gradient-glow: radial-gradient(60% 60% at 50% 0%, oklch(0.78 0.13 78 / 12%), transparent 70%);
   --shadow-gold: 0 8px 24px -12px oklch(0.78 0.13 78 / 28%), 0 20px 60px -20px oklch(0 0 0 / 45%);
   --shadow-elegant: 0 20px 50px -25px oklch(0 0 0 / 55%);
+  --shadow-tile:
+    0 1px 2px oklch(0 0 0 / 20%), 0 10px 24px -14px oklch(0.78 0.13 78 / 22%),
+    0 24px 48px -28px oklch(0 0 0 / 35%);
+  --shadow-tile-sm: 0 1px 2px oklch(0 0 0 / 16%), 0 6px 14px -10px oklch(0.78 0.13 78 / 18%);
 }
 
 @layer base {
@@ -398,6 +415,59 @@
   @media (prefers-reduced-motion: reduce) {
     .scroll-surface {
       scroll-behavior: auto;
+    }
+  }
+
+  /* Richting A: vervangt de losse "rounded-xl border border-gold/NN"-combinatie
+     (tientallen keren losstaand herhaald door de app) door één utility met een
+     steviger, consistente rand + gelaagde schaduw. Achtergrond (bg-card, incl.
+     opacity-varianten als bg-card/70) blijft een aparte klasse — deze utility
+     regelt alleen vorm + rand + diepte. */
+  .card-surface {
+    border-radius: var(--radius-xl);
+    border: 1px solid oklch(0.72 0.13 75 / 22%);
+    box-shadow: var(--shadow-tile);
+  }
+  .card-surface-lg {
+    border-radius: var(--radius-2xl);
+    border: 1px solid oklch(0.72 0.13 75 / 22%);
+    box-shadow: var(--shadow-tile);
+  }
+  .card-surface-sm {
+    border-radius: var(--radius-lg);
+    border: 1px solid oklch(0.72 0.13 75 / 18%);
+    box-shadow: var(--shadow-tile-sm);
+  }
+  .dark .card-surface,
+  .dark .card-surface-lg {
+    border-color: oklch(0.78 0.13 78 / 20%);
+  }
+  .dark .card-surface-sm {
+    border-color: oklch(0.78 0.13 78 / 16%);
+  }
+
+  /* Generieke scroll-reveal — voorheen alleen op de landingspagina
+     beschikbaar (lp-reveal, lokaal ge-injecteerd via LandingStyles). Hier
+     app-breed zodat portal-pagina's 'm ook kunnen gebruiken via de gedeelde
+     <Reveal>-component (src/components/reveal.tsx) zonder landing-only
+     bestanden te hoeven importeren. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .reveal-in {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
     }
   }
 

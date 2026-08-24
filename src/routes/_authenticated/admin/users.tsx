@@ -269,7 +269,7 @@ function UsersAdmin() {
       </form>
 
       {/* Snel test-account zonder e-mailadres */}
-      <div className="rounded-2xl border border-gold/10 bg-card p-6">
+      <div className="card-surface-lg bg-card p-6">
         <div className="flex items-center gap-2">
           <FlaskConical className="h-4 w-4 text-gold" />
           <h2 className="font-display text-lg">Test-account (zonder e-mailadres)</h2>
@@ -340,7 +340,7 @@ function UsersAdmin() {
       </div>
 
       {/* Demo-klant + login in één klik (voor Meta/TikTok review of tester-klant) */}
-      <div className="rounded-2xl border border-gold/10 bg-card p-6">
+      <div className="card-surface-lg bg-card p-6">
         <div className="flex items-center gap-2">
           <Rocket className="h-4 w-4 text-gold" />
           <h2 className="font-display text-lg">Demo-klant + login (voor App Review / tester)</h2>

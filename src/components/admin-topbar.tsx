@@ -121,7 +121,7 @@ export function AdminTopbar() {
             align="end"
             sideOffset={8}
             collisionPadding={12}
-            className="flex w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] max-h-[min(32rem,calc(100vh-5rem))] flex-col overflow-hidden rounded-xl border border-gold/10 bg-card p-0 shadow-elegant"
+            className="flex w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] max-h-[min(32rem,calc(100vh-5rem))] flex-col overflow-hidden card-surface bg-card p-0 shadow-elegant"
           >
             <NotificationCenter center={notificationCenter} onClose={() => setNotifOpen(false)} />
           </PopoverContent>

@@ -104,7 +104,7 @@ export function HooksHashtagsTab() {
   return (
     <div className="grid gap-6 xl:grid-cols-2 max-w-6xl">
       {/* Hooks */}
-      <section className="rounded-xl border border-gold/10 bg-card p-5 space-y-4 self-start">
+      <section className="card-surface bg-card p-5 space-y-4 self-start">
         <h3 className="font-display text-lg flex items-center gap-2">
           <Anchor className="h-4 w-4 text-gold" />
           Hooks
@@ -184,7 +184,7 @@ export function HooksHashtagsTab() {
       </section>
 
       {/* Hashtags */}
-      <section className="rounded-xl border border-gold/10 bg-card p-5 space-y-4 self-start">
+      <section className="card-surface bg-card p-5 space-y-4 self-start">
         <h3 className="font-display text-lg flex items-center gap-2">
           <Hash className="h-4 w-4 text-gold" />
           Hashtags

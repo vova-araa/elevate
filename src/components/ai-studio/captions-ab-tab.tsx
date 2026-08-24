@@ -79,7 +79,7 @@ export function CaptionsAbTab({ clients }: { clients: StudioClient[] }) {
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Formulier */}
-      <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-4">
+      <div className="card-surface bg-card p-5 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="ab-briefing">Briefing</Label>
           <Textarea
@@ -160,7 +160,7 @@ export function CaptionsAbTab({ clients }: { clients: StudioClient[] }) {
 
       {/* Resultaten */}
       {generate.isPending && (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 grid place-items-center">
+        <div className="card-surface bg-card p-10 grid place-items-center">
           <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin text-gold" />
             De AI schrijft {variantCount} varianten per platform…
@@ -169,7 +169,7 @@ export function CaptionsAbTab({ clients }: { clients: StudioClient[] }) {
       )}
 
       {!generate.isPending && generate.isSuccess && byPlatform.length === 0 && (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center text-sm text-muted-foreground">
+        <div className="card-surface bg-card p-10 text-center text-sm text-muted-foreground">
           Geen varianten ontvangen — probeer het opnieuw met een andere briefing.
         </div>
       )}
@@ -193,10 +193,7 @@ export function CaptionsAbTab({ clients }: { clients: StudioClient[] }) {
                   const key = `${v.platform}-${v.variant}`;
                   const isSaved = savedKeys.has(key);
                   return (
-                    <div
-                      key={key}
-                      className="rounded-xl border border-gold/10 bg-card p-4 flex flex-col gap-3"
-                    >
+                    <div key={key} className="card-surface bg-card p-4 flex flex-col gap-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="h-6 w-6 rounded-full bg-gold/15 text-gold grid place-items-center text-xs font-semibold">

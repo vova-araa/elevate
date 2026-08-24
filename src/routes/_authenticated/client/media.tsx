@@ -197,7 +197,7 @@ function Tile({ item }: { item: MediaItem }) {
   }, [item.path]);
 
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-xl border border-gold/10 bg-card">
+    <div className="group relative aspect-square overflow-hidden card-surface bg-card">
       {url && item.kind === "image" && (
         <img
           src={url}

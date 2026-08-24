@@ -48,7 +48,7 @@ export function RepurposeTab({ clients }: { clients: StudioClient[] }) {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-4">
+      <div className="card-surface bg-card p-5 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="rp-source">Bron-content</Label>
           <Textarea
@@ -98,7 +98,7 @@ export function RepurposeTab({ clients }: { clients: StudioClient[] }) {
       </div>
 
       {generate.isPending && (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 grid place-items-center">
+        <div className="card-surface bg-card p-10 grid place-items-center">
           <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin text-gold" />
             De AI herschrijft de content per platform…
@@ -107,7 +107,7 @@ export function RepurposeTab({ clients }: { clients: StudioClient[] }) {
       )}
 
       {!generate.isPending && generate.isSuccess && posts.length === 0 && (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center text-sm text-muted-foreground">
+        <div className="card-surface bg-card p-10 text-center text-sm text-muted-foreground">
           Geen posts ontvangen — probeer het opnieuw.
         </div>
       )}
@@ -121,7 +121,7 @@ export function RepurposeTab({ clients }: { clients: StudioClient[] }) {
             return (
               <div
                 key={`${post.platform}-${i}`}
-                className="rounded-xl border border-gold/10 bg-card p-4 flex flex-col gap-3"
+                className="card-surface bg-card p-4 flex flex-col gap-3"
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-display text-base flex items-center gap-2">

@@ -11,6 +11,7 @@ import { ChevronDown, ChevronUp, Download, FileBarChart, FileDown, Loader2 } fro
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { createReportFromAnalytics } from "@/lib/report-generate.functions";
+import { formatDateRange } from "@/lib/date-range";
 import {
   generateReportPdfLazy,
   extractPlatformBreakdown,
@@ -91,7 +92,7 @@ function ReportsPage() {
       </div>
 
       <div className="grid lg:grid-cols-[360px_1fr] gap-5">
-        <div className="rounded-xl border border-gold/15 bg-card p-5 space-y-4">
+        <div className="card-surface bg-card p-5 space-y-4">
           <div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">
               Klant
@@ -111,6 +112,7 @@ function ReportsPage() {
               <option value="30">Laatste 30 dagen</option>
               <option value="90">Laatste 90 dagen</option>
             </select>
+            <p className="mt-1 text-xs text-muted-foreground">{formatDateRange(Number(period))}</p>
           </div>
           <button
             onClick={() => generate.mutate()}
@@ -130,7 +132,7 @@ function ReportsPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
+        <div className="card-surface bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
             Geschiedenis
           </div>

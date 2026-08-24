@@ -97,7 +97,7 @@ export function ReportCard({ report }: { report: Tables<"reports"> }) {
         : null;
 
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-4 sm:p-6">
+    <div className="card-surface bg-card p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
         <div className="rounded-lg bg-gold/10 border border-gold/30 p-2.5 w-fit shrink-0">
           <FileBarChart className="h-5 w-5 text-gold" />

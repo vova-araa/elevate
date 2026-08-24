@@ -82,7 +82,7 @@ function BestTimePage() {
         </div>
       ) : (
         <div className="grid lg:grid-cols-[1fr_320px] gap-5">
-          <div className="rounded-xl border border-gold/15 bg-card p-4 overflow-auto">
+          <div className="card-surface bg-card p-4 overflow-auto">
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
               Heatmap — publicaties per dag/uur ({total} in totaal)
             </div>
@@ -116,7 +116,7 @@ function BestTimePage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-gold/15 bg-card p-4">
+          <div className="card-surface bg-card p-4">
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
               Meest gebruikte tijdstippen
             </div>

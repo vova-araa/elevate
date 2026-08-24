@@ -12,8 +12,8 @@ import {
 } from "@/lib/analytics.functions";
 import { useClientStore } from "@/lib/stores/client-store";
 import {
-  LineChart,
-  Line,
+  Area,
+  AreaChart,
   XAxis,
   YAxis,
   Tooltip,
@@ -23,6 +23,8 @@ import {
 import { useState } from "react";
 import { Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateRange } from "@/lib/date-range";
+import { Reveal } from "@/components/reveal";
 
 /**
  * "08-14" is geen datum die je leest, en met dertig van die labels naast elkaar
@@ -77,21 +79,24 @@ function ReachPage() {
   return (
     <div className="space-y-5 max-w-6xl">
       <PageTabs tabs={ANALYSE_TABS} />
-      <div className="flex flex-wrap gap-2">
-        {PERIODS.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setPeriod(p.id)}
-            className={cn(
-              "px-3 h-8 rounded-full text-xs font-medium border transition",
-              period === p.id
-                ? "bg-gold/15 text-gold border-gold/40"
-                : "border-border hover:bg-accent/40",
-            )}
-          >
-            {p.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="flex flex-wrap gap-2">
+          {PERIODS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={cn(
+                "px-3 h-8 rounded-full text-xs font-medium border transition",
+                period === p.id
+                  ? "bg-gold/15 text-gold border-gold/40"
+                  : "border-border hover:bg-accent/40",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground">{formatDateRange(days)}</span>
       </div>
 
       {isLoading ? (
@@ -118,14 +123,27 @@ function ReachPage() {
             <StatCard label="Klant" value={activeClient?.name ?? "Alle"} small />
           </div>
 
-          <div className="rounded-xl border border-gold/15 bg-card p-4">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-              Gepubliceerde posts over tijd
+          <div className="card-surface bg-card p-4">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Gepubliceerde posts over tijd
+              </div>
+              <div className="text-xs text-muted-foreground">{formatDateRange(days)}</div>
             </div>
             <div className="h-[300px] sm:h-[360px]">
               <ResponsiveContainer>
-                <LineChart data={series} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.85 0.015 75 / 30%)" />
+                <AreaChart data={series} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="reach-page-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="oklch(0.85 0.015 75 / 30%)"
+                    vertical={false}
+                  />
                   {/* Bij 30 of 90 dagen paste elk datumlabel niet meer naast
                       elkaar; Recharts tekende ze dan tegen elkaar aan. We laten
                       hooguit ~8 labels staan en schrijven ze als "14 aug". */}
@@ -137,12 +155,16 @@ function ReachPage() {
                     interval={Math.max(0, Math.ceil(series.length / 8) - 1)}
                     tickFormatter={(v: string) => shortDate(v)}
                     tickMargin={8}
+                    tickLine={false}
+                    axisLine={false}
                   />
                   <YAxis
                     stroke="oklch(0.48 0.018 65)"
                     fontSize={11}
                     allowDecimals={false}
                     width={32}
+                    tickLine={false}
+                    axisLine={false}
                   />
                   <Tooltip
                     labelFormatter={(v: string) => shortDate(v, true)}
@@ -150,22 +172,25 @@ function ReachPage() {
                       background: "var(--card)",
                       border: "1px solid var(--border)",
                       borderRadius: 8,
+                      fontSize: 12,
                     }}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="posts"
                     stroke="var(--gold)"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
+                    fill="url(#reach-page-fill)"
                     dot={false}
+                    activeDot={{ r: 4, fill: "var(--gold)", stroke: "var(--card)", strokeWidth: 2 }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {analytics && analytics.followersByPlatform.length > 0 && (
-            <div className="rounded-xl border border-gold/15 bg-card p-4">
+            <Reveal className="card-surface bg-card p-4">
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
                 Volgers per platform
               </div>
@@ -181,7 +206,7 @@ function ReachPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
           )}
 
           <p className="text-xs text-muted-foreground">

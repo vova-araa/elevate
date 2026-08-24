@@ -308,7 +308,7 @@ function ComposePage() {
       {/* Editor */}
       <div className="space-y-5">
         {/* Active client */}
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
+        <div className="card-surface bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
             Klant
           </div>
@@ -333,7 +333,7 @@ function ComposePage() {
         {(() => {
           const available = PLATFORMS.filter((p) => clientConnected.has(p.id));
           return (
-            <div className="rounded-xl border border-gold/15 bg-card p-4 space-y-3">
+            <div className="card-surface bg-card p-4 space-y-3">
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Platforms & post type
               </div>
@@ -394,7 +394,7 @@ function ComposePage() {
         })()}
 
         {/* Textarea */}
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
+        <div className="card-surface bg-card p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Caption
@@ -532,7 +532,7 @@ function ComposePage() {
         </div>
 
         {/* Media */}
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
+        <div className="card-surface bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
             Media
           </div>
@@ -580,7 +580,7 @@ function ComposePage() {
         </div>
 
         {/* Schedule */}
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
+        <div className="card-surface bg-card p-4">
           <div className="flex gap-2 mb-3">
             {(["schedule", "now", "draft"] as const).map((m) => (
               <button
@@ -625,7 +625,7 @@ function ComposePage() {
 
       {/* Preview */}
       <aside className="hidden lg:block">
-        <div className="sticky top-20 rounded-xl border border-gold/15 bg-card/60 p-4 space-y-3">
+        <div className="sticky top-20 card-surface bg-card/60 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Voorbeeld

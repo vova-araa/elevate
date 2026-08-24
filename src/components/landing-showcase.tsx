@@ -170,7 +170,7 @@ export function LandingShowcase() {
 function ShowcaseCard({ slide, index }: { slide: Slide; index: number }) {
   const Icon = slide.icon;
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold/10 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant">
+    <div className="group relative flex h-full flex-col overflow-hidden card-surface-lg bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/25 hover:shadow-elegant">
       {/* Gouden accentlijn bovenaan, groeit bij hover */}
       <span
         className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-gradient-gold transition-transform duration-500 group-hover:scale-x-100"
@@ -206,7 +206,7 @@ function ShowcaseCard({ slide, index }: { slide: Slide; index: number }) {
 function SlideVisual({ kind }: { kind: Slide["visual"] }) {
   if (kind === "chart" || kind === "reach") {
     return (
-      <div className="rounded-xl border border-gold/10 bg-card/70 p-3">
+      <div className="card-surface bg-card/70 p-3">
         <svg viewBox="0 0 200 44" className="h-11 w-full" preserveAspectRatio="none" aria-hidden>
           <defs>
             <linearGradient id={`sv-${kind}`} x1="0" y1="0" x2="0" y2="1">
@@ -254,10 +254,7 @@ function SlideVisual({ kind }: { kind: Slide["visual"] }) {
     return (
       <div className="space-y-2" aria-hidden>
         {[70, 90].map((w) => (
-          <div
-            key={w}
-            className="flex items-center gap-2.5 rounded-lg border border-gold/10 bg-card/70 px-3 py-2"
-          >
+          <div key={w} className="flex items-center gap-2.5 card-surface-sm bg-card/70 px-3 py-2">
             <span className="h-2 rounded-full bg-gold/15" style={{ width: `${w}%` }} />
             <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-xs uppercase tracking-wider text-gold/80">
               akkoord

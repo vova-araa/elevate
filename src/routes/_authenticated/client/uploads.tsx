@@ -99,7 +99,7 @@ function ClientUploads() {
       <DeliveryChecklist clientId={clientId} />
 
       {(openRequests?.length ?? 0) > 0 && (
-        <label className="block rounded-xl border border-gold/10 bg-card p-4">
+        <label className="block card-surface bg-card p-4">
           <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
             Hoort bij aanvraag
           </span>

@@ -151,7 +151,7 @@ export function PostingBoard({
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         {/* Wat gaat er live — per dag */}
-        <div className="rounded-2xl border border-gold/15 bg-card p-5">
+        <div className="card-surface-lg bg-card p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2.5 font-display text-xl">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold/12 text-gold">
@@ -210,7 +210,7 @@ export function PostingBoard({
         </div>
 
         {/* Per klant: staat de motor aan? */}
-        <div className="rounded-2xl border border-gold/15 bg-card p-5">
+        <div className="card-surface-lg bg-card p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-xl">Per klant</h2>
             <Link
@@ -335,7 +335,7 @@ function Stat({
   tone: string;
 }) {
   return (
-    <Link to={to} className="card-lift group rounded-xl border border-gold/15 bg-card p-4">
+    <Link to={to} className="card-lift group card-surface bg-card p-4">
       <span className={cn("grid h-9 w-9 place-items-center rounded-lg", tone)}>
         <Icon className="h-5 w-5" />
       </span>

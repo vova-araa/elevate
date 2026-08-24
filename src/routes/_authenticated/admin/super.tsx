@@ -169,7 +169,7 @@ function SuperAdminDashboard() {
 
       {/* Klanten + team */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-xl border border-gold/10 bg-card p-5">
+        <div className="lg:col-span-2 card-surface bg-card p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-xl">Klanten</h2>
             <Link
@@ -217,7 +217,7 @@ function SuperAdminDashboard() {
           )}
         </div>
 
-        <div className="rounded-xl border border-gold/10 bg-card p-5">
+        <div className="card-surface bg-card p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-xl">Team</h2>
             <Link
@@ -258,7 +258,7 @@ function StatTile({
   tone: string;
 }) {
   return (
-    <Link to={to} className="card-lift group rounded-xl border border-gold/10 bg-card p-4">
+    <Link to={to} className="card-lift group card-surface bg-card p-4">
       <span className={cn("grid h-9 w-9 place-items-center rounded-lg", tone)}>
         <Icon className="h-5 w-5" />
       </span>

@@ -339,7 +339,7 @@ function AdminChannels() {
             <div
               key={id}
               className={cn(
-                "relative rounded-2xl border border-gold/15 bg-card p-4 overflow-hidden bg-gradient-to-br",
+                "relative card-surface-lg bg-card p-4 overflow-hidden bg-gradient-to-br",
                 tint,
               )}
             >

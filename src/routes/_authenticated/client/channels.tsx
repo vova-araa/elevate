@@ -194,7 +194,7 @@ function ChannelsPage() {
               <div
                 key={id}
                 className={cn(
-                  "card-lift relative rounded-2xl border border-gold/15 bg-card p-4 overflow-hidden",
+                  "card-lift relative card-surface-lg bg-card p-4 overflow-hidden",
                   "bg-gradient-to-br",
                   tint,
                 )}

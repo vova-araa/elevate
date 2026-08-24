@@ -17,12 +17,23 @@ import {
   Cell,
 } from "recharts";
 import { Sparkles, Video } from "lucide-react";
+import { useState } from "react";
+import { subDays } from "date-fns";
+import { formatDateRange } from "@/lib/date-range";
+import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/reveal";
 
 export const Route = createFileRoute("/_authenticated/admin/engagement")({
   component: EngagementPage,
 });
 
 const COLORS = ["var(--gold)", "var(--gold-soft)", "var(--gold-deep)", "oklch(0.78 0.13 78)"];
+
+const PERIODS = [
+  { id: "7", label: "7 dagen" },
+  { id: "30", label: "30 dagen" },
+  { id: "90", label: "90 dagen" },
+];
 
 function isVideo(media_type?: string | null, media_path?: string | null) {
   const mt = media_type ?? "";
@@ -32,14 +43,22 @@ function isVideo(media_type?: string | null, media_path?: string | null) {
 
 function EngagementPage() {
   const { activeClient } = useClientStore();
+  // Voorheen ontbrak elke datumafbakening hier: de lijst toonde "alles ooit
+  // gepubliceerd" zonder dat ergens te zeggen. Zelfde periode-patroon als
+  // /admin/reach, zodat "posts per platform" niet blijft groeien richting het
+  // begin van de tijd.
+  const [period, setPeriod] = useState("30");
+  const days = Number(period);
+  const sinceIso = subDays(new Date(), days).toISOString();
 
   const { data: posts } = useQuery({
-    queryKey: ["engagement-posts", activeClient?.id],
+    queryKey: ["engagement-posts", activeClient?.id, days],
     queryFn: async () => {
       let q = supabase
         .from("scheduled_posts")
         .select("id, platform, status, media_path, media_type, caption, published_at")
         .eq("status", "published")
+        .gte("published_at", sinceIso)
         .order("published_at", { ascending: false });
       if (activeClient?.id) q = q.eq("client_id", activeClient.id);
       const { data } = await q;
@@ -66,8 +85,27 @@ function EngagementPage() {
   return (
     <div className="space-y-5 max-w-6xl">
       <PageTabs tabs={ANALYSE_TABS} />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="flex flex-wrap gap-2">
+          {PERIODS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={cn(
+                "px-3 h-8 rounded-full text-xs font-medium border transition",
+                period === p.id
+                  ? "bg-gold/15 text-gold border-gold/40"
+                  : "border-border hover:bg-accent/40",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground">{formatDateRange(days)}</span>
+      </div>
       <div className="grid md:grid-cols-2 gap-5">
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
+        <div className="card-surface bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
             Posts per platform
           </div>
@@ -101,7 +139,7 @@ function EngagementPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gold/15 bg-card p-4">
+        <div className="card-surface bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
             Content-types
           </div>
@@ -145,7 +183,7 @@ function EngagementPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gold/15 bg-card p-4">
+      <Reveal className="card-surface bg-card p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Reacties op video's
@@ -190,12 +228,13 @@ function EngagementPage() {
           Reactietellingen zijn nog niet beschikbaar — dat vereist een insights-koppeling per
           platform. Zodra die actief is, verschijnen hier echte cijfers in plaats van deze staat.
         </p>
-      </div>
+      </Reveal>
 
       <p className="text-xs text-muted-foreground">
-        De cijfers hierboven (posts per platform, content-type-verdeling) komen rechtstreeks uit de
-        geplande en gepubliceerde posts — dat is echte data. Engagement-rates (likes/comments/
-        shares) per post zijn nog niet beschikbaar en vereisen een insights-koppeling per{" "}
+        De cijfers hierboven (posts per platform, content-type-verdeling) gaan over de gekozen
+        periode ({formatDateRange(days)}) en komen rechtstreeks uit de gepubliceerde posts — dat is
+        echte data. Engagement-rates (likes/comments/ shares) per post zijn nog niet beschikbaar en
+        vereisen een insights-koppeling per{" "}
         <Link to="/admin/channels" className="text-gold underline">
           gekoppeld account
         </Link>

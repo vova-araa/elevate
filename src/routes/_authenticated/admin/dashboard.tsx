@@ -32,6 +32,7 @@ import { getPostingOverview } from "@/lib/posting-overview.functions";
 import { getInsights } from "@/lib/insights.functions";
 import { getMomentum } from "@/lib/momentum.functions";
 import { getDashboardSummary, type FocusItem, type FocusKind } from "@/lib/dashboard.functions";
+import { Reveal } from "@/components/reveal";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -208,7 +209,7 @@ function DashboardContent({
 
       {/* Focus nu — wat vraagt vandaag actie. De cijfers, de agenda en het
           klantoverzicht staan in het postbord hierboven. */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <Reveal className="grid gap-6 lg:grid-cols-2">
         <Card title="Focus nu" icon={Sparkles}>
           {focusLoading ? (
             <ListSkeleton rows={3} />
@@ -227,9 +228,9 @@ function DashboardContent({
         </Card>
 
         <InsightsCard insights={insights} loading={insightsLoading} />
-      </div>
+      </Reveal>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+      <Reveal className="grid gap-6 lg:grid-cols-[1fr_1fr]" delay={80}>
         <MomentumCard
           data={momentum}
           loading={momentumLoading}
@@ -238,21 +239,23 @@ function DashboardContent({
         />
         {/* De echte feed van de klant die in de sidebar actief is. */}
         <LiveFeedCard />
-      </div>
+      </Reveal>
 
       {/* Bereik — brede kaart onderaan */}
-      <Card
-        title="Bereik"
-        icon={TrendingUp}
-        link={{ to: "/admin/reach", label: "Volledige analyse" }}
-      >
-        <ReachChart
-          series={reachSeries}
-          loading={reachLoading}
-          followersTotal={reachAnalytics?.followersTotal ?? null}
-          followerGrowth={reachAnalytics?.followerGrowth ?? null}
-        />
-      </Card>
+      <Reveal delay={80}>
+        <Card
+          title="Bereik"
+          icon={TrendingUp}
+          link={{ to: "/admin/reach", label: "Volledige analyse" }}
+        >
+          <ReachChart
+            series={reachSeries}
+            loading={reachLoading}
+            followersTotal={reachAnalytics?.followersTotal ?? null}
+            followerGrowth={reachAnalytics?.followerGrowth ?? null}
+          />
+        </Card>
+      </Reveal>
     </>
   );
 }
@@ -304,10 +307,7 @@ function StatTile({
   children?: ReactNode;
 }) {
   return (
-    <Link
-      to={to}
-      className="card-lift group relative overflow-hidden rounded-2xl border border-gold/15 bg-card p-5 shadow-sm"
-    >
+    <Link to={to} className="card-lift group relative overflow-hidden card-surface-lg bg-card p-5">
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-gold opacity-80"
@@ -648,7 +648,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-2xl border border-gold/15 bg-card p-5 shadow-sm", className)}>
+    <div className={cn("card-surface-lg bg-card p-5", className)}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-xl flex items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold/12 text-gold">

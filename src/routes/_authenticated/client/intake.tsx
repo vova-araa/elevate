@@ -120,7 +120,7 @@ function ClientIntakePage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-xl border border-gold/10 bg-card p-10 text-center text-sm text-muted-foreground">
+        <div className="card-surface bg-card p-10 text-center text-sm text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
           Intake laden…
         </div>
@@ -238,7 +238,7 @@ function ClientIntakePage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-5 space-y-4">
+    <div className="card-surface bg-card p-5 space-y-4">
       <div className="text-xs uppercase tracking-[0.2em] text-gold/80">{title}</div>
       {children}
     </div>

@@ -119,7 +119,7 @@ export function DriveImportCard({
   const busy = checking || progress !== null;
 
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-4 sm:p-5">
+    <div className="card-surface bg-card p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <FolderSymlink className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
         <div className="min-w-0 flex-1">

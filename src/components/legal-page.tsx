@@ -49,7 +49,7 @@ export function LegalPage({
 
 export function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-gold/10 bg-card/60 p-5 backdrop-blur-sm">
+    <section className="card-surface bg-card/60 p-5 backdrop-blur-sm">
       <h2 className="font-display text-xl text-gold">{title}</h2>
       <div className="mt-3 space-y-3">{children}</div>
     </section>

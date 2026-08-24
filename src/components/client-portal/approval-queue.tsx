@@ -139,7 +139,7 @@ function DraftCard({
   }
 
   return (
-    <div className="rounded-xl border border-gold/10 bg-card p-4 sm:p-5">
+    <div className="card-surface bg-card p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row gap-4">
         {post.media_path && <MediaPreview path={post.media_path} mediaType={post.media_type} />}
 

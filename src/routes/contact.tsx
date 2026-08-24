@@ -166,7 +166,7 @@ function ContactPage() {
         <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_1.4fr]">
           {/* Contactgegevens */}
           <div className="space-y-4">
-            <div className="rounded-xl border border-gold/10 bg-card/60 p-5 backdrop-blur-sm">
+            <div className="card-surface bg-card/60 p-5 backdrop-blur-sm">
               <h2 className="font-display text-lg text-gold">Rechtstreeks</h2>
               <div className="mt-3 space-y-2.5 text-sm">
                 <a
@@ -191,7 +191,7 @@ function ContactPage() {
                 </p>
               </div>
             </div>
-            <div className="rounded-xl border border-gold/10 bg-card/60 p-5 backdrop-blur-sm text-sm text-muted-foreground">
+            <div className="card-surface bg-card/60 p-5 backdrop-blur-sm text-sm text-muted-foreground">
               Al klant?{" "}
               <Link to="/auth" className="text-gold hover:underline">
                 Log in op het portaal
@@ -201,7 +201,7 @@ function ContactPage() {
           </div>
 
           {/* Formulier */}
-          <div className="rounded-2xl border border-gold/10 bg-card/60 p-6 backdrop-blur-sm">
+          <div className="card-surface-lg bg-card/60 p-6 backdrop-blur-sm">
             {submitted ? (
               <div className="flex flex-col items-center py-10 text-center">
                 <CheckCircle2 className="h-10 w-10 text-gold" />

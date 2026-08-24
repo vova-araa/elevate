@@ -125,7 +125,7 @@ export function LiveFeedCard() {
 
   if (!clientId) {
     return (
-      <div className="rounded-2xl border border-gold/15 bg-card p-5">
+      <div className="card-surface-lg bg-card p-5">
         <h2 className="font-display text-xl">Feed</h2>
         <p className="mt-3 text-sm text-muted-foreground">
           Kies links een klant om hun feed te zien.
@@ -135,7 +135,7 @@ export function LiveFeedCard() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-gold/15 bg-card">
+    <div className="relative overflow-hidden card-surface-lg bg-card">
       {/* Gloed in de kleur van het gekozen platform — het kanaal wisselt zo ook
           visueel, niet alleen in de inhoud. */}
       <div
