@@ -108,7 +108,9 @@ export function MomentumCard({
               stroke="currentColor"
             />
           </svg>
-          <span className="absolute font-display text-2xl tabular-nums">{data.score}</span>
+          <span className="absolute font-display text-2xl tabular-nums lining-nums">
+            {data.score}
+          </span>
         </div>
 
         {/* Onderdelen */}
@@ -117,7 +119,7 @@ export function MomentumCard({
             <div key={p.key}>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{p.label}</span>
-                <span className={cn("tabular-nums", toneFor(p.score, p.max))}>
+                <span className={cn("tabular-nums lining-nums", toneFor(p.score, p.max))}>
                   {p.score}/{p.max}
                 </span>
               </div>

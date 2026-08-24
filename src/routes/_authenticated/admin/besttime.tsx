@@ -133,7 +133,9 @@ function BestTimePage() {
                     <span className="font-medium">
                       {DAYS[(s.day + 6) % 7]} • {String(s.hour).padStart(2, "0")}:00
                     </span>
-                    <span className="text-xs text-gold font-semibold tabular-nums">{s.count}×</span>
+                    <span className="text-xs text-gold font-semibold tabular-nums lining-nums">
+                      {s.count}×
+                    </span>
                   </div>
                   <Link
                     to="/admin/compose"

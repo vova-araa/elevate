@@ -46,7 +46,7 @@ export function HealthRing({
       </svg>
       <span
         className={cn(
-          "absolute inset-0 grid place-items-center text-[10px] font-medium tabular-nums",
+          "absolute inset-0 grid place-items-center text-[10px] font-medium tabular-nums lining-nums",
           tone,
         )}
       >

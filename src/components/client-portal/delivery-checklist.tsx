@@ -192,7 +192,7 @@ function ChecklistRow({ item, onToggle }: { item: DeliveryItem; onToggle?: () =>
                   style={{ width: `${Math.min(100, (item.delivered / item.needed) * 100)}%` }}
                 />
               </div>
-              <p className="mt-1 text-[11px] tabular-nums text-muted-foreground">
+              <p className="mt-1 text-[11px] tabular-nums lining-nums text-muted-foreground">
                 {item.delivered} van {item.needed} aangeleverd
               </p>
             </div>

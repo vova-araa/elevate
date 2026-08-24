@@ -599,7 +599,7 @@ function StatTile({
       ) : (
         <div
           className={cn(
-            "mt-3 font-display text-3xl tabular-nums",
+            "mt-3 font-display text-3xl tabular-nums lining-nums",
             accent ? "text-gold" : "text-foreground",
           )}
         >
@@ -644,7 +644,7 @@ function ProgressRing({ pct }: { pct: number }) {
         />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
-        <span className="font-display text-4xl tabular-nums text-gold">{clamped}%</span>
+        <span className="font-display text-4xl tabular-nums lining-nums text-gold">{clamped}%</span>
       </div>
     </div>
   );

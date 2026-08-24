@@ -307,7 +307,7 @@ function UpcomingRow({ post, url }: { post: UpcomingPost; url: string }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 text-xs">
-          <span className="font-medium tabular-nums text-gold">
+          <span className="font-medium tabular-nums lining-nums text-gold">
             {format(new Date(post.scheduledAt), "HH:mm")}
           </span>
           <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -339,7 +339,9 @@ function Stat({
       <span className={cn("grid h-9 w-9 place-items-center rounded-lg", tone)}>
         <Icon className="h-5 w-5" />
       </span>
-      <div className="mt-3 font-display text-3xl leading-none tabular-nums">{value}</div>
+      <div className="mt-3 font-display text-3xl leading-none tabular-nums lining-nums">
+        {value}
+      </div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
     </Link>
   );

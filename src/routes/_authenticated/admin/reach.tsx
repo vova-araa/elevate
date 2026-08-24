@@ -175,7 +175,7 @@ function ReachPage() {
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground capitalize">
                       {f.platform}
                     </div>
-                    <div className="mt-1 font-display text-lg tabular-nums">
+                    <div className="mt-1 font-display text-lg tabular-nums lining-nums">
                       {f.followers != null ? f.followers.toLocaleString("nl-NL") : "—"}
                     </div>
                   </div>
@@ -209,7 +209,10 @@ function StatCard({
     <div className="rounded-lg bg-surface p-3.5">
       <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
       <div
-        className={cn("mt-1 font-display tabular-nums", small ? "text-base truncate" : "text-2xl")}
+        className={cn(
+          "mt-1 font-display tabular-nums lining-nums",
+          small ? "text-base truncate" : "text-2xl",
+        )}
       >
         {value}
       </div>
@@ -227,7 +230,7 @@ function FollowerGrowthStat({ growth }: { growth: number | null }) {
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         <Icon className="h-3 w-3" /> Volgersgroei
       </div>
-      <div className={cn("mt-1 font-display text-2xl tabular-nums", tint)}>{value}</div>
+      <div className={cn("mt-1 font-display text-2xl tabular-nums lining-nums", tint)}>{value}</div>
     </div>
   );
 }

@@ -138,7 +138,7 @@ function EngagementPage() {
                   style={{ background: COLORS[i % COLORS.length] }}
                 />
                 <span className="capitalize">{t.name}</span>
-                <span className="text-muted-foreground tabular-nums">{t.value}</span>
+                <span className="text-muted-foreground tabular-nums lining-nums">{t.value}</span>
               </div>
             ))}
           </div>

@@ -541,7 +541,12 @@ function Kpi({
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className={cn("h-3.5 w-3.5", tint ?? "text-gold")} /> {label}
       </div>
-      <div className={cn("mt-2 text-2xl font-display tabular-nums", tint ?? "text-foreground")}>
+      <div
+        className={cn(
+          "mt-2 text-2xl font-display tabular-nums lining-nums",
+          tint ?? "text-foreground",
+        )}
+      >
         {value}
       </div>
     </div>
@@ -564,7 +569,7 @@ function StatCard({
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
-      <div className="mt-2 text-3xl font-display tabular-nums text-gold">{value}</div>
+      <div className="mt-2 text-3xl font-display tabular-nums lining-nums text-gold">{value}</div>
       <div className="text-xs text-muted-foreground mt-2">{hint}</div>
     </div>
   );
@@ -590,7 +595,7 @@ function FollowerGrowthCard({ growth, days }: { growth: number | null; days: num
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
         <Icon className={cn("h-3.5 w-3.5", tint)} /> Volgersgroei
       </div>
-      <div className={cn("mt-2 text-3xl font-display tabular-nums", tint)}>{value}</div>
+      <div className={cn("mt-2 text-3xl font-display tabular-nums lining-nums", tint)}>{value}</div>
       <div className="text-xs text-muted-foreground mt-2">{hint}</div>
     </div>
   );

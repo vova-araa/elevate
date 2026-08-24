@@ -578,11 +578,15 @@ function DealsPanel({ clientId }: { clientId: string }) {
       <div className="grid grid-cols-2 gap-3">
         <div className="glass rounded-2xl p-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-gold/70">Pipeline waarde</div>
-          <div className="font-display text-3xl mt-1">€ {totalPipe.toLocaleString("nl-NL")}</div>
+          <div className="font-display text-3xl tabular-nums lining-nums mt-1">
+            € {totalPipe.toLocaleString("nl-NL")}
+          </div>
         </div>
         <div className="glass rounded-2xl p-4">
           <div className="text-[10px] uppercase tracking-[0.2em] text-gold/70">Gewonnen</div>
-          <div className="font-display text-3xl mt-1">€ {totalWon.toLocaleString("nl-NL")}</div>
+          <div className="font-display text-3xl tabular-nums lining-nums mt-1">
+            € {totalWon.toLocaleString("nl-NL")}
+          </div>
         </div>
       </div>
       <SectionForm title="Nieuwe deal" onSubmit={add}>

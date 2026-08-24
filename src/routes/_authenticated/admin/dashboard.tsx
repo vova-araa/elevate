@@ -461,7 +461,9 @@ function StatTile({
         </span>
         <ArrowRight className="h-4 w-4 text-muted-foreground/40 transition group-hover:translate-x-0.5 group-hover:text-gold" />
       </div>
-      <div className="mt-3 font-display text-4xl leading-none tabular-nums">{value}</div>
+      <div className="mt-3 font-display text-4xl leading-none tabular-nums lining-nums">
+        {value}
+      </div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
       {children}
     </Link>
@@ -685,22 +687,27 @@ function ReachChart({
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
         <span>
-          <span className="font-display text-lg text-foreground">{total}</span> gepubliceerd (30d)
+          <span className="font-display text-lg tabular-nums lining-nums text-foreground">
+            {total}
+          </span>{" "}
+          gepubliceerd (30d)
         </span>
         <span>
-          <span className="font-display text-lg text-foreground">{(total / 30).toFixed(1)}</span>{" "}
+          <span className="font-display text-lg tabular-nums lining-nums text-foreground">
+            {(total / 30).toFixed(1)}
+          </span>{" "}
           gem./dag
         </span>
         <span className="flex items-center gap-1">
           <Users className="h-3.5 w-3.5" />
-          <span className="font-display text-lg text-foreground">
+          <span className="font-display text-lg tabular-nums lining-nums text-foreground">
             {followersTotal != null ? followersTotal.toLocaleString("nl-NL") : "—"}
           </span>{" "}
           volgers
         </span>
         <span className="flex items-center gap-1">
           <GrowthIcon className={cn("h-3.5 w-3.5", growthTint)} />
-          <span className={cn("font-display text-lg", growthTint)}>
+          <span className={cn("font-display text-lg tabular-nums lining-nums", growthTint)}>
             {followerGrowth != null
               ? `${followerGrowth > 0 ? "+" : ""}${followerGrowth.toLocaleString("nl-NL")}`
               : "—"}

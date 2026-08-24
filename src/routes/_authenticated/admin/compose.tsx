@@ -399,7 +399,7 @@ function ComposePage() {
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Caption
             </div>
-            <div className="text-xs text-muted-foreground tabular-nums">
+            <div className="text-xs text-muted-foreground tabular-nums lining-nums">
               {content.length} / {longest}
             </div>
           </div>

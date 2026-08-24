@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { prefersReducedMotion, useInView } from "@/components/landing-motion";
+import { cn } from "@/lib/utils";
 
 /** Herbruikbaar scroll-reveal-blok: faadt + schuift zacht in beeld. `delay` in ms voor stagger. */
 export function Reveal({
@@ -87,9 +88,13 @@ export function CountUp({
     return () => cancelAnimationFrame(raf);
   }, [inView, hasMatch, target, duration, worthAnimating]);
 
+  // S13: cijfers die tijdens het optellen van breedte wisselen (proportionele
+  // nullen zijn smaller dan andere cijfers) laten de hele stat-tegel wiebelen.
+  const numericClassName = cn("tabular-nums lining-nums", className);
+
   if (!match) {
     return (
-      <span ref={ref} className={className}>
+      <span ref={ref} className={numericClassName}>
         {value}
       </span>
     );
@@ -100,7 +105,7 @@ export function CountUp({
     maximumFractionDigits: decimals,
   });
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} className={numericClassName}>
       {prefix}
       {formatted}
       {suffix}

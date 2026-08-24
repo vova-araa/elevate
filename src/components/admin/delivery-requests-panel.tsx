@@ -175,7 +175,7 @@ export function DeliveryRequestsPanel({ clientId }: { clientId: string }) {
                 max={100}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Math.min(100, Number(e.target.value))))}
-                className="w-20 min-h-11 rounded-lg bg-input/60 hairline px-3 text-sm tabular-nums"
+                className="w-20 min-h-11 rounded-lg bg-input/60 hairline px-3 text-sm tabular-nums lining-nums"
               />
             </label>
           )}

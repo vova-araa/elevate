@@ -84,7 +84,7 @@ export function GradePanel({ grade, onChange }: { grade: Grade; onChange: (g: Gr
           <label key={s.key} className="block">
             <span className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">{s.label}</span>
-              <span className="tabular-nums text-foreground/70">
+              <span className="tabular-nums lining-nums text-foreground/70">
                 {displayValue(s, grade[s.key])}
               </span>
             </span>

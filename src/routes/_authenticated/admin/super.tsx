@@ -261,7 +261,9 @@ function StatTile({
       <span className={cn("grid h-9 w-9 place-items-center rounded-lg", tone)}>
         <Icon className="h-5 w-5" />
       </span>
-      <div className="mt-3 font-display text-2xl leading-none tabular-nums">{value}</div>
+      <div className="mt-3 font-display text-2xl leading-none tabular-nums lining-nums">
+        {value}
+      </div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
     </Link>
   );
@@ -271,7 +273,9 @@ function TeamRow({ label, value, tone }: { label: string; value?: number; tone: 
   return (
     <li className="flex items-center justify-between rounded-lg bg-background/50 px-3 py-2">
       <span className="text-muted-foreground">{label}</span>
-      <span className={cn("font-display text-lg tabular-nums", tone)}>{value ?? "—"}</span>
+      <span className={cn("font-display text-lg tabular-nums lining-nums", tone)}>
+        {value ?? "—"}
+      </span>
     </li>
   );
 }

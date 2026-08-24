@@ -500,7 +500,7 @@ function Stat({
     <div className="text-center">
       <Icon className={`h-3.5 w-3.5 mx-auto ${highlight ? "text-gold" : "text-gold/70"}`} />
       <div
-        className={`font-display text-lg mt-1 leading-none tabular-nums ${highlight ? "text-gold" : ""}`}
+        className={`font-display text-lg mt-1 leading-none tabular-nums lining-nums ${highlight ? "text-gold" : ""}`}
       >
         {value}
       </div>

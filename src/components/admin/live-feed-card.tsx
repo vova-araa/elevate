@@ -163,19 +163,21 @@ export function LiveFeedCard() {
             <div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
               {typeof connection?.follower_count === "number" && (
                 <span>
-                  <b className="text-foreground tabular-nums">
+                  <b className="text-foreground tabular-nums lining-nums">
                     {compactNumber(connection.follower_count)}
                   </b>{" "}
                   volgers
                 </span>
               )}
               <span>
-                <b className="text-foreground tabular-nums">{feed?.publishedCount ?? 0}</b>{" "}
+                <b className="text-foreground tabular-nums lining-nums">
+                  {feed?.publishedCount ?? 0}
+                </b>{" "}
                 gepubliceerd
               </span>
               {!!feed?.plannedCount && (
                 <span className="text-gold">
-                  <b className="tabular-nums">{feed.plannedCount}</b> gepland
+                  <b className="tabular-nums lining-nums">{feed.plannedCount}</b> gepland
                 </span>
               )}
               {feed?.source === "eigen" && (

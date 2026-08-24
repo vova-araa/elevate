@@ -1588,7 +1588,7 @@ function ComposeModal({
                     />
                   </div>
                   <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="tabular-nums">
+                    <span className="tabular-nums lining-nums">
                       {uploadProgress
                         ? `${formatBytes(uploadProgress.loaded)} van ${formatBytes(uploadProgress.total)}`
                         : "Verbinden met de opslag…"}
