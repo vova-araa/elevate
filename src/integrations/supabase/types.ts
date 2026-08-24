@@ -1079,6 +1079,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      leads: {
+        Row: {
+          bedrijf: string | null;
+          bron: string | null;
+          budgetrange: string | null;
+          created_at: string;
+          doel: string | null;
+          email: string;
+          hoe_gevonden: string | null;
+          id: string;
+          kanalen: string[];
+          naam: string;
+          status: string;
+          telefoon: string | null;
+          website: string | null;
+        };
+        Insert: {
+          bedrijf?: string | null;
+          bron?: string | null;
+          budgetrange?: string | null;
+          created_at?: string;
+          doel?: string | null;
+          email: string;
+          hoe_gevonden?: string | null;
+          id?: string;
+          kanalen?: string[];
+          naam: string;
+          status?: string;
+          telefoon?: string | null;
+          website?: string | null;
+        };
+        Update: {
+          bedrijf?: string | null;
+          bron?: string | null;
+          budgetrange?: string | null;
+          created_at?: string;
+          doel?: string | null;
+          email?: string;
+          hoe_gevonden?: string | null;
+          id?: string;
+          kanalen?: string[];
+          naam?: string;
+          status?: string;
+          telefoon?: string | null;
+          website?: string | null;
+        };
+        Relationships: [];
+      };
       media_folders: {
         Row: {
           client_id: string;

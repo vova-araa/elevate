@@ -26,6 +26,8 @@ import {
   Reveal,
 } from "@/components/landing-decor";
 import { useParallax, useReveal } from "@/components/landing-motion";
+import { SiteFooter } from "@/components/site-footer";
+import { track } from "@/lib/analytics";
 
 const SITE_URL = "https://www.elevatedesign.nl";
 
@@ -81,20 +83,6 @@ export const Route = createFileRoute("/")({
 // Alleen de kanalen waar klanten daadwerkelijk mee kunnen koppelen — anders
 // belooft de landing iets wat de app (nog) niet levert.
 const SOCIALS = [Instagram, Music2, Facebook];
-
-// Officiële Elevate Design-accounts — gekoppeld in de footer ("Volg ons").
-const SOCIAL_LINKS = [
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/elevatedesign.official/",
-    icon: Instagram,
-  },
-  {
-    label: "TikTok",
-    href: "https://www.tiktok.com/@elevate.design.official",
-    icon: Music2,
-  },
-];
 
 type ServiceVisual = "tags" | "palette" | "calendar" | "chart";
 
@@ -210,6 +198,7 @@ function Landing() {
           </nav>
           <Link
             to="/dashboard"
+            onClick={() => track("portal_login_click", { location: "topbar" })}
             className="group inline-flex items-center gap-1.5 rounded-full border border-gold/30 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-gold transition-colors duration-200 hover:border-gold/50 hover:bg-gold/5"
           >
             Portaal{" "}
@@ -264,10 +253,11 @@ function Landing() {
                 style={{ animationDelay: "240ms" }}
               >
                 <Link
-                  to="/dashboard"
+                  to="/contact"
+                  onClick={() => track("cta_click", { location: "hero" })}
                   className="group glow-gold inline-flex items-center gap-1.5 rounded-full bg-gradient-gold px-6 py-3 text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
                 >
-                  Open het portaal{" "}
+                  Plan een merkscan{" "}
                   <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </Link>
                 <a
@@ -276,6 +266,13 @@ function Landing() {
                 >
                   Bekijk wat we doen
                 </a>
+                <Link
+                  to="/dashboard"
+                  onClick={() => track("portal_login_click", { location: "hero" })}
+                  className="inline-flex items-center gap-1.5 px-2 py-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-gold"
+                >
+                  Al klant? Open het portaal
+                </Link>
               </div>
 
               {/* Kanaal-rij */}
@@ -413,7 +410,8 @@ function Landing() {
                 />
               </Reveal>
               <Link
-                to="/dashboard"
+                to="/contact"
+                onClick={() => track("cta_click", { location: "werkwijze" })}
                 className="group mt-8 hidden items-center gap-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold lg:inline-flex"
               >
                 Start vandaag{" "}
@@ -520,14 +518,16 @@ function Landing() {
               Klaar voor de <span className="italic text-gradient-gold">volgende stap</span>?
             </h2>
             <p className="relative mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-              Open het portaal en ervaar hoe overzichtelijk samenwerken aan je merk kan zijn.
+              Plan een vrijblijvende merkscan en ervaar hoe overzichtelijk samenwerken aan je merk
+              kan zijn.
             </p>
             <div className="relative mt-9 flex flex-wrap items-center justify-center gap-3">
               <Link
-                to="/dashboard"
+                to="/contact"
+                onClick={() => track("cta_click", { location: "slot" })}
                 className="group glow-gold inline-flex items-center gap-1.5 rounded-full bg-gradient-gold px-7 py-3 text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105"
               >
-                Open het portaal{" "}
+                Plan een merkscan{" "}
                 <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
               </Link>
               <a
@@ -541,47 +541,7 @@ function Landing() {
         </section>
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="relative z-10 border-t border-gold/10 py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-[11px] text-muted-foreground sm:flex-row">
-          <div className="flex items-center gap-2">
-            <img src={elevateLogoUrl} alt="" className="h-5 w-5 object-contain" />
-            <span>© {new Date().getFullYear()} Elevate Design. Alle rechten voorbehouden.</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/terms" className="transition-colors hover:text-gold">
-              Voorwaarden
-            </Link>
-            <Link to="/privacy" className="transition-colors hover:text-gold">
-              Privacy
-            </Link>
-            <Link to="/data-deletion" className="transition-colors hover:text-gold">
-              Gegevens verwijderen
-            </Link>
-            <Link to="/dashboard" className="transition-colors hover:text-gold">
-              Portaal
-            </Link>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
-              Volg ons
-            </span>
-            {SOCIAL_LINKS.map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={s.label}
-                title={s.label}
-                className="grid h-8 w-8 place-items-center rounded-lg border border-gold/10 bg-card/60 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
-              >
-                <s.icon className="h-4 w-4" />
-              </a>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
