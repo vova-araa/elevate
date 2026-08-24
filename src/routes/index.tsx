@@ -19,7 +19,6 @@ import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { LandingShowcase } from "@/components/landing-showcase";
 import {
   Atmosphere,
-  CountUp,
   HeroGlow,
   KeywordMarquee,
   LandingStyles,
@@ -149,18 +148,6 @@ const PORTAL_POINTS = [
   "Goedkeuren op je telefoon — of via een deelbare link",
   "Mediabibliotheek met bulk-upload en Drive-import",
   "Overzichtelijke maandrapportage per merk en kanaal",
-];
-
-/**
- * Vier cijfers die iets zeggen. "1 portaal voor alles" en "3 gekoppelde
- * kanalen" riepen vooral de vraag op waar het over ging — dit benoemt wat je
- * er concreet aan hebt.
- */
-const STATS: [string, string][] = [
-  ["3", "kanalen: Instagram, Facebook en TikTok"],
-  ["1", "plek voor plannen, goedkeuren en rapporteren"],
-  ["AI", "voor strategie, captions en hashtags"],
-  ["100%", "in jouw eigen huisstijl"],
 ];
 
 function Landing() {
@@ -432,38 +419,14 @@ function Landing() {
           </div>
         </section>
 
-        {/* ── Elevate in cijfers ── */}
-        <section className="mx-auto max-w-6xl px-6 pt-28">
-          <Reveal className="relative overflow-hidden rounded-3xl border border-gold/15 bg-card/50 backdrop-blur-sm">
-            <div className="grain absolute inset-0" aria-hidden />
-            <div
-              className="pointer-events-none absolute inset-x-0 -bottom-24 h-56 opacity-60"
-              style={{ background: "var(--gradient-glow)", transform: "rotate(180deg)" }}
-              aria-hidden
-            />
-            <div className="relative grid grid-cols-2 md:grid-cols-4">
-              {STATS.map(([n, l], i) => (
-                <div
-                  key={l}
-                  className={
-                    "px-5 py-9 text-center md:py-11 " +
-                    (i % 2 === 1 ? "border-l border-gold/10 " : "") +
-                    (i >= 2 ? "border-t border-gold/10 md:border-t-0 " : "") +
-                    (i === 2 ? "md:border-l " : "") +
-                    (i === 3 ? "md:border-l " : "")
-                  }
-                >
-                  <div className="font-display text-4xl md:text-5xl">
-                    <CountUp value={n} className="text-gradient-gold" />
-                  </div>
-                  <div className="mt-1.5 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    {l}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </section>
+        {/* S15: hier stond een statistiekbalk ("3 kanalen · 1 plek · AI ·
+            100% in jouw huisstijl") die zich als resultaat voordeed maar
+            feature-labels waren — geen enkel cijfer kwam uit echte data. Tot
+            er genoeg publicatie- en resultaatdata is om een eerlijke
+            statistiekbalk te vullen (aantal begeleide merken, posts per
+            maand, bereikgroei, goedkeuringsdoorlooptijd — zie A03-precedent
+            op /admin/besttime), blijft dit blok weg in plaats van iets te
+            tonen dat nog dun is. */}
 
         {/* ── Portaal-showcase ── */}
         <section id="portaal" className="mx-auto max-w-6xl px-6 pt-28">
