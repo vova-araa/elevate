@@ -150,7 +150,7 @@ function SettingsPage() {
           <Key className="h-3.5 w-3.5" /> API sleutels
         </Link>
         <Link
-          to="/admin/webhooks"
+          to="/admin/channels"
           className="flex items-center gap-2 rounded-full border border-gold/20 bg-background/40 px-3 py-1.5 text-xs text-muted-foreground hover:text-gold hover:border-gold/40 transition"
         >
           <Plug className="h-3.5 w-3.5" /> Kanalen
@@ -159,7 +159,7 @@ function SettingsPage() {
           to="/admin/automations"
           className="flex items-center gap-2 rounded-full border border-gold/20 bg-background/40 px-3 py-1.5 text-xs text-muted-foreground hover:text-gold hover:border-gold/40 transition"
         >
-          <Bell className="h-3.5 w-3.5" /> Alerts
+          <Bell className="h-3.5 w-3.5" /> Automatiseringen
         </Link>
       </div>
 
