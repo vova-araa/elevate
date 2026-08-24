@@ -150,7 +150,7 @@ function AuthPage() {
                     setMode("reset");
                     setError(null);
                   }}
-                  className="text-[11px] text-gold transition-colors hover:underline"
+                  className="text-xs text-gold transition-colors hover:underline"
                 >
                   Wachtwoord vergeten?
                 </button>
@@ -233,13 +233,13 @@ function AuthPage() {
           </form>
         )}
 
-        <p className="text-center text-[11px] text-muted-foreground/70">
+        <p className="text-center text-xs text-muted-foreground/70">
           Nog geen klant?{" "}
           <Link to="/contact" className="text-gold transition-colors hover:underline">
             Plan een merkscan
           </Link>
         </p>
-        <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60">
+        <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground/60">
           <a href="/terms" className="transition-colors hover:text-gold">
             Voorwaarden
           </a>

@@ -20,7 +20,7 @@ export function SiteFooter() {
   return (
     <footer className="relative z-10 border-t border-gold/10 py-8">
       <div className="mx-auto max-w-6xl px-6 space-y-6">
-        <div className="flex flex-col items-center justify-between gap-4 text-[11px] text-muted-foreground sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-4 text-caption text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
             <img src={elevateLogoUrl} alt="" className="h-5 w-5 object-contain" />
             <span>© {new Date().getFullYear()} Elevate Design. Alle rechten voorbehouden.</span>
@@ -43,7 +43,7 @@ export function SiteFooter() {
             </Link>
           </div>
           <div className="flex items-center gap-2.5">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
+            <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
               Volg ons
             </span>
             {SOCIAL_LINKS.map((s) => (
@@ -63,7 +63,7 @@ export function SiteFooter() {
         </div>
 
         {/* NAP-blok: naam, adres, KvK, btw-id, telefoon, e-mail. Minimaal 13px. */}
-        <div className="border-t border-gold/10 pt-5 text-[13px] leading-relaxed text-muted-foreground">
+        <div className="border-t border-gold/10 pt-5 text-caption leading-relaxed text-muted-foreground">
           <p className="font-medium text-foreground/80">
             {BUSINESS.tradeName}
             {BUSINESS.legalName !== BUSINESS.tradeName && ` (${BUSINESS.legalName})`}

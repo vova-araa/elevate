@@ -35,7 +35,7 @@ export function LegalPage({
         </Link>
       </header>
       <main className="relative z-10 mx-auto max-w-3xl px-6 pb-24 pt-10">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-gold/80">{eyebrow}</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-gold/80">{eyebrow}</p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl">{title}</h1>
         <p className="mt-2 text-xs text-muted-foreground">Laatst bijgewerkt: {updated}</p>
         <div className="legal-body mt-8 space-y-8 text-sm leading-relaxed text-foreground/90">

@@ -191,9 +191,7 @@ function ShowcaseCard({ slide, index }: { slide: Slide; index: number }) {
         <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/12 text-gold transition-colors group-hover:bg-gold/20">
           <Icon className="h-5 w-5" aria-hidden />
         </span>
-        <span className="text-[10px] uppercase tracking-[0.24em] text-gold/80">
-          {slide.eyebrow}
-        </span>
+        <span className="text-xs uppercase tracking-[0.24em] text-gold/80">{slide.eyebrow}</span>
       </div>
       <h3 className="relative mt-5 font-display text-2xl leading-tight">{slide.title}</h3>
       <p className="relative mt-2 text-sm leading-relaxed text-muted-foreground">{slide.body}</p>
@@ -261,7 +259,7 @@ function SlideVisual({ kind }: { kind: Slide["visual"] }) {
             className="flex items-center gap-2.5 rounded-lg border border-gold/10 bg-card/70 px-3 py-2"
           >
             <span className="h-2 rounded-full bg-gold/15" style={{ width: `${w}%` }} />
-            <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-[8px] uppercase tracking-wider text-gold/80">
+            <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-xs uppercase tracking-wider text-gold/80">
               akkoord
             </span>
           </div>
@@ -276,7 +274,7 @@ function SlideVisual({ kind }: { kind: Slide["visual"] }) {
       {["Positionering", "Doelgroep", "Pijlers", "Toon", "Kalender"].map((t) => (
         <span
           key={t}
-          className="rounded-full border border-gold/15 bg-gold/5 px-2.5 py-1 text-[10px] tracking-wide text-foreground/70"
+          className="rounded-full border border-gold/15 bg-gold/5 px-2.5 py-1 text-xs tracking-wide text-foreground/70"
         >
           {t}
         </span>

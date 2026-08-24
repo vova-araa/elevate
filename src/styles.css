@@ -8,6 +8,15 @@
   --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
+  /* S14: minimale tekstgrootte op de marketingsite was her en der 8-11px.
+     text-xs (12px) is de vloer voor decoratieve labels; text-caption (13px,
+     de S05-maat voor het NAP-blok) is de vloer voor iets dat gelezen moet
+     worden maar geen volwaardige body-tekst is (footer-navigatie,
+     bijschriften). Vastgelegd als token zodat het niet als losse
+     text-[Npx] terugsluipt. */
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.4;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

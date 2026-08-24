@@ -207,7 +207,7 @@ function Landing() {
 
           <div className="relative grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr]">
             <div>
-              <div className="fade-in-up inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-[10px] uppercase tracking-[0.22em] text-gold/90 backdrop-blur-sm">
+              <div className="fade-in-up inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-xs uppercase tracking-[0.22em] text-gold/90 backdrop-blur-sm">
                 <Sparkles className="h-3 w-3" /> Brand &amp; social studio
               </div>
 
@@ -265,7 +265,7 @@ function Landing() {
                 className="fade-in-up mt-11 flex flex-wrap items-center gap-x-4 gap-y-3"
                 style={{ animationDelay: "320ms" }}
               >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
+                <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
                   Publiceert naar
                 </span>
                 <div className="flex items-center gap-3">
@@ -351,7 +351,7 @@ function Landing() {
                 <span className="italic-accent italic text-gradient-gold">rust</span> in de
                 uitvoering.
               </blockquote>
-              <figcaption className="relative mt-9 text-[11px] uppercase tracking-[0.28em] text-gold/60">
+              <figcaption className="relative mt-9 text-xs uppercase tracking-[0.28em] text-gold/60">
                 Het handschrift van Elevate Design
               </figcaption>
             </figure>
@@ -432,7 +432,7 @@ function Landing() {
         <section id="portaal" className="mx-auto max-w-6xl px-6 pt-28">
           <div className="grid items-center gap-14 lg:grid-cols-2">
             <Reveal>
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-[10px] uppercase tracking-[0.22em] text-gold/90">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-background/40 px-3.5 py-1 text-xs uppercase tracking-[0.22em] text-gold/90">
                 <Layers className="h-3 w-3" /> Het portaal
               </div>
               <h2 className="mt-5 font-display text-4xl leading-tight md:text-5xl">
@@ -520,7 +520,7 @@ function ServiceVisualBlock({ kind }: { kind: ServiceVisual }) {
           (t) => (
             <span
               key={t}
-              className="rounded-full border border-gold/15 bg-gold/5 px-3 py-1 text-[11px] tracking-wide text-foreground/70"
+              className="rounded-full border border-gold/15 bg-gold/5 px-3 py-1 text-xs tracking-wide text-foreground/70"
             >
               {t}
             </span>
@@ -620,13 +620,13 @@ function PortalPreview() {
           ].map(([n, l]) => (
             <div key={l} className="rounded-lg border border-gold/10 bg-card/70 p-2.5">
               <div className="font-display text-lg text-gold">{n}</div>
-              <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{l}</div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">{l}</div>
             </div>
           ))}
         </div>
         {/* Mini-grafiek */}
         <div className="mt-3 rounded-lg border border-gold/10 bg-card/70 p-3">
-          <div className="mb-2 text-[9px] uppercase tracking-wider text-muted-foreground">
+          <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
             Bereik — 30 dagen
           </div>
           <svg viewBox="0 0 200 48" className="h-12 w-full" preserveAspectRatio="none" aria-hidden>
@@ -659,7 +659,7 @@ function PortalPreview() {
             >
               <Icon className="h-3.5 w-3.5 text-gold" aria-hidden />
               <span className="h-2 flex-1 rounded-full bg-gold/10" />
-              <span className="text-[9px] uppercase tracking-wider text-gold/70">gepland</span>
+              <span className="text-xs uppercase tracking-wider text-gold/70">gepland</span>
             </div>
           ))}
         </div>
@@ -686,7 +686,7 @@ function WorkflowPreview() {
             </span>
             <span className="font-display text-sm">Nieuwe post</span>
           </div>
-          <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[9px] uppercase tracking-wider text-gold/80">
+          <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs uppercase tracking-wider text-gold/80">
             wacht op akkoord
           </span>
         </div>
@@ -705,10 +705,10 @@ function WorkflowPreview() {
             <span className="block h-2.5 w-full rounded-full bg-gold/10" />
             <span className="block h-2.5 w-2/3 rounded-full bg-gold/10" />
             <div className="flex gap-1.5 pt-1">
-              <span className="rounded-full border border-gold/15 bg-gold/5 px-2 py-0.5 text-[8px] tracking-wide text-foreground/60">
+              <span className="rounded-full border border-gold/15 bg-gold/5 px-2 py-0.5 text-xs tracking-wide text-foreground/60">
                 #merk
               </span>
-              <span className="rounded-full border border-gold/15 bg-gold/5 px-2 py-0.5 text-[8px] tracking-wide text-foreground/60">
+              <span className="rounded-full border border-gold/15 bg-gold/5 px-2 py-0.5 text-xs tracking-wide text-foreground/60">
                 #social
               </span>
             </div>
@@ -717,10 +717,10 @@ function WorkflowPreview() {
 
         {/* Actieknoppen */}
         <div className="mt-4 flex items-center gap-2">
-          <span className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gradient-gold py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-primary-foreground">
+          <span className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gradient-gold py-2 text-xs font-medium uppercase tracking-[0.16em] text-primary-foreground">
             <Check className="h-3 w-3" /> Goedkeuren
           </span>
-          <span className="inline-flex flex-1 items-center justify-center rounded-lg border border-gold/20 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-foreground/70">
+          <span className="inline-flex flex-1 items-center justify-center rounded-lg border border-gold/20 py-2 text-xs font-medium uppercase tracking-[0.16em] text-foreground/70">
             Feedback
           </span>
         </div>
@@ -732,8 +732,8 @@ function WorkflowPreview() {
           <CalendarClock className="h-4 w-4" aria-hidden />
         </span>
         <div>
-          <div className="text-[11px] font-medium leading-tight">Automatisch gepubliceerd</div>
-          <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs font-medium leading-tight">Automatisch gepubliceerd</div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">
             naar 5 kanalen
           </div>
         </div>
@@ -765,7 +765,7 @@ function ServiceCard({ service, index }: { service: (typeof SERVICES)[number]; i
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold/12 text-gold transition-colors group-hover:bg-gold/20">
             <Icon className="h-5 w-5" />
           </span>
-          <span className="font-display text-[10px] uppercase tracking-[0.24em] text-gold/70">
+          <span className="font-display text-xs uppercase tracking-[0.24em] text-gold/70">
             0{index + 1}
           </span>
         </div>
@@ -816,7 +816,7 @@ function SectionHead({
 }) {
   return (
     <div className="max-w-2xl">
-      <div className="text-[10px] uppercase tracking-[0.28em] text-gold/80">{eyebrow}</div>
+      <div className="text-xs uppercase tracking-[0.28em] text-gold/80">{eyebrow}</div>
       <h2 className="mt-3 font-display text-4xl leading-tight md:text-5xl">{title}</h2>
       <p className="mt-4 text-base leading-relaxed text-muted-foreground">{body}</p>
     </div>

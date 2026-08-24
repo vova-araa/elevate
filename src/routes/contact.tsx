@@ -156,7 +156,7 @@ function ContactPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-5xl px-6 pb-24 pt-10">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-gold/80">Contact</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-gold/80">Contact</p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl">Plan een merkscan</h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
           Vertel kort over je merk en waar je hulp bij zoekt. We reageren binnen één werkdag met een
