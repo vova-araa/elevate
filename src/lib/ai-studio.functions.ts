@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { generateJson } from "@/lib/ai-provider.server";
+import { ENABLED_PLATFORMS, type Platform } from "@/config/platforms";
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -20,15 +21,23 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
 
 // ── Platform helpers ─────────────────────────────────────────────────────────
 
-const studioPlatform = z.enum(["instagram", "linkedin", "tiktok", "facebook"]);
+// Alleen de platforms die we daadwerkelijk aanbieden (A02) — AI Studio bood
+// eerder ook LinkedIn aan terwijl daar geen koppeling voor bestaat.
+const studioPlatform = z.enum(ENABLED_PLATFORMS as [Platform, ...Platform[]]);
 export type StudioPlatform = z.infer<typeof studioPlatform>;
 
-const PLATFORM_HINTS: Record<StudioPlatform, string> = {
+// Record<Platform, ...> in plaats van Record<StudioPlatform, ...>: het
+// zod-enum hierboven staat runtime alleen ENABLED_PLATFORMS toe, maar het
+// afgeleide TS-type is het bredere Platform-type (z.enum kan de precieze
+// subset niet uit een Platform[]-array afleiden). Alle 5 hints invullen houdt
+// dit exhaustief in plaats van een niet-triviale Partial<> door te voeren.
+const PLATFORM_HINTS: Record<Platform, string> = {
   instagram:
     "Instagram: max 2200 tekens, gebruik 3-5 relevante hashtags, emoji ok, eerste zin is een hook.",
   linkedin:
     "LinkedIn: max 3000 tekens, professioneel, geen hashtags-spam (max 3), call-to-action voor reacties.",
   tiktok: "TikTok: max 300 tekens, korte energieke zin, 2-3 hashtags, trend-aware.",
+  youtube: "YouTube: pakkende titel/omschrijving, gericht op kijktijd.",
   facebook: "Facebook: max 1500 tekens, conversationeel, geen hashtag-overdaad.",
 };
 

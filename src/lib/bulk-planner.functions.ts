@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
+import { computeBestTimeSlots } from "@/lib/best-times";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, TablesInsert } from "@/integrations/supabase/types";
 
@@ -15,7 +17,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
   }
 }
 
-const platformSchema = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
+const platformSchema = z.enum(ALL_PLATFORM_IDS as [Platform, ...Platform[]]);
 
 const bulkRowSchema = z.object({
   scheduledAt: z.string().refine((v) => !Number.isNaN(new Date(v).getTime()), {
@@ -86,16 +88,26 @@ export const getBestTimes = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
+    // A03: geen benchmark-tabel met verzonnen scores meer — het meest gebruikte
+    // uur uit de eigen publicatiegeschiedenis, met 09:00 als redelijke default
+    // zolang er nog niets gepubliceerd is.
     const result: BestTimeResult = {};
     for (const platform of data.platforms) {
-      const { data: rows, error } = await supabaseAdmin
-        .from("best_time_benchmarks")
-        .select("time_of_day,score")
+      let query = supabaseAdmin
+        .from("scheduled_posts")
+        .select("published_at")
         .eq("platform", platform)
-        .order("score", { ascending: false })
-        .limit(1);
+        .eq("status", "published")
+        .is("deleted_at", null)
+        .not("published_at", "is", null);
+      if (data.clientId) query = query.eq("client_id", data.clientId);
+      const { data: rows, error } = await query;
       if (error) throw new Error(error.message);
-      result[platform] = rows?.[0]?.time_of_day?.slice(0, 5) ?? "09:00";
+      const [best] = computeBestTimeSlots(
+        (rows ?? []).map((r) => r.published_at),
+        1,
+      );
+      result[platform] = best ? `${String(best.hour).padStart(2, "0")}:00` : "09:00";
     }
 
     return result;

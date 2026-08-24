@@ -17,11 +17,6 @@ import { z } from "zod";
 import {
   Sparkles,
   Loader2,
-  Instagram,
-  Music2,
-  Linkedin,
-  Youtube,
-  Facebook,
   Copy,
   Send,
   Lightbulb,
@@ -33,7 +28,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { PLATFORMS, type Platform } from "@/config/platforms";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 const searchSchema = z.object({ clientId: z.string().uuid().optional() });
@@ -43,7 +38,6 @@ export const Route = createFileRoute("/_authenticated/admin/create")({
   component: CreatePage,
 });
 
-type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 type Tab = "ideas" | "caption" | "hooks" | "hashtags";
 
 type CreateClient = Pick<
@@ -63,14 +57,6 @@ type ContentIdea = {
 function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
-
-const PLATFORMS: { id: Platform; label: string; Icon: LucideIcon }[] = [
-  { id: "instagram", label: "Instagram", Icon: Instagram },
-  { id: "tiktok", label: "TikTok", Icon: Music2 },
-  { id: "linkedin", label: "LinkedIn", Icon: Linkedin },
-  { id: "youtube", label: "YouTube", Icon: Youtube },
-  { id: "facebook", label: "Facebook", Icon: Facebook },
-];
 
 function CreatePage() {
   const { clientId } = Route.useSearch();

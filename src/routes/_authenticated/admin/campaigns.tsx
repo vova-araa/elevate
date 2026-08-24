@@ -15,6 +15,7 @@ import { PLATFORMS } from "@/components/planner/planner-shared";
 import {
   generateContentPlan,
   createPlanPosts,
+  DEFAULT_HOUR,
   type PlanItem,
   type CampaignPlatform,
 } from "@/lib/campaigns.functions";
@@ -22,15 +23,6 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/campaigns")({
   component: CampaignsPage,
 });
-
-// Standaard-publicatietijd per platform (lokaal, spiegelt de server-default).
-const DEFAULT_HOUR: Record<CampaignPlatform, number> = {
-  instagram: 18,
-  tiktok: 19,
-  linkedin: 8,
-  youtube: 17,
-  facebook: 12,
-};
 
 const TONES = ["professioneel", "informeel", "energiek", "inspirerend"] as const;
 type Tone = (typeof TONES)[number];

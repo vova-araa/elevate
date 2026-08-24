@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
 import { reconnectDeadline } from "@/lib/token-lifetime";
 import { toPublicPages, type StoredPage } from "@/lib/meta-pages";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -21,7 +22,7 @@ import {
  * /api/public/oauth/callback die de koppeling in social_connections zet.
  */
 
-const PLATFORM = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
+const PLATFORM = z.enum(ALL_PLATFORM_IDS as [Platform, ...Platform[]]);
 
 async function getUserClientId(
   supabase: SupabaseClient<Database>,

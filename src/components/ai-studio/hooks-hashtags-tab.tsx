@@ -16,18 +16,13 @@ import {
 import { generateHooks, generateHashtags } from "@/lib/planner.functions";
 import { CopyButton } from "./copy-button";
 import { cn } from "@/lib/utils";
+import { ENABLED_PLATFORMS, platformLabel, type Platform } from "@/config/platforms";
 
-// Platform-enum van de bestaande planner-functies
-// Alleen de kanalen waarvoor we koppelen; LinkedIn en YouTube zijn geen
-// publicatiedoel, dus daar hoeven hier ook geen hooks voor.
-const PLANNER_PLATFORMS = ["instagram", "tiktok", "facebook"] as const;
-type PlannerPlatform = (typeof PLANNER_PLATFORMS)[number];
-
-const PLATFORM_LABELS: Record<PlannerPlatform, string> = {
-  instagram: "Instagram",
-  tiktok: "TikTok",
-  facebook: "Facebook",
-};
+// Alleen de kanalen waarvoor we koppelen (src/config/platforms.ts, A02);
+// LinkedIn en YouTube zijn geen publicatiedoel, dus daar hoeven hier ook geen
+// hooks voor.
+const PLANNER_PLATFORMS = ENABLED_PLATFORMS;
+type PlannerPlatform = Platform;
 
 function PlatformSelect({
   value,
@@ -44,7 +39,7 @@ function PlatformSelect({
       <SelectContent>
         {PLANNER_PLATFORMS.map((p) => (
           <SelectItem key={p} value={p}>
-            {PLATFORM_LABELS[p]}
+            {platformLabel(p)}
           </SelectItem>
         ))}
       </SelectContent>

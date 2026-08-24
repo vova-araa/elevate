@@ -7,20 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { differenceInCalendarDays, formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
-import {
-  Instagram,
-  Linkedin,
-  Youtube,
-  Facebook,
-  Music2,
-  CheckCircle2,
-  Loader2,
-  Link2,
-  X,
-  AlertTriangle,
-  ShieldCheck,
-  type LucideIcon,
-} from "lucide-react";
+import { CheckCircle2, Loader2, Link2, X, AlertTriangle, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   listClientChannels,
@@ -30,6 +17,7 @@ import {
 } from "@/lib/channels.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveClient } from "@/hooks/use-active-client";
+import { PLATFORMS as PLATFORM_CONFIG, type Platform } from "@/config/platforms";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const searchSchema = z.object({
@@ -42,8 +30,6 @@ export const Route = createFileRoute("/_authenticated/client/channels")({
   validateSearch: searchSchema,
   component: ChannelsPage,
 });
-
-type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 
 /**
  * Waarschuwing wanneer er écht een mens aan te pas moet komen.
@@ -72,55 +58,24 @@ function tokenExpiryWarning(
 // tint = alleen de kaart-gradient (from-…/to-…). De platformkleur zit
 // uitsluitend op de icoon-box (iconTint); labels erven text-foreground,
 // zodat ze in light mode leesbaar blijven (zie ook connect.$token.tsx).
-const PLATFORMS: {
-  id: Platform;
-  label: string;
-  Icon: LucideIcon;
-  tint: string;
-  iconTint: string;
-}[] = [
-  {
-    id: "instagram",
-    label: "Instagram",
-    Icon: Instagram,
+// Welke platforms er zijn en of ze aangeboden worden komt uit
+// src/config/platforms.ts (A02) — hier alleen de kaartkleuren.
+const CARD_TINT: Record<Platform, { tint: string; iconTint: string }> = {
+  instagram: {
     tint: "from-fuchsia-500/15 to-rose-500/10",
     iconTint: "text-fuchsia-500 dark:text-rose-300",
   },
-  {
-    id: "tiktok",
-    label: "TikTok",
-    Icon: Music2,
-    tint: "from-cyan-500/15 to-pink-500/10",
-    iconTint: "text-cyan-600 dark:text-cyan-300",
-  },
-  {
-    id: "linkedin",
-    label: "LinkedIn",
-    Icon: Linkedin,
-    tint: "from-sky-500/15 to-blue-500/10",
-    iconTint: "text-sky-600 dark:text-sky-300",
-  },
-  {
-    id: "youtube",
-    label: "YouTube",
-    Icon: Youtube,
-    tint: "from-red-500/15 to-orange-500/10",
-    iconTint: "text-red-500 dark:text-red-300",
-  },
-  {
-    id: "facebook",
-    label: "Facebook",
-    Icon: Facebook,
+  tiktok: { tint: "from-cyan-500/15 to-pink-500/10", iconTint: "text-cyan-600 dark:text-cyan-300" },
+  linkedin: { tint: "from-sky-500/15 to-blue-500/10", iconTint: "text-sky-600 dark:text-sky-300" },
+  youtube: { tint: "from-red-500/15 to-orange-500/10", iconTint: "text-red-500 dark:text-red-300" },
+  facebook: {
     tint: "from-indigo-500/15 to-blue-500/10",
     iconTint: "text-indigo-500 dark:text-indigo-300",
   },
-];
+};
 
-// Voor nu tonen we alleen Instagram, Facebook en TikTok. LinkedIn/YouTube
-// blijven in de code, maar worden niet aangeboden — voeg ze hier toe om ze
-// weer te activeren.
-const ENABLED_PLATFORMS: Platform[] = ["instagram", "facebook", "tiktok"];
-const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => ENABLED_PLATFORMS.includes(p.id));
+const PLATFORMS = PLATFORM_CONFIG.map((p) => ({ ...p, ...CARD_TINT[p.id] }));
+const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => p.enabled);
 
 function ChannelsPage() {
   const qc = useQueryClient();

@@ -12,6 +12,7 @@ import {
   type CampaignPlatform,
   type PlanItem,
 } from "@/lib/campaigns.functions";
+import { ALL_PLATFORM_IDS } from "@/config/platforms";
 
 // ── Auth (zelfde patroon als campaigns.functions.ts) ─────────────────────────
 
@@ -25,13 +26,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
   }
 }
 
-const PLATFORM_LIST: CampaignPlatform[] = [
-  "instagram",
-  "tiktok",
-  "linkedin",
-  "youtube",
-  "facebook",
-];
+const PLATFORM_LIST: CampaignPlatform[] = ALL_PLATFORM_IDS;
 
 // ── Intake ───────────────────────────────────────────────────────────────────
 
@@ -188,14 +183,10 @@ const strategyJsonSchema = {
     pillars: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 6 },
     cadence: {
       type: "object",
-      properties: {
-        instagram: { type: "integer", minimum: 0, maximum: 14 },
-        tiktok: { type: "integer", minimum: 0, maximum: 14 },
-        linkedin: { type: "integer", minimum: 0, maximum: 14 },
-        youtube: { type: "integer", minimum: 0, maximum: 14 },
-        facebook: { type: "integer", minimum: 0, maximum: 14 },
-      },
-      required: ["instagram", "tiktok", "linkedin", "youtube", "facebook"],
+      properties: Object.fromEntries(
+        PLATFORM_LIST.map((p) => [p, { type: "integer", minimum: 0, maximum: 14 }]),
+      ),
+      required: PLATFORM_LIST,
       additionalProperties: false,
     },
     goals: { type: "string" },

@@ -5,49 +5,24 @@ import { useSignedUrlState } from "@/lib/use-signed-url";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import {
-  Instagram,
-  Linkedin,
-  Youtube,
-  Facebook,
-  Music2,
-  ShieldCheck,
-  MessageSquarePlus,
-  CalendarClock,
-  Loader2,
-  Inbox,
-  X,
-} from "lucide-react";
+import { ShieldCheck, MessageSquarePlus, CalendarClock, Loader2, Inbox, X } from "lucide-react";
 import { PostComments } from "./post-comments";
-import type { LucideIcon } from "lucide-react";
+import { PLATFORMS, type Platform } from "@/config/platforms";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
 type ScheduledPost = Tables<"scheduled_posts">;
 
-const PLATFORM_META: Record<Platform, { label: string; Icon: LucideIcon; tint: string }> = {
-  instagram: {
-    label: "Instagram",
-    Icon: Instagram,
-    tint: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-400/30",
-  },
-  tiktok: { label: "TikTok", Icon: Music2, tint: "text-sky-300 bg-sky-500/10 border-sky-400/30" },
-  linkedin: {
-    label: "LinkedIn",
-    Icon: Linkedin,
-    tint: "text-blue-300 bg-blue-500/10 border-blue-400/30",
-  },
-  youtube: {
-    label: "YouTube",
-    Icon: Youtube,
-    tint: "text-red-300 bg-red-500/10 border-red-400/30",
-  },
-  facebook: {
-    label: "Facebook",
-    Icon: Facebook,
-    tint: "text-indigo-300 bg-indigo-500/10 border-indigo-400/30",
-  },
+const PLATFORM_TINT: Record<Platform, string> = {
+  instagram: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-400/30",
+  tiktok: "text-sky-300 bg-sky-500/10 border-sky-400/30",
+  linkedin: "text-blue-300 bg-blue-500/10 border-blue-400/30",
+  youtube: "text-red-300 bg-red-500/10 border-red-400/30",
+  facebook: "text-indigo-300 bg-indigo-500/10 border-indigo-400/30",
 };
+
+const PLATFORM_META = Object.fromEntries(
+  PLATFORMS.map((p) => [p.id, { label: p.label, Icon: p.Icon, tint: PLATFORM_TINT[p.id] }]),
+) as Record<Platform, { label: string; Icon: (typeof PLATFORMS)[number]["Icon"]; tint: string }>;
 
 /**
  * "Ter goedkeuring": alle concept-posts (status = draft) van de klant.

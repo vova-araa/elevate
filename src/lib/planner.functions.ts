@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { generateJson } from "@/lib/ai-provider.server";
 import { copywriterSystem, subjectOrFallback } from "@/lib/copywriting";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
 
 /**
  * AI-aanroepen kosten geld op de sleutel van het bureau, dus ze zijn
@@ -20,7 +21,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
   }
 }
 
-const platformSchema = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
+const platformSchema = z.enum(ALL_PLATFORM_IDS as [Platform, ...Platform[]]);
 
 const generateCaptionInput = z.object({
   brief: z.string().min(2).max(2000),
@@ -113,7 +114,7 @@ Mix awareness, education, social proof en conversie. Vermijd cliché's. Geef var
                 title: { type: "string" },
                 platform: {
                   type: "string",
-                  enum: ["instagram", "tiktok", "linkedin", "youtube", "facebook"],
+                  enum: ALL_PLATFORM_IDS,
                 },
                 format: { type: "string" },
                 hook: { type: "string" },

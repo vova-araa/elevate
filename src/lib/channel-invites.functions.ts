@@ -12,6 +12,7 @@ import {
   platformEnvStatus,
   type SocialPlatform,
 } from "@/lib/social-oauth.server";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
 
 /**
  * Deelbare koppel-links: een bedrijfseigenaar koppelt zijn eigen
@@ -32,7 +33,7 @@ import {
 // ruim genoeg om een klant zover te krijgen, en scheelt drie weken blootstelling
 // voor een doorgestuurde mail.
 const TOKEN_TTL_DAYS = 7;
-const PLATFORM = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
+const PLATFORM = z.enum(ALL_PLATFORM_IDS as [Platform, ...Platform[]]);
 
 // ── Auth (zelfde patroon als approval-links.functions.ts) ────────────────────
 

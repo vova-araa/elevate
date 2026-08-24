@@ -9,6 +9,7 @@ import type { Database, TablesInsert } from "@/integrations/supabase/types";
 import { runToolLoop, type JsonValue, type ToolArgs } from "@/lib/ai-provider.server";
 import { defaultHourFor, type CampaignPlatform } from "@/lib/campaigns.functions";
 import type { Cadence, IntakeAnswers } from "@/lib/strategy.functions";
+import { ALL_PLATFORM_IDS } from "@/config/platforms";
 
 // ── Auth (zelfde patroon als campaigns.functions.ts / ai.functions.ts) ──────
 
@@ -35,7 +36,7 @@ const inputSchema = z.object({
 
 // ── Tools ─────────────────────────────────────────────────────────────────
 
-const PLATFORM_ENUM = ["instagram", "tiktok", "linkedin", "youtube", "facebook"] as const;
+const PLATFORM_ENUM = ALL_PLATFORM_IDS;
 
 const tools: Anthropic.Tool[] = [
   {

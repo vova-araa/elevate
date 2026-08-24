@@ -2,26 +2,14 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  ArrowRight,
-  ExternalLink,
-  Facebook,
-  CalendarClock,
-  ImageOff,
-  Instagram,
-  Linkedin,
-  Music2,
-  Play,
-  Plug,
-  Youtube,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, ExternalLink, CalendarClock, ImageOff, Play, Plug } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
 import { getPublishedFeed, type FeedPlatform } from "@/lib/feed.functions";
+import { PLATFORMS as PLATFORM_CONFIG, ALL_PLATFORM_IDS } from "@/config/platforms";
 
 /**
  * De feed van de klant die nu actief is, zoals hij er op het platform uitziet.
@@ -36,9 +24,7 @@ import { getPublishedFeed, type FeedPlatform } from "@/lib/feed.functions";
  * daar tonen we wat wij voor deze klant hebben gepubliceerd.
  */
 
-interface PlatformStyle {
-  label: string;
-  Icon: LucideIcon;
+interface PlatformVisual {
   /** Verhouding van een tegel. */
   ratio: string;
   /** Kolommen in het raster. */
@@ -48,42 +34,34 @@ interface PlatformStyle {
   glow: string;
 }
 
-const STYLES: Record<FeedPlatform, PlatformStyle> = {
+// Label en icoon komen uit src/config/platforms.ts (A02); ratio/cols/tint/glow
+// zijn puur presentatie voor dit feed-kaartje.
+const VISUALS: Record<FeedPlatform, PlatformVisual> = {
   instagram: {
-    label: "Instagram",
-    Icon: Instagram,
     ratio: "1 / 1",
     cols: "grid-cols-3",
     tint: "text-fuchsia-500 dark:text-rose-300",
     glow: "from-fuchsia-500/12 via-orange-300/8",
   },
   facebook: {
-    label: "Facebook",
-    Icon: Facebook,
     ratio: "1.91 / 1",
     cols: "grid-cols-2",
     tint: "text-indigo-500 dark:text-indigo-300",
     glow: "from-indigo-500/12 via-sky-300/8",
   },
   tiktok: {
-    label: "TikTok",
-    Icon: Music2,
     ratio: "9 / 16",
     cols: "grid-cols-3",
     tint: "text-cyan-600 dark:text-cyan-300",
     glow: "from-cyan-400/14 via-rose-300/8",
   },
   linkedin: {
-    label: "LinkedIn",
-    Icon: Linkedin,
     ratio: "1.91 / 1",
     cols: "grid-cols-2",
     tint: "text-sky-600 dark:text-sky-300",
     glow: "from-sky-500/12 via-blue-300/8",
   },
   youtube: {
-    label: "YouTube",
-    Icon: Youtube,
     ratio: "16 / 9",
     cols: "grid-cols-2",
     tint: "text-red-500 dark:text-red-300",
@@ -91,7 +69,16 @@ const STYLES: Record<FeedPlatform, PlatformStyle> = {
   },
 };
 
-const ORDER: FeedPlatform[] = ["instagram", "tiktok", "facebook", "linkedin", "youtube"];
+type PlatformStyle = {
+  label: string;
+  Icon: (typeof PLATFORM_CONFIG)[number]["Icon"];
+} & PlatformVisual;
+
+const STYLES = Object.fromEntries(
+  PLATFORM_CONFIG.map((p) => [p.id, { label: p.label, Icon: p.Icon, ...VISUALS[p.id] }]),
+) as Record<FeedPlatform, PlatformStyle>;
+
+const ORDER: FeedPlatform[] = ALL_PLATFORM_IDS;
 
 function compactNumber(n: number): string {
   return n >= 10_000 ? `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1)}K` : n.toLocaleString("nl-NL");

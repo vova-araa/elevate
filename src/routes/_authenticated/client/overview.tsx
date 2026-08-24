@@ -22,11 +22,6 @@ import {
   ListChecks,
   Compass,
   ArrowRight,
-  Instagram,
-  Linkedin,
-  Youtube,
-  Facebook,
-  Music2,
   Send,
   FileBarChart,
   Link2,
@@ -35,6 +30,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { listClientChannels } from "@/lib/channels.functions";
+import { PLATFORMS, type Platform } from "@/config/platforms";
 import { EmptyState } from "@/components/empty-state";
 import { ReportCard } from "@/components/client-portal/report-card";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
@@ -46,17 +42,21 @@ export const Route = createFileRoute("/_authenticated/client/overview")({
   component: ClientOverview,
 });
 
-type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
-
-const PLATFORM_META: Record<Platform, { label: string; Icon: LucideIcon; tint: string }> = {
-  instagram: { label: "Instagram", Icon: Instagram, tint: "text-fuchsia-500 dark:text-rose-300" },
-  tiktok: { label: "TikTok", Icon: Music2, tint: "text-cyan-600 dark:text-cyan-300" },
-  linkedin: { label: "LinkedIn", Icon: Linkedin, tint: "text-sky-600 dark:text-sky-300" },
-  youtube: { label: "YouTube", Icon: Youtube, tint: "text-red-500 dark:text-red-300" },
-  facebook: { label: "Facebook", Icon: Facebook, tint: "text-indigo-500 dark:text-indigo-300" },
+// Kleurtoon per platform is puur presentatie voor dit scherm; identiteit
+// (label, icoon, welke platforms er zijn) komt uit src/config/platforms.ts.
+const PLATFORM_TINT: Record<Platform, string> = {
+  instagram: "text-fuchsia-500 dark:text-rose-300",
+  tiktok: "text-cyan-600 dark:text-cyan-300",
+  linkedin: "text-sky-600 dark:text-sky-300",
+  youtube: "text-red-500 dark:text-red-300",
+  facebook: "text-indigo-500 dark:text-indigo-300",
 };
 
-const PLATFORM_ORDER: Platform[] = ["instagram", "tiktok", "linkedin", "youtube", "facebook"];
+const PLATFORM_META = Object.fromEntries(
+  PLATFORMS.map((p) => [p.id, { label: p.label, Icon: p.Icon, tint: PLATFORM_TINT[p.id] }]),
+) as Record<Platform, { label: string; Icon: (typeof PLATFORMS)[number]["Icon"]; tint: string }>;
+
+const PLATFORM_ORDER: Platform[] = PLATFORMS.map((p) => p.id);
 
 function ClientOverview() {
   const { clientId, clientName, previewing } = useActiveClient();

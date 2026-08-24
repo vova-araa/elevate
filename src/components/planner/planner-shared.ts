@@ -1,58 +1,25 @@
-import { Instagram, Music2, Linkedin, Youtube, Facebook, type LucideIcon } from "lucide-react";
+import { PLATFORMS as PLATFORM_CONFIG, type Platform } from "@/config/platforms";
 
-export type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
+export type { Platform };
 export type PostStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
 
-export const PLATFORMS: {
-  id: Platform;
-  label: string;
-  Icon: LucideIcon;
-  ratio: string;
-  color: string;
-}[] = [
-  {
-    id: "instagram",
-    label: "Instagram",
-    Icon: Instagram,
-    ratio: "4 / 5",
-    color: "from-pink-500 to-orange-400",
-  },
-  {
-    id: "tiktok",
-    label: "TikTok",
-    Icon: Music2,
-    ratio: "9 / 16",
-    color: "from-fuchsia-500 to-cyan-400",
-  },
-  {
-    id: "linkedin",
-    label: "LinkedIn",
-    Icon: Linkedin,
-    ratio: "1.91 / 1",
-    color: "from-sky-600 to-sky-400",
-  },
-  {
-    id: "youtube",
-    label: "YouTube",
-    Icon: Youtube,
-    ratio: "16 / 9",
-    color: "from-red-600 to-red-400",
-  },
-  {
-    id: "facebook",
-    label: "Facebook",
-    Icon: Facebook,
-    ratio: "1.91 / 1",
-    color: "from-blue-600 to-blue-400",
-  },
-];
+// Beeldverhouding + kaartkleur zijn planner-specifiek en horen niet in de
+// centrale platformlijst (src/config/platforms.ts, A02) — id/label/Icon en
+// welke platforms aangeboden worden komen wél vandaar.
+const PLANNER_VISUALS: Record<Platform, { ratio: string; color: string }> = {
+  instagram: { ratio: "4 / 5", color: "from-pink-500 to-orange-400" },
+  tiktok: { ratio: "9 / 16", color: "from-fuchsia-500 to-cyan-400" },
+  linkedin: { ratio: "1.91 / 1", color: "from-sky-600 to-sky-400" },
+  youtube: { ratio: "16 / 9", color: "from-red-600 to-red-400" },
+  facebook: { ratio: "1.91 / 1", color: "from-blue-600 to-blue-400" },
+};
 
-/**
- * Platforms die we op dit moment aanbieden. LinkedIn/YouTube blijven in de
- * code staan maar worden niet getoond (zie ook de kanalen-schermen).
- */
-export const ENABLED_PLATFORMS: Platform[] = ["instagram", "facebook", "tiktok"];
-export const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => ENABLED_PLATFORMS.includes(p.id));
+export const PLATFORMS = PLATFORM_CONFIG.map((p) => ({ ...p, ...PLANNER_VISUALS[p.id] }));
+
+export const ENABLED_PLATFORMS: Platform[] = PLATFORM_CONFIG.filter((p) => p.enabled).map(
+  (p) => p.id,
+);
+export const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => p.enabled);
 
 export const STATUS_META: Record<PostStatus, { label: string; cls: string; dot: string }> = {
   draft: {

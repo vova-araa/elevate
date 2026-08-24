@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { z } from "zod";
 import { CAPTION_LIMITS, DAY_LABELS_LONG } from "@/lib/social-constants";
+import { computeBestTimeSlots } from "@/lib/best-times";
 import { dutchHolidays } from "@/lib/holidays";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
 import {
@@ -1111,17 +1112,23 @@ function ComposeModal({
     );
   }, [connectedPlatforms, editId]);
 
-  // Best-time suggestions for the primary platform
+  // Best-time-suggesties voor het primaire platform — uit echte publicatie-
+  // geschiedenis (A03), geen verzonnen benchmark-scores meer.
   const { data: bestTimes } = useQuery({
-    queryKey: ["best-times", primary],
+    queryKey: ["best-times", primary, clientId],
     queryFn: async () => {
       const { data } = await supabase
-        .from("best_time_benchmarks")
-        .select("day_of_week,time_of_day,score,rationale")
+        .from("scheduled_posts")
+        .select("published_at")
+        .eq("client_id", clientId)
         .eq("platform", primary)
-        .order("score", { ascending: false })
-        .limit(3);
-      return data ?? [];
+        .eq("status", "published")
+        .is("deleted_at", null)
+        .not("published_at", "is", null);
+      return computeBestTimeSlots(
+        (data ?? []).map((p) => p.published_at),
+        3,
+      );
     },
   });
 
@@ -1146,14 +1153,13 @@ function ComposeModal({
     });
   }
 
-  function applyBestTime(dayOfWeek: number, timeOfDay: string) {
+  function applyBestTime(dayOfWeek: number, hour: number) {
     const base = new Date(scheduledAt);
     const cur = base.getDay();
     const diff = (dayOfWeek - cur + 7) % 7;
     const target = new Date(base);
-    const [h, m] = timeOfDay.split(":").map(Number);
     target.setDate(target.getDate() + diff);
-    target.setHours(h, m, 0, 0);
+    target.setHours(hour, 0, 0, 0);
     // Alleen een week doorschuiven als dat tijdstip vandaag al geweest is.
     // Voorheen sprong hij altijd een week vooruit zodra de aanbevolen dag
     // dezelfde weekdag was — je klikte "dinsdag 20:00" en kreeg volgende week.
@@ -1619,12 +1625,11 @@ function ComposeModal({
                     <button
                       key={i}
                       type="button"
-                      onClick={() => applyBestTime(bt.day_of_week, bt.time_of_day)}
-                      title={bt.rationale ?? ""}
+                      onClick={() => applyBestTime(bt.day, bt.hour)}
+                      title={`${bt.count}× eerder gepubliceerd op dit moment`}
                       className="rounded-full border border-gold/30 bg-gold/5 px-2 py-0.5 text-[11px] hover:bg-gold/15"
                     >
-                      {DAY_LABELS_LONG[bt.day_of_week]?.slice(0, 3)}{" "}
-                      {String(bt.time_of_day).slice(0, 5)}
+                      {DAY_LABELS_LONG[bt.day]?.slice(0, 3)} {String(bt.hour).padStart(2, "0")}:00
                     </button>
                   ))}
                 </div>

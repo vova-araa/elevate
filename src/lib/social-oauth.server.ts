@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pickPageForPlatform, toStoredPages } from "@/lib/meta-pages";
+import type { Platform } from "@/config/platforms";
 
 /**
  * Directe OAuth-koppelingen met de social platforms (geen tussenpartij).
@@ -16,7 +17,7 @@ import { pickPageForPlatform, toStoredPages } from "@/lib/meta-pages";
  *   `${APP_URL}/api/public/oauth/callback`
  */
 
-export type SocialPlatform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
+export type SocialPlatform = Platform;
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 

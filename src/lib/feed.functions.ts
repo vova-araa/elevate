@@ -10,6 +10,7 @@ import {
   tiktokCanReadFeed,
   type SocialPlatform,
 } from "@/lib/social-oauth.server";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
 
 /**
  * De échte gepubliceerde feed van een gekoppeld account ophalen, zodat je in de
@@ -40,7 +41,7 @@ export interface PublishedFeedItem {
 }
 
 /** Alle platforms waarvoor we een feed kunnen tonen. */
-const FEED_PLATFORM = z.enum(["instagram", "facebook", "tiktok", "linkedin", "youtube"]);
+const FEED_PLATFORM = z.enum(ALL_PLATFORM_IDS as [Platform, ...Platform[]]);
 export type FeedPlatform = z.infer<typeof FEED_PLATFORM>;
 
 /**

@@ -10,6 +10,7 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { DAY_LABELS, DAY_LABELS_LONG } from "@/lib/social-constants";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
 import {
   Loader2,
   Plus,
@@ -29,8 +30,7 @@ export const Route = createFileRoute("/_authenticated/admin/queue")({
   component: QueuePage,
 });
 
-type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
-const PLATFORMS: Platform[] = ["instagram", "tiktok", "linkedin", "youtube", "facebook"];
+const PLATFORMS: Platform[] = ALL_PLATFORM_IDS;
 
 function QueuePage() {
   const { clientId } = Route.useSearch();

@@ -11,8 +11,9 @@
  * vragenlijst. Dat is hier een harde regel, geen suggestie.
  */
 
-/** Platforms waarvoor we daadwerkelijk schrijven. */
-export type Platform = "instagram" | "facebook" | "tiktok" | "youtube" | "linkedin";
+import type { Platform } from "@/config/platforms";
+
+export type { Platform };
 
 /**
  * Wat elk platform van een tekst vraagt. Kort en operationeel: een limiet, waar

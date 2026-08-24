@@ -10,17 +10,13 @@ import {
   Check,
   Building2,
   Target,
-  Instagram,
-  Music2,
-  Linkedin,
-  Youtube,
-  Facebook,
   Sparkles,
   Users,
   FileText,
   type LucideIcon,
 } from "lucide-react";
 import { z } from "zod";
+import { PLATFORMS } from "@/config/platforms";
 
 const intakeSearchSchema = z.object({
   clientId: z.string().uuid().optional(),
@@ -181,10 +177,8 @@ function IntakePage() {
 
   const upd = <K extends keyof IntakeState>(k: K, v: IntakeState[K]) =>
     setF((p) => ({ ...p, [k]: v }));
-  const updPlatform = (
-    k: "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook",
-    patch: PlatformStats,
-  ) => setF((p) => ({ ...p, [k]: { ...p[k], ...patch } }));
+  const updPlatform = (k: (typeof PLATFORMS)[number]["id"], patch: PlatformStats) =>
+    setF((p) => ({ ...p, [k]: { ...p[k], ...patch } }));
 
   async function save() {
     if (!f.brand_name.trim()) {
@@ -402,36 +396,15 @@ function IntakePage() {
             <p className="text-sm text-muted-foreground">
               Vul per platform de huidige situatie in. Laat leeg als ze niet aanwezig zijn.
             </p>
-            <PlatformBlock
-              label="Instagram"
-              Icon={Instagram}
-              stats={f.instagram}
-              onChange={(p) => updPlatform("instagram", p)}
-            />
-            <PlatformBlock
-              label="TikTok"
-              Icon={Music2}
-              stats={f.tiktok}
-              onChange={(p) => updPlatform("tiktok", p)}
-            />
-            <PlatformBlock
-              label="LinkedIn"
-              Icon={Linkedin}
-              stats={f.linkedin}
-              onChange={(p) => updPlatform("linkedin", p)}
-            />
-            <PlatformBlock
-              label="YouTube"
-              Icon={Youtube}
-              stats={f.youtube}
-              onChange={(p) => updPlatform("youtube", p)}
-            />
-            <PlatformBlock
-              label="Facebook"
-              Icon={Facebook}
-              stats={f.facebook}
-              onChange={(p) => updPlatform("facebook", p)}
-            />
+            {PLATFORMS.map((p) => (
+              <PlatformBlock
+                key={p.id}
+                label={p.label}
+                Icon={p.Icon}
+                stats={f[p.id]}
+                onChange={(patch) => updPlatform(p.id, patch)}
+              />
+            ))}
           </div>
         )}
 

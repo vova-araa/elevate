@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { allowRequest, requestIp, tooManyRequests } from "@/lib/rate-limit.server";
 import { authenticateApiKey, dispatchEvent } from "@/lib/automation-engine.server";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
 
 function admin() {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -12,7 +13,7 @@ function admin() {
 
 const CreateSchema = z.object({
   client_id: z.string().uuid(),
-  platform: z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]),
+  platform: z.enum(ALL_PLATFORM_IDS as [Platform, ...Platform[]]),
   caption: z.string().max(5000).optional(),
   scheduled_at: z.string().datetime(),
   media_path: z.string().max(500).optional(),

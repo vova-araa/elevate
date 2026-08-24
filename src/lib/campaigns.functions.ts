@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, TablesInsert } from "@/integrations/supabase/types";
 import { generateJson } from "@/lib/ai-provider.server";
+import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
 
 // ── Auth (zelfde patroon als ai-studio.functions.ts) ─────────────────────────
 
@@ -20,7 +21,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
 
 // ── Platforms ────────────────────────────────────────────────────────────────
 
-export const campaignPlatform = z.enum(["instagram", "tiktok", "linkedin", "youtube", "facebook"]);
+export const campaignPlatform = z.enum(ALL_PLATFORM_IDS as [Platform, ...Platform[]]);
 export type CampaignPlatform = z.infer<typeof campaignPlatform>;
 
 const PLATFORM_HINTS: Record<CampaignPlatform, string> = {
@@ -33,7 +34,7 @@ const PLATFORM_HINTS: Record<CampaignPlatform, string> = {
 
 // Standaard-publicatietijd per platform (lokale uren), gebruikt als er geen
 // expliciete tijd wordt meegegeven.
-const DEFAULT_HOUR: Record<CampaignPlatform, number> = {
+export const DEFAULT_HOUR: Record<CampaignPlatform, number> = {
   instagram: 18,
   tiktok: 19,
   linkedin: 8,

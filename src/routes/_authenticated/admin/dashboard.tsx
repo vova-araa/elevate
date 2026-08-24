@@ -40,20 +40,16 @@ import {
   ChevronDown,
   CalendarCheck,
   FileText,
-  Instagram,
-  Linkedin,
   Loader2,
   Minus,
-  Music2,
   Plug,
   Sparkles,
   TrendingDown,
   TrendingUp,
   Users,
-  Youtube,
-  Facebook,
   type LucideIcon,
 } from "lucide-react";
+import { PLATFORMS as PLATFORM_CONFIG } from "@/config/platforms";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({ clientId: z.string().uuid().optional() });
@@ -67,13 +63,10 @@ type ClientMini = Pick<Tables<"clients">, "id" | "name" | "brand_color" | "indus
 type Platform = Tables<"scheduled_posts">["platform"];
 type PostStatus = Tables<"scheduled_posts">["status"];
 
-const PLATFORM_ICONS: Record<Platform, LucideIcon> = {
-  instagram: Instagram,
-  tiktok: Music2,
-  linkedin: Linkedin,
-  youtube: Youtube,
-  facebook: Facebook,
-};
+const PLATFORM_ICONS = Object.fromEntries(PLATFORM_CONFIG.map((p) => [p.id, p.Icon])) as Record<
+  Platform,
+  LucideIcon
+>;
 
 const STATUS_LABELS: Record<PostStatus, string> = {
   scheduled: "gepland",

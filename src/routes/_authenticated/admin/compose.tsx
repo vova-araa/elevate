@@ -24,6 +24,7 @@ import { useClientStore } from "@/lib/stores/client-store";
 import { publishScheduledPost } from "@/lib/publish.functions";
 import { uploadMedia } from "@/lib/upload-media";
 import type { Platform } from "@/components/planner/planner-shared";
+import { platformLabel } from "@/config/platforms";
 import type { TablesInsert } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -34,10 +35,12 @@ function localDateTimeValue(d: Date): string {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 
+// Label komt uit src/config/platforms.ts (A02); postformaat en teken-limiet
+// per platform zijn eigen aan de composer en blijven hier.
 const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }[] = [
   {
     id: "instagram",
-    label: "Instagram",
+    label: platformLabel("instagram"),
     limit: 2200,
     types: [
       { id: "feed", label: "Feed" },
@@ -47,7 +50,7 @@ const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }
   },
   {
     id: "linkedin",
-    label: "LinkedIn",
+    label: platformLabel("linkedin"),
     limit: 3000,
     types: [
       { id: "post", label: "Post" },
@@ -56,7 +59,7 @@ const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }
   },
   {
     id: "tiktok",
-    label: "TikTok",
+    label: platformLabel("tiktok"),
     limit: 300,
     types: [
       { id: "video", label: "Video" },
@@ -65,7 +68,7 @@ const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }
   },
   {
     id: "facebook",
-    label: "Facebook",
+    label: platformLabel("facebook"),
     limit: 1500,
     types: [
       { id: "post", label: "Post" },
@@ -75,7 +78,7 @@ const PLATFORMS: { id: string; label: string; limit: number; types: PostType[] }
   },
   {
     id: "youtube",
-    label: "YouTube",
+    label: platformLabel("youtube"),
     limit: 1000,
     types: [
       { id: "short", label: "Short" },

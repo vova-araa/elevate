@@ -9,11 +9,6 @@ import { z } from "zod";
 import { differenceInCalendarDays, formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 import {
-  Instagram,
-  Linkedin,
-  Youtube,
-  Facebook,
-  Music2,
   CheckCircle2,
   Loader2,
   Link2,
@@ -25,11 +20,11 @@ import {
   Share2,
   Copy,
   Check,
-  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
+import { PLATFORMS as PLATFORM_CONFIG, type Platform } from "@/config/platforms";
 import {
   listClientChannels,
   startSocialConnect,
@@ -110,8 +105,6 @@ export const Route = createFileRoute("/_authenticated/admin/channels")({
   component: AdminChannels,
 });
 
-type Platform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
-
 /**
  * Waarschuwing wanneer er écht een mens aan te pas moet komen.
  *
@@ -136,24 +129,18 @@ function tokenExpiryWarning(
   return null;
 }
 
-const PLATFORMS: { id: Platform; label: string; Icon: LucideIcon; tint: string }[] = [
-  {
-    id: "instagram",
-    label: "Instagram",
-    Icon: Instagram,
-    tint: "from-pink-500/10 to-orange-500/5",
-  },
-  { id: "tiktok", label: "TikTok", Icon: Music2, tint: "from-fuchsia-500/10 to-cyan-500/5" },
-  { id: "linkedin", label: "LinkedIn", Icon: Linkedin, tint: "from-sky-600/10 to-sky-400/5" },
-  { id: "youtube", label: "YouTube", Icon: Youtube, tint: "from-red-500/10 to-orange-500/5" },
-  { id: "facebook", label: "Facebook", Icon: Facebook, tint: "from-indigo-500/10 to-blue-500/5" },
-];
+// Kaartkleur is presentatie voor dit scherm; welke platforms er zijn en of ze
+// aangeboden worden komt uit src/config/platforms.ts (A02).
+const CARD_TINT: Record<Platform, string> = {
+  instagram: "from-pink-500/10 to-orange-500/5",
+  tiktok: "from-fuchsia-500/10 to-cyan-500/5",
+  linkedin: "from-sky-600/10 to-sky-400/5",
+  youtube: "from-red-500/10 to-orange-500/5",
+  facebook: "from-indigo-500/10 to-blue-500/5",
+};
 
-// Voor nu bieden we alleen Instagram, Facebook en TikTok aan als koppeling.
-// LinkedIn/YouTube blijven in de code staan (config + flow), maar worden niet
-// getoond — zet ze hier terug om ze weer te activeren.
-const ENABLED_PLATFORMS: Platform[] = ["instagram", "facebook", "tiktok"];
-const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => ENABLED_PLATFORMS.includes(p.id));
+const PLATFORMS = PLATFORM_CONFIG.map((p) => ({ ...p, tint: CARD_TINT[p.id] }));
+const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => p.enabled);
 
 function AdminChannels() {
   const qc = useQueryClient();
