@@ -57,3 +57,46 @@ export const BUSINESS: BusinessInfo = Object.fromEntries(
 export function isPlaceholder(value: string): boolean {
   return value === PLACEHOLDER;
 }
+
+/**
+ * S10: de structured data op de landingspagina stond hardcoded los van dit
+ * bestand — een tweede plek om bij te werken die vroeg of laat uit de pas
+ * zou lopen. Bouwt het JSON-LD-object hiervandaan op, en laat velden die nog
+ * "<<NOG INVULLEN>>" zijn gewoon weg in plaats van placeholder-tekst als
+ * adres of telefoonnummer aan Google te voeren — ongeldige structured data
+ * is voor zoekmachines erger dan ontbrekende structured data.
+ */
+export function buildOrganizationJsonLd(opts: { url: string; image: string; description: string }) {
+  const hasAddress =
+    !isPlaceholder(BUSINESS.street) &&
+    !isPlaceholder(BUSINESS.postalCode) &&
+    !isPlaceholder(BUSINESS.city);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    name: BUSINESS.tradeName,
+    ...(!isPlaceholder(BUSINESS.legalName) && { legalName: BUSINESS.legalName }),
+    url: opts.url,
+    image: opts.image,
+    description: opts.description,
+    email: BUSINESS.email,
+    ...(!isPlaceholder(BUSINESS.phone) && { telephone: BUSINESS.phone }),
+    ...(!isPlaceholder(BUSINESS.kvk) && {
+      identifier: { "@type": "PropertyValue", name: "KVK", value: BUSINESS.kvk },
+    }),
+    ...(!isPlaceholder(BUSINESS.vat) && { vatID: BUSINESS.vat }),
+    ...(hasAddress && {
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: BUSINESS.street,
+        postalCode: BUSINESS.postalCode,
+        addressLocality: BUSINESS.city,
+        addressCountry: BUSINESS.country,
+      },
+    }),
+    sameAs: [BUSINESS.instagram, BUSINESS.tiktok].filter((v) => !isPlaceholder(v)),
+    areaServed: "NL",
+    knowsLanguage: "nl",
+  };
+}

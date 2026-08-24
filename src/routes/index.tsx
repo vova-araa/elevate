@@ -28,6 +28,7 @@ import {
 import { useParallax, useReveal } from "@/components/landing-motion";
 import { SiteFooter } from "@/components/site-footer";
 import { track } from "@/lib/analytics";
+import { buildOrganizationJsonLd } from "@/config/business";
 
 const SITE_URL = "https://www.elevatedesign.nl";
 
@@ -63,17 +64,14 @@ export const Route = createFileRoute("/")({
     scripts: [
       {
         type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "ProfessionalService",
-          name: "Elevate Design",
-          url: SITE_URL,
-          image: `${SITE_URL}/og.png`,
-          description:
-            "Social-media-studio: contentcreatie, planning en publicatie naar Instagram, TikTok en Facebook, met een eigen klantportaal.",
-          areaServed: "NL",
-          knowsLanguage: "nl",
-        }),
+        children: JSON.stringify(
+          buildOrganizationJsonLd({
+            url: SITE_URL,
+            image: `${SITE_URL}/og.png`,
+            description:
+              "Social-media-studio: contentcreatie, planning en publicatie naar Instagram, TikTok en Facebook, met een eigen klantportaal.",
+          }),
+        ),
       },
     ],
   }),
