@@ -787,6 +787,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      drive_admin_connection: {
+        Row: {
+          access_token: string;
+          account_email: string;
+          connected_at: string;
+          connected_by: string | null;
+          id: string;
+          refresh_token: string;
+          token_expires_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          access_token: string;
+          account_email: string;
+          connected_at?: string;
+          connected_by?: string | null;
+          id?: string;
+          refresh_token: string;
+          token_expires_at: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_token?: string;
+          account_email?: string;
+          connected_at?: string;
+          connected_by?: string | null;
+          id?: string;
+          refresh_token?: string;
+          token_expires_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       clients: {
         Row: {
           brand_color: string | null;

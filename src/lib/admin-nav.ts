@@ -62,6 +62,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
       { to: "/admin/editor", label: "Beeld-editor" },
       { to: "/admin/besttime", label: "Beste tijden" },
       { to: "/admin/bulk", label: "Bulk import" },
+      { to: "/admin/drive", label: "Drive" },
     ],
   },
   { to: "/admin/ai", label: "AI Studio", icon: Sparkles },

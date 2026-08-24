@@ -247,3 +247,169 @@ export async function downloadDriveFile(
     contentType: res.headers.get("content-type") ?? "application/octet-stream",
   };
 }
+
+// ── OAuth-varianten (Authorization-header i.p.v. API-sleutel) ───────────────
+//
+// De functies hierboven werken met GOOGLE_DRIVE_API_KEY, genoeg voor een
+// enkele map die een klant "voor iedereen met de link" deelt. Doorzoeken van
+// álles wat met elevate.plannen@gmail.com gedeeld is kan dat niet — daarvoor
+// is een ingelogde sessie nodig (zie drive-connection.functions.ts). Zelfde
+// Drive-API, zelfde SSRF-guard, alleen de auth verschilt.
+
+export interface DriveSharedItem {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number | null;
+  isFolder: boolean;
+  ownerName: string | null;
+  modifiedTime: string | null;
+}
+
+async function driveJsonAuthed(url: string, accessToken: string): Promise<Record<string, unknown>> {
+  await assertSafeExternalUrl(url);
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
+    error?: { message?: string; code?: number };
+  };
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Drive-koppeling is niet meer geldig — koppel opnieuw op /admin/drive.");
+    }
+    throw new Error(json.error?.message ?? `Google Drive gaf een fout (${res.status})`);
+  }
+  return json;
+}
+
+/**
+ * Alles wat met het gekoppelde account gedeeld is, optioneel gefilterd op
+ * naam. Toont zowel mappen als losse bestanden — de admin klikt een map open
+ * om verder te bladeren, of importeert een los bestand direct.
+ */
+export async function listSharedWithMe(
+  accessToken: string,
+  query?: string,
+): Promise<DriveSharedItem[]> {
+  const clauses = ["sharedWithMe = true", "trashed = false"];
+  if (query?.trim()) {
+    // Enkele quotes in Drive's query-taal escapen met \'.
+    const escaped = query.trim().replace(/'/g, "\\'");
+    clauses.push(`name contains '${escaped}'`);
+  }
+  const out: DriveSharedItem[] = [];
+  let pageToken: string | undefined;
+  do {
+    const url =
+      `${DRIVE_API}/files?q=${encodeURIComponent(clauses.join(" and "))}` +
+      `&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime,owners(displayName))` +
+      `&pageSize=100&orderBy=folder,modifiedTime desc` +
+      (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "");
+    const json = await driveJsonAuthed(url, accessToken);
+    for (const f of (json.files as Record<string, unknown>[]) ?? []) {
+      const owners = (f.owners as { displayName?: string }[] | undefined) ?? [];
+      out.push({
+        id: String(f.id),
+        name: String(f.name ?? "bestand"),
+        mimeType: String(f.mimeType ?? ""),
+        size: f.size !== undefined && f.size !== null ? Number(f.size) : null,
+        isFolder: f.mimeType === FOLDER_MIME,
+        ownerName: owners[0]?.displayName ?? null,
+        modifiedTime: typeof f.modifiedTime === "string" ? f.modifiedTime : null,
+      });
+    }
+    pageToken = typeof json.nextPageToken === "string" ? json.nextPageToken : undefined;
+    // Zoekresultaten hoeven niet compleet te zijn — 100 is ruim genoeg om
+    // iets te herkennen en desnoods de zoekterm aan te scherpen.
+  } while (pageToken && out.length < 300);
+  return out;
+}
+
+/** Inhoud van één map, één niveau diep — voor het doorklikken vanuit de zoekresultaten. */
+export async function listFolderContentsAuthed(
+  folderId: string,
+  accessToken: string,
+): Promise<DriveSharedItem[]> {
+  const out: DriveSharedItem[] = [];
+  let pageToken: string | undefined;
+  do {
+    const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
+    const url =
+      `${DRIVE_API}/files?q=${q}` +
+      `&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime,owners(displayName))` +
+      `&pageSize=200&orderBy=folder,name` +
+      `&supportsAllDrives=true&includeItemsFromAllDrives=true` +
+      (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "");
+    const json = await driveJsonAuthed(url, accessToken);
+    for (const f of (json.files as Record<string, unknown>[]) ?? []) {
+      const owners = (f.owners as { displayName?: string }[] | undefined) ?? [];
+      out.push({
+        id: String(f.id),
+        name: String(f.name ?? "bestand"),
+        mimeType: String(f.mimeType ?? ""),
+        size: f.size !== undefined && f.size !== null ? Number(f.size) : null,
+        isFolder: f.mimeType === FOLDER_MIME,
+        ownerName: owners[0]?.displayName ?? null,
+        modifiedTime: typeof f.modifiedTime === "string" ? f.modifiedTime : null,
+      });
+    }
+    pageToken = typeof json.nextPageToken === "string" ? json.nextPageToken : undefined;
+  } while (pageToken);
+  return out;
+}
+
+export async function driveMetadataAuthed(
+  id: string,
+  accessToken: string,
+): Promise<{ name: string; mimeType: string }> {
+  const json = await driveJsonAuthed(
+    `${DRIVE_API}/files/${encodeURIComponent(id)}?fields=id,name,mimeType&supportsAllDrives=true`,
+    accessToken,
+  );
+  return { name: String(json.name ?? "Drive"), mimeType: String(json.mimeType ?? "") };
+}
+
+/** Zelfde als downloadDriveFile, maar met een Drive-koppeling in plaats van de API-sleutel. */
+export async function downloadDriveFileAuthed(
+  fileId: string,
+  accessToken: string,
+  maxBytes: number,
+): Promise<{ bytes: Uint8Array; contentType: string }> {
+  const url = `${DRIVE_API}/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`;
+  await assertSafeExternalUrl(url);
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok || !res.body) {
+    throw new Error("Kon het bestand niet ophalen uit Drive.");
+  }
+
+  const declared = res.headers.get("content-length");
+  if (declared && Number(declared) > maxBytes) {
+    throw new Error("groter dan de uploadlimiet");
+  }
+
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new Error("groter dan de uploadlimiet");
+    }
+    chunks.push(value);
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return {
+    bytes,
+    contentType: res.headers.get("content-type") ?? "application/octet-stream",
+  };
+}

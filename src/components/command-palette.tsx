@@ -28,6 +28,7 @@ import {
   Users,
   Wand2,
   Bot,
+  HardDrive,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -66,6 +67,12 @@ const NAV_ITEMS = [
     keywords: "editor bijsnijden crop afbeelding foto tekstlagen bewerken",
   },
   { to: "/admin/bulk", label: "Bulk import", icon: Upload, keywords: "csv import massa inplannen" },
+  {
+    to: "/admin/drive",
+    label: "Drive",
+    icon: HardDrive,
+    keywords: "google drive zoeken doorzoeken gedeeld releaseplanning",
+  },
   {
     to: "/admin/ai",
     label: "AI Studio",

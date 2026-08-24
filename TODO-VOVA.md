@@ -3,6 +3,41 @@
 Dingen die ik niet kon afronden omdat de gegevens ontbreken, of die bewust
 bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026.
 
+## Google Drive-koppeling (/admin/drive) — actie nodig
+
+Nieuwe bureau-brede Drive-koppeling: op /admin/drive kun je alles
+doorzoeken wat met elevate.plannen@gmail.com gedeeld is, bestanden
+selecteren en er met AI een releaseplanning van laten maken (per bestand
+een post — platform, caption, hashtags, datum), en na akkoord worden de
+bestanden gedownload, geüpload en als concept ingepland.
+
+Voor het werkt:
+
+- [ ] **Migratie toepassen**: `supabase/migrations/20260824190000_drive_admin_connection.sql`
+  staat klaar maar is nog niet op de live database toegepast (ik had hier
+  geen toegang toe in deze sessie) — zet 'm via de Supabase CLI
+  (`supabase db push`) of plak de inhoud in de SQL-editor van het
+  Supabase-dashboard.
+- [ ] **Drive-scope toevoegen aan de bestaande Google OAuth-app**: de
+  koppeling hergebruikt dezelfde `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`
+  als de YouTube-koppeling (Google staat meerdere scopes op één OAuth-app
+  toe). Ga naar Google Cloud Console → die OAuth-app → OAuth consent screen
+  → Scopes, en voeg toe: `https://www.googleapis.com/auth/drive.readonly`.
+- [ ] **Redirect-URI registreren**: zet bij diezelfde OAuth-app onder
+  Authorized redirect URIs ook `${APP_URL}/api/public/oauth/drive-callback`
+  (naast de al bestaande `/api/public/oauth/callback`).
+- [ ] **Koppelen**: log als admin in, ga naar /admin/drive, klik "Koppel
+  Google Drive" en log in op **elevate.plannen@gmail.com** (niet een ander
+  account — de knop dwingt dat account af via `login_hint`, maar controleer
+  het bij het inloggen). Trek bij een eerdere test-koppeling eerst de
+  bestaande toegang in bij myaccount.google.com/permissions op dat account,
+  anders geeft Google geen nieuw refresh-token terug en faalt het koppelen
+  met een duidelijke foutmelding die dat ook zegt.
+
+De koppeling zelf is bureau-breed (één rij in `drive_admin_connection`),
+niet per klant — welke klant een geïmporteerd bestand krijgt, kies je op de
+pagina zelf via de actieve-klant-wisselaar.
+
 ## Bedrijfsgegevens (`src/config/business.ts`)
 
 Verplicht bij commerciële online dienstverlening (art. 3:15d BW,

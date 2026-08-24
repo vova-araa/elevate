@@ -51,6 +51,7 @@ import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
 import { Route as AuthenticatedAdminEngagementRouteImport } from './routes/_authenticated/admin/engagement'
 import { Route as AuthenticatedAdminEditorRouteImport } from './routes/_authenticated/admin/editor'
+import { Route as AuthenticatedAdminDriveRouteImport } from './routes/_authenticated/admin/drive'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminCreateRouteImport } from './routes/_authenticated/admin/create'
 import { Route as AuthenticatedAdminComposeRouteImport } from './routes/_authenticated/admin/compose'
@@ -67,6 +68,7 @@ import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminClientsIndexRouteImport } from './routes/_authenticated/admin/clients.index'
 import { Route as ApiPublicV1PostsRouteImport } from './routes/api/public/v1/posts'
 import { Route as ApiPublicV1ClientsRouteImport } from './routes/api/public/v1/clients'
+import { Route as ApiPublicOauthDriveCallbackRouteImport } from './routes/api/public/oauth/drive-callback'
 import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/oauth/callback'
 import { Route as ApiPublicMetaDataDeletionRouteImport } from './routes/api/public/meta/data-deletion'
 import { Route as AuthenticatedAdminClientsNewRouteImport } from './routes/_authenticated/admin/clients.new'
@@ -304,6 +306,11 @@ const AuthenticatedAdminEditorRoute =
     path: '/editor',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminDriveRoute = AuthenticatedAdminDriveRouteImport.update({
+  id: '/drive',
+  path: '/drive',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminDashboardRoute =
   AuthenticatedAdminDashboardRouteImport.update({
     id: '/dashboard',
@@ -396,6 +403,12 @@ const ApiPublicV1ClientsRoute = ApiPublicV1ClientsRouteImport.update({
   path: '/api/public/v1/clients',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOauthDriveCallbackRoute =
+  ApiPublicOauthDriveCallbackRouteImport.update({
+    id: '/api/public/oauth/drive-callback',
+    path: '/api/public/oauth/drive-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOauthCallbackRoute = ApiPublicOauthCallbackRouteImport.update({
   id: '/api/public/oauth/callback',
   path: '/api/public/oauth/callback',
@@ -465,6 +478,7 @@ export interface FileRoutesByFullPath {
   '/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/admin/create': typeof AuthenticatedAdminCreateRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/drive': typeof AuthenticatedAdminDriveRoute
   '/admin/editor': typeof AuthenticatedAdminEditorRoute
   '/admin/engagement': typeof AuthenticatedAdminEngagementRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -498,6 +512,7 @@ export interface FileRoutesByFullPath {
   '/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
   '/api/public/meta/data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
+  '/api/public/oauth/drive-callback': typeof ApiPublicOauthDriveCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
@@ -531,6 +546,7 @@ export interface FileRoutesByTo {
   '/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/admin/create': typeof AuthenticatedAdminCreateRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/drive': typeof AuthenticatedAdminDriveRoute
   '/admin/editor': typeof AuthenticatedAdminEditorRoute
   '/admin/engagement': typeof AuthenticatedAdminEngagementRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -564,6 +580,7 @@ export interface FileRoutesByTo {
   '/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
   '/api/public/meta/data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
+  '/api/public/oauth/drive-callback': typeof ApiPublicOauthDriveCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/admin/clients': typeof AuthenticatedAdminClientsIndexRoute
@@ -599,6 +616,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/compose': typeof AuthenticatedAdminComposeRoute
   '/_authenticated/admin/create': typeof AuthenticatedAdminCreateRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/_authenticated/admin/drive': typeof AuthenticatedAdminDriveRoute
   '/_authenticated/admin/editor': typeof AuthenticatedAdminEditorRoute
   '/_authenticated/admin/engagement': typeof AuthenticatedAdminEngagementRoute
   '/_authenticated/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -632,6 +650,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/clients/new': typeof AuthenticatedAdminClientsNewRoute
   '/api/public/meta/data-deletion': typeof ApiPublicMetaDataDeletionRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
+  '/api/public/oauth/drive-callback': typeof ApiPublicOauthDriveCallbackRoute
   '/api/public/v1/clients': typeof ApiPublicV1ClientsRoute
   '/api/public/v1/posts': typeof ApiPublicV1PostsRoute
   '/_authenticated/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
@@ -667,6 +686,7 @@ export interface FileRouteTypes {
     | '/admin/compose'
     | '/admin/create'
     | '/admin/dashboard'
+    | '/admin/drive'
     | '/admin/editor'
     | '/admin/engagement'
     | '/admin/media'
@@ -700,6 +720,7 @@ export interface FileRouteTypes {
     | '/admin/clients/new'
     | '/api/public/meta/data-deletion'
     | '/api/public/oauth/callback'
+    | '/api/public/oauth/drive-callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
     | '/admin/clients/'
@@ -733,6 +754,7 @@ export interface FileRouteTypes {
     | '/admin/compose'
     | '/admin/create'
     | '/admin/dashboard'
+    | '/admin/drive'
     | '/admin/editor'
     | '/admin/engagement'
     | '/admin/media'
@@ -766,6 +788,7 @@ export interface FileRouteTypes {
     | '/admin/clients/new'
     | '/api/public/meta/data-deletion'
     | '/api/public/oauth/callback'
+    | '/api/public/oauth/drive-callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
     | '/admin/clients'
@@ -800,6 +823,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/compose'
     | '/_authenticated/admin/create'
     | '/_authenticated/admin/dashboard'
+    | '/_authenticated/admin/drive'
     | '/_authenticated/admin/editor'
     | '/_authenticated/admin/engagement'
     | '/_authenticated/admin/media'
@@ -833,6 +857,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/clients/new'
     | '/api/public/meta/data-deletion'
     | '/api/public/oauth/callback'
+    | '/api/public/oauth/drive-callback'
     | '/api/public/v1/clients'
     | '/api/public/v1/posts'
     | '/_authenticated/admin/clients/'
@@ -854,6 +879,7 @@ export interface RootRouteChildren {
   ApiPublicAutomationTickRoute: typeof ApiPublicAutomationTickRoute
   ApiPublicMetaDataDeletionRoute: typeof ApiPublicMetaDataDeletionRoute
   ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
+  ApiPublicOauthDriveCallbackRoute: typeof ApiPublicOauthDriveCallbackRoute
   ApiPublicV1ClientsRoute: typeof ApiPublicV1ClientsRoute
   ApiPublicV1PostsRoute: typeof ApiPublicV1PostsRoute
 }
@@ -1154,6 +1180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEditorRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/drive': {
+      id: '/_authenticated/admin/drive'
+      path: '/drive'
+      fullPath: '/admin/drive'
+      preLoaderRoute: typeof AuthenticatedAdminDriveRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/dashboard': {
       id: '/_authenticated/admin/dashboard'
       path: '/dashboard'
@@ -1266,6 +1299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1ClientsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/oauth/drive-callback': {
+      id: '/api/public/oauth/drive-callback'
+      path: '/api/public/oauth/drive-callback'
+      fullPath: '/api/public/oauth/drive-callback'
+      preLoaderRoute: typeof ApiPublicOauthDriveCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/oauth/callback': {
       id: '/api/public/oauth/callback'
       path: '/api/public/oauth/callback'
@@ -1349,6 +1389,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminComposeRoute: typeof AuthenticatedAdminComposeRoute
   AuthenticatedAdminCreateRoute: typeof AuthenticatedAdminCreateRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
+  AuthenticatedAdminDriveRoute: typeof AuthenticatedAdminDriveRoute
   AuthenticatedAdminEditorRoute: typeof AuthenticatedAdminEditorRoute
   AuthenticatedAdminEngagementRoute: typeof AuthenticatedAdminEngagementRoute
   AuthenticatedAdminMediaRoute: typeof AuthenticatedAdminMediaRoute
@@ -1387,6 +1428,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminComposeRoute: AuthenticatedAdminComposeRoute,
     AuthenticatedAdminCreateRoute: AuthenticatedAdminCreateRoute,
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
+    AuthenticatedAdminDriveRoute: AuthenticatedAdminDriveRoute,
     AuthenticatedAdminEditorRoute: AuthenticatedAdminEditorRoute,
     AuthenticatedAdminEngagementRoute: AuthenticatedAdminEngagementRoute,
     AuthenticatedAdminMediaRoute: AuthenticatedAdminMediaRoute,
@@ -1488,6 +1530,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAutomationTickRoute: ApiPublicAutomationTickRoute,
   ApiPublicMetaDataDeletionRoute: ApiPublicMetaDataDeletionRoute,
   ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
+  ApiPublicOauthDriveCallbackRoute: ApiPublicOauthDriveCallbackRoute,
   ApiPublicV1ClientsRoute: ApiPublicV1ClientsRoute,
   ApiPublicV1PostsRoute: ApiPublicV1PostsRoute,
 }
