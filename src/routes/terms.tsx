@@ -19,7 +19,7 @@ export const Route = createFileRoute("/terms")({
 
 function TermsPage() {
   return (
-    <LegalPage eyebrow="Juridisch" title="Gebruiksvoorwaarden" updated="23 juli 2026">
+    <LegalPage eyebrow="Juridisch" title="Gebruiksvoorwaarden" updated="24 augustus 2026">
       <LegalSection title="1. Wat Elevate Design is">
         <p>
           Elevate Design is het klant- en contentplatform van onze studio (elevatedesign.nl). Wij
@@ -46,6 +46,12 @@ function TermsPage() {
           voor je maken, blijven eigendom van jou of van je onderneming volgens de afspraken in onze
           samenwerkingsovereenkomst. Je geeft ons toestemming om deze content te gebruiken voor het
           uitvoeren van onze diensten, zoals het inplannen en publiceren op je eigen kanalen.
+        </p>
+        <p>
+          Onze opslagruimte voor media is beperkt. Zodra een bestand is gepubliceerd, kan ons team
+          het uit de opslag verwijderen om ruimte vrij te maken — de registratie dat het gebruikt is
+          blijft bewaard, alleen het bestand zelf niet. Nog niet gepubliceerde bestanden worden
+          nooit op deze manier verwijderd.
         </p>
       </LegalSection>
       <LegalSection title="4. Koppelingen met sociale platforms">

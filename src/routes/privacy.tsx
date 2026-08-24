@@ -19,7 +19,7 @@ export const Route = createFileRoute("/privacy")({
 
 function PrivacyPage() {
   return (
-    <LegalPage eyebrow="Juridisch" title="Privacyverklaring" updated="23 juli 2026">
+    <LegalPage eyebrow="Juridisch" title="Privacyverklaring" updated="24 augustus 2026">
       <LegalSection title="1. Wie wij zijn">
         <p>
           Deze privacyverklaring is van <b>Elevate Design</b> (elevatedesign.nl), de
@@ -77,6 +77,12 @@ function PrivacyPage() {
           samenwerking, dan verwijderen we je gegevens op verzoek of na een redelijke termijn.
           Verbindingen zijn versleuteld (https) en toegang is beperkt per rol: klanten zien
           uitsluitend hun eigen gegevens.
+        </p>
+        <p>
+          Onze opslagruimte voor geüploade media is beperkt. Ons team kan al gepubliceerde bestanden
+          handmatig uit de opslag verwijderen om ruimte vrij te maken; de registratie dat het
+          bestand gebruikt is blijft bewaard. Nog niet gepubliceerde bestanden verwijderen we nooit
+          op deze manier.
         </p>
       </LegalSection>
       <LegalSection title="6. Je gegevens verwijderen">

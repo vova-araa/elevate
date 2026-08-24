@@ -834,8 +834,9 @@ function StorageCard({
       </div>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        Bestanden worden 30 dagen na publicatie automatisch opgeruimd; de registratie blijft
-        bewaard.
+        Al gepubliceerde media kan hierboven handmatig opgeruimd worden om ruimte vrij te maken; de
+        registratie blijft altijd bewaard. Opslag is beperkt tot {STORAGE_LIMIT_GB} GB — neem
+        contact op als dat te krap wordt.
       </p>
     </div>
   );
