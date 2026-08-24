@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ErrorState } from "@/components/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientAnalytics } from "@/lib/analytics.functions";
+import { FEATURE_PAID_ADS } from "@/config/feature-flags";
 import { z } from "zod";
 import {
   BarChart,
@@ -473,27 +474,29 @@ function AnalyticsPage() {
             </div>
           </div>
 
-          {/* Ads placeholder */}
-          <div className="glass-strong rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm uppercase tracking-[0.2em] text-gold/70">
-                Paid ads overzicht
-              </div>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Binnenkort
-              </span>
-            </div>
-            <div className="grid sm:grid-cols-3 gap-3">
-              {["Meta Ads", "Google Ads", "TikTok Ads"].map((n) => (
-                <div key={n} className="rounded-lg border border-gold/15 p-4">
-                  <div className="text-sm font-medium">{n}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Koppel API voor live spend, CTR en ROAS.
-                  </div>
+          {/* A14: geen API-koppeling — dit blok blijft verborgen tot dat er is. */}
+          {FEATURE_PAID_ADS && (
+            <div className="glass-strong rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm uppercase tracking-[0.2em] text-gold/70">
+                  Paid ads overzicht
                 </div>
-              ))}
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Binnenkort
+                </span>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {["Meta Ads", "Google Ads", "TikTok Ads"].map((n) => (
+                  <div key={n} className="rounded-lg border border-gold/15 p-4">
+                    <div className="text-sm font-medium">{n}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Koppel API voor live spend, CTR en ROAS.
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>
