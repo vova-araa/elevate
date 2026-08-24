@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, LegalSection } from "@/components/legal-page";
+import { BUSINESS } from "@/config/business";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -24,8 +25,8 @@ function PrivacyPage() {
           Deze privacyverklaring is van <b>Elevate Design</b> (elevatedesign.nl), de
           verantwoordelijke voor de verwerking van persoonsgegevens binnen dit platform. Vragen of
           verzoeken over je gegevens? Mail ons op{" "}
-          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-            elevate.plannen@gmail.com
+          <a href={`mailto:${BUSINESS.privacyEmail}`} className="text-gold hover:underline">
+            {BUSINESS.privacyEmail}
           </a>
           .
         </p>
@@ -65,8 +66,8 @@ function PrivacyPage() {
           authenticatie), <b>Render</b> (hosting) en <b>Anthropic</b> (AI-ondersteuning bij het
           schrijven van content; hiervoor delen we geen persoonsgegevens die daarvoor niet nodig
           zijn). Publiceren verloopt via de officiële API's van de platforms die jij koppelt (zoals
-          Meta, TikTok, LinkedIn en Google) — dat gebeurt alleen na jouw uitdrukkelijke toestemming
-          op dat platform en valt daar ook onder hun eigen privacybeleid.
+          Instagram, Facebook, TikTok, LinkedIn en YouTube) — dat gebeurt alleen na jouw
+          uitdrukkelijke toestemming op dat platform en valt daar ook onder hun eigen privacybeleid.
         </p>
       </LegalSection>
       <LegalSection title="5. Bewaren en beveiligen">
@@ -89,8 +90,8 @@ function PrivacyPage() {
         <p>
           Wil je dat we álle gegevens die we van je hebben verwijderen, stuur dan een
           verwijderverzoek naar{" "}
-          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-            elevate.plannen@gmail.com
+          <a href={`mailto:${BUSINESS.privacyEmail}`} className="text-gold hover:underline">
+            {BUSINESS.privacyEmail}
           </a>
           . We voeren het verzoek uit en bevestigen dit uiterlijk binnen 30 dagen.
         </p>
@@ -99,8 +100,8 @@ function PrivacyPage() {
         <p>
           Je hebt recht op inzage, correctie en verwijdering van je persoonsgegevens en op het
           intrekken van eerder gegeven toestemming. Neem hiervoor contact op via{" "}
-          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-            elevate.plannen@gmail.com
+          <a href={`mailto:${BUSINESS.privacyEmail}`} className="text-gold hover:underline">
+            {BUSINESS.privacyEmail}
           </a>
           ; we reageren zo snel mogelijk en uiterlijk binnen 30 dagen. Ook kun je een klacht
           indienen bij de Autoriteit Persoonsgegevens.
@@ -110,8 +111,8 @@ function PrivacyPage() {
         <p>
           Wijzigt er iets aan deze verklaring, dan vind je de actuele versie altijd op deze pagina.
           Vragen over privacy stel je via{" "}
-          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-            elevate.plannen@gmail.com
+          <a href={`mailto:${BUSINESS.privacyEmail}`} className="text-gold hover:underline">
+            {BUSINESS.privacyEmail}
           </a>
           .
         </p>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, LegalSection } from "@/components/legal-page";
+import { BUSINESS } from "@/config/business";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -77,8 +78,8 @@ function TermsPage() {
         <p>
           We kunnen deze voorwaarden bijwerken; de actuele versie staat altijd op deze pagina.
           Vragen? Mail ons op{" "}
-          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-            elevate.plannen@gmail.com
+          <a href={`mailto:${BUSINESS.email}`} className="text-gold hover:underline">
+            {BUSINESS.email}
           </a>
           .
         </p>

@@ -8,6 +8,7 @@ import { LegalPage, LegalSection } from "@/components/legal-page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getDeletionStatus } from "@/lib/data-deletion.functions";
+import { BUSINESS } from "@/config/business";
 
 /**
  * Statuspagina waar Meta de gebruiker naartoe stuurt na een verwijderverzoek.
@@ -73,8 +74,8 @@ function DeletionStatusPage() {
             <p className="flex items-start gap-2 text-muted-foreground">
               <SearchX className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
               We vinden geen verzoek met deze code. Controleer de code, of mail{" "}
-              <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-                elevate.plannen@gmail.com
+              <a href={`mailto:${BUSINESS.privacyEmail}`} className="text-gold hover:underline">
+                {BUSINESS.privacyEmail}
               </a>
               .
             </p>

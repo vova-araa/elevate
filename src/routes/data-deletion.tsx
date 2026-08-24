@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, LegalSection } from "@/components/legal-page";
+import { BUSINESS } from "@/config/business";
 
 export const Route = createFileRoute("/data-deletion")({
   head: () => ({
@@ -40,8 +41,8 @@ function DataDeletionPage() {
           Wil je dat wij <b>alle</b> persoonsgegevens verwijderen die we van je hebben — je account,
           content, bestanden en alle gekoppelde platformgegevens — stuur dan een verwijderverzoek
           naar{" "}
-          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-            elevate.plannen@gmail.com
+          <a href={`mailto:${BUSINESS.privacyEmail}`} className="text-gold hover:underline">
+            {BUSINESS.privacyEmail}
           </a>{" "}
           met als onderwerp <b>&quot;Verwijderverzoek&quot;</b>. Vermeld het e-mailadres waarmee je
           bekend bent, zodat we je verzoek kunnen koppelen aan het juiste account.
@@ -72,8 +73,8 @@ function DataDeletionPage() {
           click <b>Ontkoppelen</b> (Disconnect); we immediately delete the stored access token and
           any data fetched from that account. To request full deletion of all your personal data,
           email{" "}
-          <a href="mailto:elevate.plannen@gmail.com" className="text-gold hover:underline">
-            elevate.plannen@gmail.com
+          <a href={`mailto:${BUSINESS.privacyEmail}`} className="text-gold hover:underline">
+            {BUSINESS.privacyEmail}
           </a>{" "}
           with the subject <b>&quot;Data deletion request&quot;</b>; we complete and confirm
           deletion within 30 days.

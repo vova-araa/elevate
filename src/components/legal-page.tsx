@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
+import { SiteFooter } from "@/components/site-footer";
 
 // Gedeelde opmaak voor publieke juridische pagina's (/terms en /privacy).
 // Deze URL's worden ook gebruikt in de developer-portalen van TikTok/Meta.
@@ -41,6 +42,7 @@ export function LegalPage({
           {children}
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }
