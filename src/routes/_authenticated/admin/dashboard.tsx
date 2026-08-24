@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { endOfWeek, format, formatDistanceToNow, getISOWeek, startOfWeek } from "date-fns";
+import { format, getISOWeek } from "date-fns";
 import { nl } from "date-fns/locale";
 import {
   Area,
@@ -31,6 +31,7 @@ import { MomentumCard } from "@/components/admin/momentum-card";
 import { getPostingOverview } from "@/lib/posting-overview.functions";
 import { getInsights } from "@/lib/insights.functions";
 import { getMomentum } from "@/lib/momentum.functions";
+import { getDashboardSummary, type FocusItem, type FocusKind } from "@/lib/dashboard.functions";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -107,78 +108,6 @@ function AdminDashboard() {
 /* Data + layout van de "Studio-editie"                                */
 /* ------------------------------------------------------------------ */
 
-type DraftFocusItem = {
-  id: string;
-  caption: string | null;
-  created_at: string;
-  platform: Platform;
-  client_id: string;
-  clients: { name: string } | null;
-};
-
-type FailedFocusItem = {
-  id: string;
-  caption: string | null;
-  scheduled_at: string;
-  platform: Platform;
-  client_id: string;
-  clients: { name: string } | null;
-};
-
-type ExpiredChannelItem = {
-  id: string;
-  platform: Platform;
-  client_id: string;
-  account_username: string | null;
-  clients: { name: string } | null;
-};
-
-type FocusKind = "draft" | "failed" | "channel";
-type FocusItem = {
-  id: string;
-  kind: FocusKind;
-  title: string;
-  detail: string;
-  meta: string;
-  href: string;
-  actionLabel: string;
-};
-
-function buildFocusItems(
-  drafts: DraftFocusItem[],
-  failed: FailedFocusItem[],
-  channels: ExpiredChannelItem[],
-): FocusItem[] {
-  const draftItems: FocusItem[] = drafts.map((d) => ({
-    id: `draft-${d.id}`,
-    kind: "draft",
-    title: d.clients?.name ?? "Onbekende klant",
-    detail: d.caption || "Geen caption",
-    meta: `concept sinds ${formatDistanceToNow(new Date(d.created_at), { locale: nl })}`,
-    href: "/admin/approvals",
-    actionLabel: "Beoordelen",
-  }));
-  const failedItems: FocusItem[] = failed.map((f) => ({
-    id: `failed-${f.id}`,
-    kind: "failed",
-    title: f.clients?.name ?? "Onbekende klant",
-    detail: f.caption || "Geen caption",
-    meta: "publicatie mislukt",
-    href: "/admin/planner",
-    actionLabel: "Bekijken",
-  }));
-  const channelItems: FocusItem[] = channels.map((c) => ({
-    id: `channel-${c.id}`,
-    kind: "channel",
-    title: c.clients?.name ?? "Onbekende klant",
-    detail: `${capitalize(c.platform)}${c.account_username ? ` · @${c.account_username}` : ""}`,
-    meta: "koppeling verlopen",
-    href: "/admin/channels",
-    actionLabel: "Vernieuwen",
-  }));
-  return [...draftItems, ...failedItems, ...channelItems];
-}
-
 function DashboardContent({
   clients,
   selected,
@@ -223,85 +152,19 @@ function DashboardContent({
     queryFn: () => momentumFn({ data: clientId ? { clientId } : {} }),
   });
 
-  // Kerncijfers voor de ticker-regel in de masthead
-  const { data: ticker, isLoading: tickerLoading } = useQuery({
-    queryKey: ["dashboard-ticker", clientId ?? "all"],
-    queryFn: async () => {
-      const now = new Date();
-      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-
-      let scheduledQ = supabase
-        .from("scheduled_posts")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "scheduled")
-        .is("deleted_at", null)
-        .gte("scheduled_at", weekStart.toISOString())
-        .lte("scheduled_at", weekEnd.toISOString());
-      if (clientId) scheduledQ = scheduledQ.eq("client_id", clientId);
-
-      let draftsQ = supabase
-        .from("scheduled_posts")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "draft")
-        .is("deleted_at", null);
-      if (clientId) draftsQ = draftsQ.eq("client_id", clientId);
-
-      let expiredQ = supabase
-        .from("social_connections")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "expired");
-      if (clientId) expiredQ = expiredQ.eq("client_id", clientId);
-
-      const [scheduled, drafts, expired] = await Promise.all([scheduledQ, draftsQ, expiredQ]);
-      return {
-        scheduledThisWeek: scheduled.count ?? 0,
-        waitingApproval: drafts.count ?? 0,
-        expiredChannels: expired.count ?? 0,
-      };
-    },
+  // A07: ticker-tellers + "Focus nu" kwamen voorheen uit zes losse
+  // browser→Supabase-aanroepen (waarvan er twee zelfs hetzelfde filter
+  // gebruikten voor teller én lijst). Eén server-aanroep, zie
+  // dashboard.functions.ts.
+  const dashboardSummaryFn = useServerFn(getDashboardSummary);
+  const { data: summary, isLoading: summaryLoading } = useQuery({
+    queryKey: ["dashboard-summary", clientId ?? "all"],
+    queryFn: () => dashboardSummaryFn({ data: clientId ? { clientId } : {} }),
   });
-
-  // Focus nu: concepten die het langst wachten op akkoord
-  const { data: focusDrafts, isLoading: focusDraftsLoading } = useQuery({
-    queryKey: ["dashboard-focus-drafts", clientId ?? "all"],
-    queryFn: async () => {
-      let q = supabase
-        .from("scheduled_posts")
-        .select("id,caption,created_at,platform,client_id,clients(name)")
-        .eq("status", "draft")
-        .is("deleted_at", null);
-      if (clientId) q = q.eq("client_id", clientId);
-      return (await q.order("created_at", { ascending: true }).limit(4)).data ?? [];
-    },
-  });
-
-  // Focus nu: mislukte posts
-  const { data: focusFailed, isLoading: focusFailedLoading } = useQuery({
-    queryKey: ["dashboard-focus-failed", clientId ?? "all"],
-    queryFn: async () => {
-      let q = supabase
-        .from("scheduled_posts")
-        .select("id,caption,scheduled_at,platform,client_id,clients(name)")
-        .eq("status", "failed")
-        .is("deleted_at", null);
-      if (clientId) q = q.eq("client_id", clientId);
-      return (await q.order("scheduled_at", { ascending: false }).limit(4)).data ?? [];
-    },
-  });
-
-  // Focus nu: kanalen met een verlopen koppeling
-  const { data: focusExpired, isLoading: focusExpiredLoading } = useQuery({
-    queryKey: ["dashboard-focus-expired-channels", clientId ?? "all"],
-    queryFn: async () => {
-      let q = supabase
-        .from("social_connections")
-        .select("id,platform,client_id,account_username,clients(name)")
-        .eq("status", "expired");
-      if (clientId) q = q.eq("client_id", clientId);
-      return (await q.limit(4)).data ?? [];
-    },
-  });
+  const ticker = summary?.ticker;
+  const tickerLoading = summaryLoading;
+  const focusItems = summary?.focusItems ?? [];
+  const focusLoading = summaryLoading;
 
   // Bereik: echte cijfers uit de gedeelde analytics-laag — gepubliceerde
   // posts per dag (echt, uit scheduled_posts) plus volgers/volgersgroei
@@ -322,12 +185,6 @@ function DashboardContent({
     date: format(new Date(d.date), "d MMM", { locale: nl }),
     count: d.published,
   }));
-
-  const focusItems = useMemo(
-    () => buildFocusItems(focusDrafts ?? [], focusFailed ?? [], focusExpired ?? []),
-    [focusDrafts, focusFailed, focusExpired],
-  );
-  const focusLoading = focusDraftsLoading || focusFailedLoading || focusExpiredLoading;
 
   return (
     <>
