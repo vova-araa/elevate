@@ -10,6 +10,7 @@ import { useClientStore } from "@/lib/stores/client-store";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme";
 import { ADMIN_NAV, badgeClasses, initials, type SidebarCounts } from "@/lib/admin-nav";
+import { clientAvatarStyle } from "@/lib/client-avatar";
 
 // Volwaardig mobiel navigatiemenu dat vanaf links inschuift.
 // Opent via de "Meer"-knop in de onderbalk of de hamburger in de topbar.
@@ -169,7 +170,7 @@ export function MobileNavSheet() {
                     ) : (
                       <span
                         className="grid h-5 w-5 place-items-center rounded-full text-[9px] font-semibold text-white"
-                        style={{ background: c.brand_color || "var(--gold)" }}
+                        style={clientAvatarStyle(c.brand_color)}
                       >
                         {initials(c.name)}
                       </span>

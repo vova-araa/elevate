@@ -4,6 +4,7 @@ import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { resetFileInput } from "@/lib/upload-media";
+import { clientAvatarStyle } from "@/lib/client-avatar";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
@@ -254,7 +255,7 @@ function BrandTab({ clientId }: { clientId: string }) {
           ) : (
             <div
               className="h-16 w-16 rounded-full flex items-center justify-center font-display text-2xl text-primary-foreground"
-              style={{ background: form.brand_color || "var(--gradient-gold)" }}
+              style={clientAvatarStyle(form.brand_color)}
             >
               {form.name?.[0]?.toUpperCase()}
             </div>

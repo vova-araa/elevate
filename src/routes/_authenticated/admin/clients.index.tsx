@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
+import { clientAvatarStyle } from "@/lib/client-avatar";
 
 type SortKey = "name" | "pipeline" | "openTasks" | "meetings" | "lastEval";
 type SortDir = "asc" | "desc";
@@ -383,7 +384,7 @@ function ClientsList() {
                 ) : (
                   <div
                     className="h-14 w-14 rounded-full flex items-center justify-center font-display text-2xl text-primary-foreground shrink-0"
-                    style={{ background: c.brand_color || "var(--gradient-gold)" }}
+                    style={clientAvatarStyle(c.brand_color)}
                   >
                     {c.name?.[0]?.toUpperCase()}
                   </div>

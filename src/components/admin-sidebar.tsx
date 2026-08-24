@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { clientAvatarStyle } from "@/lib/client-avatar";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { useClientStore } from "@/lib/stores/client-store";
 import { useEffect, useState } from "react";
@@ -175,7 +176,7 @@ export function AdminSidebar() {
             ) : (
               <span
                 className="grid h-9 w-9 place-items-center rounded-lg text-xs font-semibold text-white"
-                style={{ background: activeClient?.brand_color || "var(--gold)" }}
+                style={clientAvatarStyle(activeClient?.brand_color)}
               >
                 {activeClient ? initials(activeClient.name) : "?"}
               </span>
@@ -209,7 +210,7 @@ export function AdminSidebar() {
                     ) : (
                       <span
                         className="grid h-6 w-6 place-items-center rounded-full text-[10px] font-semibold text-white"
-                        style={{ background: c.brand_color || "var(--gold)" }}
+                        style={clientAvatarStyle(c.brand_color)}
                       >
                         {initials(c.name)}
                       </span>

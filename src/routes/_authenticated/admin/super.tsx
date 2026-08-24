@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clientAvatarStyle } from "@/lib/client-avatar";
 import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin/super")({
@@ -189,7 +190,7 @@ function SuperAdminDashboard() {
                 >
                   <span
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-semibold text-white"
-                    style={{ background: c.brand_color || "var(--gold)" }}
+                    style={clientAvatarStyle(c.brand_color)}
                   >
                     {c.name.slice(0, 2).toUpperCase()}
                   </span>

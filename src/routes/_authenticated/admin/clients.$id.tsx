@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia, resetFileInput } from "@/lib/upload-media";
 import { useSignedUrl } from "@/lib/use-signed-url";
+import { clientAvatarStyle } from "@/lib/client-avatar";
 import { toast } from "sonner";
 import {
   Plus,
@@ -132,7 +133,7 @@ function ClientDetail() {
         ) : (
           <div
             className="h-16 w-16 rounded-full flex items-center justify-center font-display text-3xl text-primary-foreground"
-            style={{ background: client.brand_color || "var(--gradient-gold)" }}
+            style={clientAvatarStyle(client.brand_color)}
           >
             {client.name?.[0]?.toUpperCase()}
           </div>

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Loader2, MessageSquare, Search } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { clientAvatarStyle } from "@/lib/client-avatar";
 import type { Tables } from "@/integrations/supabase/types";
 
 const searchSchema = z.object({ clientId: z.string().uuid().optional() });
@@ -105,7 +106,7 @@ function AdminMessages() {
                   ) : (
                     <div
                       className="h-9 w-9 rounded-full shrink-0"
-                      style={{ background: c.brand_color || "#D4B97A" }}
+                      style={clientAvatarStyle(c.brand_color)}
                     />
                   )}
                   <div className="min-w-0 flex-1">
@@ -149,7 +150,7 @@ function AdminMessages() {
                 ) : (
                   <div
                     className="h-10 w-10 rounded-full"
-                    style={{ background: selected.brand_color || "#D4B97A" }}
+                    style={clientAvatarStyle(selected.brand_color)}
                   />
                 )}
                 <div>
