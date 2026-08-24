@@ -25,18 +25,24 @@ export const listTeam = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
 
-    const [{ data: profiles, error: profilesError }, { data: roles }, { data: assignments }] =
+    // A05: clientCount komt bewust uit client_members, niet client_assignments.
+    // client_assignments is een los toewijzings-/audittrail-concept (zie het
+    // "Klant-toewijzing"-tabblad) en bepaalt geen enkele toegang; client_members
+    // is de tabel die user_has_client_access() leest. Stond dit op
+    // client_assignments, dan zag /admin/team "0 klanten toegewezen" bij
+    // iedereen terwijl /admin/users bij dezelfde mensen wél klanten toont.
+    const [{ data: profiles, error: profilesError }, { data: roles }, { data: members }] =
       await Promise.all([
         supabaseAdmin.from("profiles").select("*").order("created_at", { ascending: false }),
         supabaseAdmin.from("user_roles").select("user_id,role"),
-        supabaseAdmin.from("client_assignments").select("user_id"),
+        supabaseAdmin.from("client_members").select("user_id"),
       ]);
     if (profilesError) throw new Error(profilesError.message);
 
     return (profiles ?? []).map((p) => ({
       ...p,
       roles: (roles ?? []).filter((r) => r.user_id === p.id).map((r) => r.role),
-      clientCount: (assignments ?? []).filter((a) => a.user_id === p.id).length,
+      clientCount: (members ?? []).filter((m) => m.user_id === p.id).length,
     }));
   });
 

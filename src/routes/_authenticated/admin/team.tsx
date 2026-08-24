@@ -224,7 +224,7 @@ function TeamAdmin() {
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-muted-foreground">
-                  {m.clientCount} klant{m.clientCount === 1 ? "" : "en"} toegewezen
+                  {m.clientCount} klant{m.clientCount === 1 ? "" : "en"} gekoppeld
                 </span>
               </div>
             </div>
@@ -232,6 +232,11 @@ function TeamAdmin() {
         </TabsContent>
 
         <TabsContent value="toewijzing" className="mt-4 space-y-4">
+          <p className="text-xs text-muted-foreground max-w-2xl">
+            Dit is een interne toewijzing met optionele notitie — een audittrail van wie waarvoor
+            verantwoordelijk is. Het bepaalt geen toegang: welke klant een teamlid daadwerkelijk kan
+            zien, stel je in bij <b>Gebruikers</b>.
+          </p>
           <div className="glass-strong rounded-2xl p-6 space-y-4">
             <div className="space-y-2">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
