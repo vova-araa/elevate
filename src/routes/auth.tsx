@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AlertCircle, Loader2, LogIn } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, LogIn } from "lucide-react";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { useAuth } from "@/lib/auth-context";
 
@@ -16,11 +16,15 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { signIn, loading, user, role } = useAuth();
+  const { signIn, requestPasswordReset, loading, user, role } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // S16: geen wachtwoordherstel — de enige weg terug was iemand die het
+  // handmatig in Supabase resette. Zelfde kaart, alleen de inhoud wisselt.
+  const [mode, setMode] = useState<"login" | "reset">("login");
+  const [resetSent, setResetSent] = useState(false);
 
   // Redirect zodra rol bekend is (zowel bij bestaande sessie als na sign-in)
   useEffect(() => {
@@ -48,6 +52,32 @@ function AuthPage() {
     }
   }
 
+  async function submitReset(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!email.trim()) {
+      setError("Vul je e-mailadres in.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error: resetError } = await requestPasswordReset(email.trim());
+      if (resetError) {
+        setError(resetError);
+        return;
+      }
+      setResetSent(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function backToLogin() {
+    setMode("login");
+    setResetSent(false);
+    setError(null);
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-luxe px-4 py-10 flex items-center justify-center">
       {/* Zachte gouden glow bovenaan */}
@@ -58,12 +88,13 @@ function AuthPage() {
       {/* Subtiele gloed onder de kaart */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/10 blur-3xl" />
 
-      <form
-        onSubmit={submit}
-        className="fade-in-up glass-strong shadow-elegant relative w-full max-w-sm space-y-5 rounded-2xl p-8"
-      >
+      <div className="fade-in-up glass-strong shadow-elegant relative w-full max-w-sm space-y-5 rounded-2xl p-8">
         <div className="text-center">
-          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border border-gold/20 bg-background/60 shadow-sm">
+          <Link
+            to="/"
+            className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border border-gold/20 bg-background/60 shadow-sm transition hover:border-gold/40"
+            aria-label="Naar de homepage"
+          >
             <img
               src={elevateLogoUrl}
               alt="Elevate Design"
@@ -71,9 +102,17 @@ function AuthPage() {
               height={32}
               className="h-8 w-8 object-contain"
             />
-          </div>
-          <h1 className="font-display text-4xl text-gold">Inloggen</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">Log in om het portaal te openen.</p>
+          </Link>
+          <h1 className="font-display text-4xl text-gold">
+            {mode === "login" ? "Inloggen" : "Wachtwoord herstellen"}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {mode === "login"
+              ? "Log in om het portaal te openen."
+              : resetSent
+                ? "Check je inbox voor de herstellink."
+                : "Vul je e-mailadres in en we sturen een link om een nieuw wachtwoord in te stellen."}
+          </p>
         </div>
 
         {error && (
@@ -86,50 +125,119 @@ function AuthPage() {
           </div>
         )}
 
-        <label className="block text-sm">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            placeholder="naam@bedrijf.nl"
-            className="mt-1.5 w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-gold/40 focus:ring-2 focus:ring-gold/35"
-          />
-        </label>
+        {mode === "login" ? (
+          <form onSubmit={submit} className="space-y-5">
+            <label className="block text-sm">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="naam@bedrijf.nl"
+                className="mt-1.5 w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-gold/40 focus:ring-2 focus:ring-gold/35"
+              />
+            </label>
 
-        <label className="block text-sm">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">Wachtwoord</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            placeholder="••••••••"
-            className="mt-1.5 w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-gold/40 focus:ring-2 focus:ring-gold/35"
-          />
-        </label>
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Wachtwoord
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("reset");
+                    setError(null);
+                  }}
+                  className="text-[11px] text-gold transition-colors hover:underline"
+                >
+                  Wachtwoord vergeten?
+                </button>
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="mt-1.5 w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-gold/40 focus:ring-2 focus:ring-gold/35"
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={busy || loading}
-          className="glow-gold inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
-        >
-          {busy ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Bezig met inloggen…
-            </>
-          ) : (
-            <>
-              <LogIn className="h-4 w-4" />
-              Inloggen
-            </>
-          )}
-        </button>
+            <button
+              type="submit"
+              disabled={busy || loading}
+              className="glow-gold inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+            >
+              {busy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Bezig met inloggen…
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-4 w-4" />
+                  Inloggen
+                </>
+              )}
+            </button>
+          </form>
+        ) : resetSent ? (
+          <div className="space-y-5">
+            <div className="flex items-start gap-2 rounded-lg border border-gold/20 bg-gold/5 px-3 py-2.5 text-sm text-foreground/80">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+              <span>
+                Staat er een account op {email.trim()}, dan is er een mail onderweg met een link om
+                een nieuw wachtwoord in te stellen.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={backToLogin}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-gold/20 px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-gold/40"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Terug naar inloggen
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={submitReset} className="space-y-5">
+            <label className="block text-sm">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="naam@bedrijf.nl"
+                className="mt-1.5 w-full rounded-lg border border-gold/20 bg-background/60 px-3 py-2 outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-gold/40 focus:ring-2 focus:ring-gold/35"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={busy || loading}
+              className="glow-gold inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Stuur herstellink
+            </button>
+
+            <button
+              type="button"
+              onClick={backToLogin}
+              className="inline-flex w-full items-center justify-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-gold"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Terug naar inloggen
+            </button>
+          </form>
+        )}
 
         <p className="text-center text-[11px] text-muted-foreground/70">
-          Elevate Design — jouw merk, één portaal.
+          Nog geen klant?{" "}
+          <Link to="/contact" className="text-gold transition-colors hover:underline">
+            Plan een merkscan
+          </Link>
         </p>
         <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60">
           <a href="/terms" className="transition-colors hover:text-gold">
@@ -140,7 +248,7 @@ function AuthPage() {
             Privacy
           </a>
         </div>
-      </form>
+      </div>
     </main>
   );
 }

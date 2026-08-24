@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConnectTokenRouteImport } from './routes/connect.$token'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as ApproveTokenRouteImport } from './routes/approve.$token'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClientRouteRouteImport } from './routes/_authenticated/client/route'
@@ -117,6 +118,11 @@ const ConnectTokenRoute = ConnectTokenRouteImport.update({
   id: '/connect/$token',
   path: '/connect/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
 } as any)
 const ApproveTokenRoute = ApproveTokenRouteImport.update({
   id: '/approve/$token',
@@ -434,7 +440,7 @@ const AuthenticatedAdminClientsIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
   '/data-deletion-status': typeof DataDeletionStatusRoute
@@ -444,6 +450,7 @@ export interface FileRoutesByFullPath {
   '/client': typeof AuthenticatedClientRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
@@ -499,7 +506,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
   '/data-deletion-status': typeof DataDeletionStatusRoute
@@ -509,6 +516,7 @@ export interface FileRoutesByTo {
   '/client': typeof AuthenticatedClientRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
@@ -566,7 +574,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
   '/data-deletion-status': typeof DataDeletionStatusRoute
@@ -576,6 +584,7 @@ export interface FileRoutesById {
   '/_authenticated/client': typeof AuthenticatedClientRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/approve/$token': typeof ApproveTokenRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/connect/$token': typeof ConnectTokenRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
@@ -643,6 +652,7 @@ export interface FileRouteTypes {
     | '/client'
     | '/dashboard'
     | '/approve/$token'
+    | '/auth/reset-password'
     | '/connect/$token'
     | '/admin/ai'
     | '/admin/analytics'
@@ -708,6 +718,7 @@ export interface FileRouteTypes {
     | '/client'
     | '/dashboard'
     | '/approve/$token'
+    | '/auth/reset-password'
     | '/connect/$token'
     | '/admin/ai'
     | '/admin/analytics'
@@ -774,6 +785,7 @@ export interface FileRouteTypes {
     | '/_authenticated/client'
     | '/_authenticated/dashboard'
     | '/approve/$token'
+    | '/auth/reset-password'
     | '/connect/$token'
     | '/_authenticated/admin/ai'
     | '/_authenticated/admin/analytics'
@@ -831,7 +843,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   ContactRoute: typeof ContactRoute
   DataDeletionRoute: typeof DataDeletionRoute
   DataDeletionStatusRoute: typeof DataDeletionStatusRoute
@@ -910,6 +922,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/connect/$token'
       preLoaderRoute: typeof ConnectTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/approve/$token': {
       id: '/approve/$token'
@@ -1445,10 +1464,20 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface AuthRouteChildren {
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   ContactRoute: ContactRoute,
   DataDeletionRoute: DataDeletionRoute,
   DataDeletionStatusRoute: DataDeletionStatusRoute,

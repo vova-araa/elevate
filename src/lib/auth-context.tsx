@@ -12,6 +12,10 @@ interface AuthCtx {
   isSuperAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** S16: stuurt een herstelmail met een link naar /auth/reset-password. */
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>;
+  /** Zet het nieuwe wachtwoord — vereist de recovery-sessie die de link in requestPasswordReset opent. */
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -76,8 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const raw = error.message.toLowerCase();
     let message = error.message;
     if (raw.includes("invalid login credentials")) {
-      message =
-        "E-mail of wachtwoord klopt niet. Controleer beide, of reset je wachtwoord in Supabase.";
+      message = "E-mail of wachtwoord klopt niet. Controleer beide, of reset je wachtwoord.";
     } else if (raw.includes("email not confirmed")) {
       message =
         "Je account is nog niet bevestigd. Zet in Supabase → Authentication → Users bij je gebruiker 'Auto Confirm' aan (of bevestig via de mail).";
@@ -94,13 +97,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: message };
   }
 
+  async function requestPasswordReset(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    if (!error) return { error: null };
+    const raw = error.message.toLowerCase();
+    let message = error.message;
+    if (raw.includes("rate limit") || raw.includes("too many")) {
+      message = "Te veel pogingen. Wacht even en probeer opnieuw.";
+    } else if (
+      raw.includes("failed to fetch") ||
+      raw.includes("networkerror") ||
+      raw.includes("load failed")
+    ) {
+      message = "Kan de server niet bereiken. Probeer het straks opnieuw.";
+    }
+    return { error: message };
+  }
+
+  async function updatePassword(password: string) {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (!error) return { error: null };
+    const raw = error.message.toLowerCase();
+    const message = raw.includes("password")
+      ? "Wachtwoord voldoet niet aan de eisen — gebruik minimaal 6 tekens."
+      : error.message;
+    return { error: message };
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     setRole(null);
   }
 
   return (
-    <Ctx.Provider value={{ user, session, role, isSuperAdmin, loading, signIn, signOut }}>
+    <Ctx.Provider
+      value={{
+        user,
+        session,
+        role,
+        isSuperAdmin,
+        loading,
+        signIn,
+        requestPasswordReset,
+        updatePassword,
+        signOut,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );
