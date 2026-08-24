@@ -13,6 +13,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { prefersReducedMotion } from "@/components/landing-motion";
 
 type Slide = {
   icon: LucideIcon;
@@ -66,6 +67,7 @@ export function LandingShowcase() {
   const [selected, setSelected] = useState(0);
   const [snaps, setSnaps] = useState<number[]>([]);
   const paused = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const onSelect = useCallback((embla: CarouselApi) => {
     if (!embla) return;
@@ -84,9 +86,28 @@ export function LandingShowcase() {
     };
   }, [api, onSelect]);
 
-  // Auto-advance, met pauze bij hover/focus.
+  // S12: pauzeer ook buiten beeld — voorheen draaide de setInterval altijd
+  // door, ook wanneer de sectie allang gescrold was, wat op een pagina met
+  // meerdere auto-advancing onderdelen onnodig CPU/batterij kost.
   useEffect(() => {
-    if (!api) return;
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        paused.current = !entry.isIntersecting;
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Auto-advance, met pauze bij hover/focus/buiten-beeld. Geheel uit bij
+  // prefers-reduced-motion — anders draait de carousel door tegen de
+  // uitdrukkelijke voorkeur van de bezoeker in.
+  useEffect(() => {
+    if (!api || prefersReducedMotion()) return;
     const id = window.setInterval(() => {
       if (paused.current) return;
       api.scrollNext();
@@ -96,6 +117,7 @@ export function LandingShowcase() {
 
   return (
     <div
+      ref={rootRef}
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
       onFocusCapture={() => (paused.current = true)}
@@ -116,16 +138,22 @@ export function LandingShowcase() {
         </CarouselContent>
       </Carousel>
 
-      {/* Dots / indicators */}
-      <div className="mt-8 flex items-center justify-center gap-2">
+      {/* Dots / indicators — role="tablist" zodat schermlezers dit als een
+          groep bij elkaar horende, selecteerbare pagina's aankondigen. */}
+      <div
+        className="mt-8 flex items-center justify-center gap-2"
+        role="tablist"
+        aria-label="Slides"
+      >
         {snaps.map((_, i) => {
           const active = i === selected;
           return (
             <button
               key={i}
               type="button"
+              role="tab"
+              aria-selected={active}
               aria-label={`Ga naar slide ${i + 1}`}
-              aria-current={active}
               onClick={() => api?.scrollTo(i)}
               className={
                 "h-1.5 rounded-full transition-all duration-300 " +
