@@ -29,6 +29,7 @@ import {
   Image as ImageIcon,
   Share2,
   Eye,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
@@ -186,6 +187,7 @@ function SidebarContent({ onLogout, asClient }: { onLogout: () => void; asClient
       label: "Werk",
       items: [
         { to: "/client/roadmap", label: "Stappenplan", icon: Compass },
+        { to: "/client/intake", label: "Intake", icon: Target },
         { to: "/client/tasks", label: "Taken", icon: ListChecks },
         { to: "/client/uploads", label: "Uploads", icon: Upload },
         { to: "/client/media", label: "Media", icon: ImageIcon },
@@ -249,6 +251,19 @@ function SidebarContent({ onLogout, asClient }: { onLogout: () => void; asClient
   );
 }
 
+const CLIENT_TITLES: Record<string, string> = {
+  "/client/overview": "Overzicht",
+  "/client/calendar": "Kalender",
+  "/client/roadmap": "Stappenplan",
+  "/client/intake": "Intake",
+  "/client/uploads": "Uploads",
+  "/client/tasks": "Taken",
+  "/client/media": "Media",
+  "/client/reports": "Rapporten",
+  "/client/messages": "Berichten",
+  "/client/channels": "Kanalen",
+};
+
 function TopBar({ onMenu }: { onMenu: () => void }) {
   const { user, role } = useAuth();
   const [unread, setUnread] = useState(0);
@@ -256,6 +271,25 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const [items, setItems] = useState<Tables<"notifications">[]>([]);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isHome = pathname === "/dashboard" || pathname === "/";
+  // Loader-data van de /_authenticated/client-gate (A01) — hier alleen om de
+  // klantnaam in de paginatitel te zetten, dus geen guard nodig als die
+  // route (nog) niet gematcht is (bv. op /dashboard).
+  const activeClientName = useRouterState({
+    select: (s) =>
+      (
+        s.matches.find((m) => m.routeId === "/_authenticated/client")?.loaderData as
+          { clientName?: string | null } | undefined
+      )?.clientName ?? null,
+  });
+
+  // A06: elke pagina droeg dezelfde titel. Zelfde patroon als de admin-topbar.
+  useEffect(() => {
+    const title = Object.entries(CLIENT_TITLES).find(([k]) => pathname.startsWith(k))?.[1];
+    if (!title) return;
+    document.title = activeClientName
+      ? `${title} · ${activeClientName} — Elevate`
+      : `${title} — Elevate`;
+  }, [pathname, activeClientName]);
 
   useEffect(() => {
     if (!user) return;

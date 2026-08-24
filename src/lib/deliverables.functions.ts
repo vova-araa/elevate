@@ -230,7 +230,7 @@ export const getDeliveryOverview = createServerFn({ method: "POST" })
         needed: 1,
         overdue: false,
         actionLabel: "Intake openen",
-        actionTo: "/client/roadmap",
+        actionTo: "/client/intake",
       });
     }
 

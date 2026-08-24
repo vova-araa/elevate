@@ -30,6 +30,7 @@ import { Route as AuthenticatedClientReportsRouteImport } from './routes/_authen
 import { Route as AuthenticatedClientOverviewRouteImport } from './routes/_authenticated/client/overview'
 import { Route as AuthenticatedClientMessagesRouteImport } from './routes/_authenticated/client/messages'
 import { Route as AuthenticatedClientMediaRouteImport } from './routes/_authenticated/client/media'
+import { Route as AuthenticatedClientIntakeRouteImport } from './routes/_authenticated/client/intake'
 import { Route as AuthenticatedClientChannelsRouteImport } from './routes/_authenticated/client/channels'
 import { Route as AuthenticatedClientCalendarRouteImport } from './routes/_authenticated/client/calendar'
 import { Route as AuthenticatedAdminWebhooksRouteImport } from './routes/_authenticated/admin/webhooks'
@@ -183,6 +184,12 @@ const AuthenticatedClientMediaRoute =
   AuthenticatedClientMediaRouteImport.update({
     id: '/media',
     path: '/media',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
+  } as any)
+const AuthenticatedClientIntakeRoute =
+  AuthenticatedClientIntakeRouteImport.update({
+    id: '/intake',
+    path: '/intake',
     getParentRoute: () => AuthenticatedClientRouteRoute,
   } as any)
 const AuthenticatedClientChannelsRoute =
@@ -470,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
   '/client/calendar': typeof AuthenticatedClientCalendarRoute
   '/client/channels': typeof AuthenticatedClientChannelsRoute
+  '/client/intake': typeof AuthenticatedClientIntakeRoute
   '/client/media': typeof AuthenticatedClientMediaRoute
   '/client/messages': typeof AuthenticatedClientMessagesRoute
   '/client/overview': typeof AuthenticatedClientOverviewRoute
@@ -534,6 +542,7 @@ export interface FileRoutesByTo {
   '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
   '/client/calendar': typeof AuthenticatedClientCalendarRoute
   '/client/channels': typeof AuthenticatedClientChannelsRoute
+  '/client/intake': typeof AuthenticatedClientIntakeRoute
   '/client/media': typeof AuthenticatedClientMediaRoute
   '/client/messages': typeof AuthenticatedClientMessagesRoute
   '/client/overview': typeof AuthenticatedClientOverviewRoute
@@ -600,6 +609,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
   '/_authenticated/client/calendar': typeof AuthenticatedClientCalendarRoute
   '/_authenticated/client/channels': typeof AuthenticatedClientChannelsRoute
+  '/_authenticated/client/intake': typeof AuthenticatedClientIntakeRoute
   '/_authenticated/client/media': typeof AuthenticatedClientMediaRoute
   '/_authenticated/client/messages': typeof AuthenticatedClientMessagesRoute
   '/_authenticated/client/overview': typeof AuthenticatedClientOverviewRoute
@@ -666,6 +676,7 @@ export interface FileRouteTypes {
     | '/admin/webhooks'
     | '/client/calendar'
     | '/client/channels'
+    | '/client/intake'
     | '/client/media'
     | '/client/messages'
     | '/client/overview'
@@ -730,6 +741,7 @@ export interface FileRouteTypes {
     | '/admin/webhooks'
     | '/client/calendar'
     | '/client/channels'
+    | '/client/intake'
     | '/client/media'
     | '/client/messages'
     | '/client/overview'
@@ -795,6 +807,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/webhooks'
     | '/_authenticated/client/calendar'
     | '/_authenticated/client/channels'
+    | '/_authenticated/client/intake'
     | '/_authenticated/client/media'
     | '/_authenticated/client/messages'
     | '/_authenticated/client/overview'
@@ -980,6 +993,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/client/media'
       preLoaderRoute: typeof AuthenticatedClientMediaRouteImport
+      parentRoute: typeof AuthenticatedClientRouteRoute
+    }
+    '/_authenticated/client/intake': {
+      id: '/_authenticated/client/intake'
+      path: '/intake'
+      fullPath: '/client/intake'
+      preLoaderRoute: typeof AuthenticatedClientIntakeRouteImport
       parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/client/channels': {
@@ -1380,6 +1400,7 @@ const AuthenticatedAdminRouteRouteWithChildren =
 interface AuthenticatedClientRouteRouteChildren {
   AuthenticatedClientCalendarRoute: typeof AuthenticatedClientCalendarRoute
   AuthenticatedClientChannelsRoute: typeof AuthenticatedClientChannelsRoute
+  AuthenticatedClientIntakeRoute: typeof AuthenticatedClientIntakeRoute
   AuthenticatedClientMediaRoute: typeof AuthenticatedClientMediaRoute
   AuthenticatedClientMessagesRoute: typeof AuthenticatedClientMessagesRoute
   AuthenticatedClientOverviewRoute: typeof AuthenticatedClientOverviewRoute
@@ -1393,6 +1414,7 @@ const AuthenticatedClientRouteRouteChildren: AuthenticatedClientRouteRouteChildr
   {
     AuthenticatedClientCalendarRoute: AuthenticatedClientCalendarRoute,
     AuthenticatedClientChannelsRoute: AuthenticatedClientChannelsRoute,
+    AuthenticatedClientIntakeRoute: AuthenticatedClientIntakeRoute,
     AuthenticatedClientMediaRoute: AuthenticatedClientMediaRoute,
     AuthenticatedClientMessagesRoute: AuthenticatedClientMessagesRoute,
     AuthenticatedClientOverviewRoute: AuthenticatedClientOverviewRoute,

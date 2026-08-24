@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme";
+import { useClientStore } from "@/lib/stores/client-store";
 import { Bell, Menu, Moon, Search, Sun } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { NotificationCenter, useNotificationCenter } from "@/components/notification-center";
@@ -48,6 +49,16 @@ export function AdminTopbar() {
   const { unreadCount } = notificationCenter;
 
   const title = Object.entries(TITLES).find(([k]) => path.startsWith(k))?.[1] ?? "Elevate";
+  const activeClient = useClientStore((s) => s.activeClient);
+
+  // A06: elke pagina droeg dezelfde titel ("Elevate Design — Elevate your
+  // brand"), ongeacht scherm of actieve klant — onbruikbaar met meerdere
+  // tabbladen open. Hergebruikt dezelfde TITLES-bron als de kop hierboven.
+  useEffect(() => {
+    document.title = activeClient
+      ? `${title} · ${activeClient.name} — Elevate`
+      : `${title} — Elevate`;
+  }, [title, activeClient]);
 
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? "EL";
 

@@ -26,6 +26,17 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
   }
 }
 
+async function assertClientAccess(
+  ctx: { supabase: SupabaseClient<Database>; userId: string },
+  clientId: string,
+) {
+  const { data: ok } = await ctx.supabase.rpc("user_has_client_access", {
+    _user_id: ctx.userId,
+    _client_id: clientId,
+  });
+  if (!ok) throw new Error("Geen toegang tot deze klant");
+}
+
 const PLATFORM_LIST: CampaignPlatform[] = ALL_PLATFORM_IDS;
 
 // ── Intake ───────────────────────────────────────────────────────────────────
@@ -78,6 +89,51 @@ export const saveIntake = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
+    const row: TablesInsert<"client_intake"> = {
+      client_id: data.clientId,
+      answers: data.answers as unknown as Json,
+      status: data.status,
+    };
+    const { data: saved, error } = await supabaseAdmin
+      .from("client_intake")
+      .upsert(row, { onConflict: "client_id" })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return saved;
+  });
+
+// A18: klanten konden de intake nergens zelf invullen — de aanleverlijst
+// verwees ernaar (zie deliverables.functions.ts), maar de vragenlijst zelf
+// bestond alleen op /admin/clients/$id/intake. Zelfde tabel en schema als
+// hierboven, alleen met assertClientAccess i.p.v. assertAdmin.
+export const getClientIntake = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertClientAccess(context, data.clientId);
+    const { data: intake, error } = await supabaseAdmin
+      .from("client_intake")
+      .select("*")
+      .eq("client_id", data.clientId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return intake;
+  });
+
+export const saveClientIntake = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        clientId: z.string().uuid(),
+        answers: intakeAnswersSchema,
+        status: z.enum(["draft", "completed"]).default("draft"),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertClientAccess(context, data.clientId);
     const row: TablesInsert<"client_intake"> = {
       client_id: data.clientId,
       answers: data.answers as unknown as Json,
