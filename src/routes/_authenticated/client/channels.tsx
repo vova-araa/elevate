@@ -1,66 +1,22 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { confirmDialog } from "@/components/ui/confirm";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { z } from "zod";
-import { differenceInCalendarDays, formatDistanceToNow } from "date-fns";
-import { nl } from "date-fns/locale";
-import { CheckCircle2, Loader2, Link2, X, AlertTriangle, ShieldCheck } from "lucide-react";
+import { useEffect } from "react";
+import { CheckCircle2, AlertTriangle, ShieldCheck, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  listClientChannels,
-  startSocialConnect,
-  disconnectChannel,
-  getSocialSetupStatus,
-  connectChannelManually,
-} from "@/lib/channels.functions";
+import { listClientChannels } from "@/lib/channels.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveClient } from "@/hooks/use-active-client";
 import { PLATFORMS as PLATFORM_CONFIG, type Platform } from "@/config/platforms";
-import { META_REVIEW_PENDING, META_GATED_PLATFORMS } from "@/config/feature-flags";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ManualConnectForm } from "@/components/manual-connect-form";
-
-const searchSchema = z.object({
-  connected: z.string().optional(),
-  handle: z.string().optional(),
-  error: z.string().optional(),
-});
 
 export const Route = createFileRoute("/_authenticated/client/channels")({
-  validateSearch: searchSchema,
   component: ChannelsPage,
 });
 
-/**
- * Waarschuwing wanneer er écht een mens aan te pas moet komen.
- *
- * Nadrukkelijk niet op basis van de vervaldatum van het access-token: die van
- * TikTok is 24 uur en wordt elke dag automatisch vernieuwd, en het Meta
- * page-token waarmee we publiceren verloopt helemaal niet. `reconnectBefore` is
- * de datum waarop verversen niet meer kan — is die leeg, dan blijft de
- * koppeling vanzelf in leven.
- */
-function tokenExpiryWarning(
-  reconnectBefore: string | null | undefined,
-): { expired: boolean; message: string } | null {
-  if (!reconnectBefore) return null;
-  const expires = new Date(reconnectBefore);
-  if (Number.isNaN(expires.getTime())) return null;
-  const days = differenceInCalendarDays(expires, new Date());
-  if (days < 0) return { expired: true, message: "Koppeling verlopen — opnieuw koppelen" };
-  if (days <= 14) {
-    const rel = formatDistanceToNow(expires, { locale: nl, addSuffix: true });
-    return { expired: false, message: `Koppeling verloopt ${rel} — opnieuw koppelen` };
-  }
-  return null;
-}
-
 // tint = alleen de kaart-gradient (from-…/to-…). De platformkleur zit
 // uitsluitend op de icoon-box (iconTint); labels erven text-foreground,
-// zodat ze in light mode leesbaar blijven (zie ook connect.$token.tsx).
+// zodat ze in light mode leesbaar blijven.
 // Welke platforms er zijn en of ze aangeboden worden komt uit
 // src/config/platforms.ts (A02) — hier alleen de kaartkleuren.
 const CARD_TINT: Record<Platform, { tint: string; iconTint: string }> = {
@@ -82,42 +38,15 @@ const VISIBLE_PLATFORMS = PLATFORMS.filter((p) => p.enabled);
 
 function ChannelsPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
-  const { connected, handle, error } = Route.useSearch();
   const { clientId, previewing } = useActiveClient();
   const list = useServerFn(listClientChannels);
-  const connect = useServerFn(startSocialConnect);
-  const disc = useServerFn(disconnectChannel);
-  const connectManually = useServerFn(connectChannelManually);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["client-channels", clientId],
     // In admin-preview expliciet de bekeken klant meegeven; de server
     // controleert die toegang alsnog via user_has_client_access.
     queryFn: () => list({ data: previewing ? { clientId } : {} }),
   });
-
-  // Setup-status: welke platforms zijn in de omgeving geconfigureerd. Zo tonen
-  // we niet-beschikbare platforms als "Nog niet beschikbaar" i.p.v. een
-  // Koppelen-knop die op een env-fout uitloopt.
-  const setupFn = useServerFn(getSocialSetupStatus);
-  const { data: setup } = useQuery({
-    queryKey: ["social-setup-status"],
-    queryFn: () => setupFn(),
-    staleTime: 60_000,
-  });
-
-  // Toon eenmalig een toast voor de OAuth-callback-redirect, wis daarna de querystring.
-  useEffect(() => {
-    if (!connected && !error) return;
-    if (error) toast.error(error);
-    else if (connected) toast.success(`${handle ?? "Account"} gekoppeld via ${connected}`);
-    navigate({
-      to: "/client/channels",
-      search: previewing ? { asClient: clientId } : {},
-      replace: true,
-    });
-  }, [connected, handle, error, navigate, previewing, clientId]);
 
   // Realtime: refetch wanneer er iets verandert in social_connections van deze klant
   useEffect(() => {
@@ -140,42 +69,6 @@ function ChannelsPage() {
     };
   }, [data?.clientId, qc]);
 
-  const [confirm, setConfirm] = useState<Platform | null>(null);
-  const [manualFormOpen, setManualFormOpen] = useState<Platform | null>(null);
-
-  const connectMut = useMutation({
-    mutationFn: async (platform: Platform) => {
-      const res = await connect({
-        data: { platform, returnTo: "client", origin: window.location.origin },
-      });
-      return res;
-    },
-    onSuccess: (res) => {
-      window.location.href = res.redirectUrl;
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Verbinden mislukt"),
-  });
-
-  const disconnectMut = useMutation({
-    mutationFn: (platform: Platform) => disc({ data: { platform } }),
-    onSuccess: () => {
-      toast.success("Ontkoppeld");
-      refetch();
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Mislukt"),
-  });
-
-  const connectManuallyMut = useMutation({
-    mutationFn: (vars: { platform: Platform; accountUsername: string; followerCount?: number }) =>
-      connectManually({ data: vars }),
-    onSuccess: () => {
-      toast.success("Handmatig gekoppeld");
-      setManualFormOpen(null);
-      refetch();
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Koppelen mislukt"),
-  });
-
   const channelsByPlatform = new Map((data?.channels ?? []).map((c) => [c.platform, c]));
 
   return (
@@ -184,7 +77,8 @@ function ChannelsPage() {
         <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Koppelingen</p>
         <h1 className="font-display text-4xl sm:text-5xl mt-2">Kanalen</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Koppel je social-accounts. Dit duurt ongeveer 30 seconden per platform.
+          Overzicht van je gekoppelde social-accounts. Je Elevate-team koppelt en beheert deze voor
+          je.
         </p>
       </header>
 
@@ -202,19 +96,6 @@ function ChannelsPage() {
             const ch = channelsByPlatform.get(id);
             const connectedActive = !!ch && ch.status === "active";
             const expired = !!ch && ch.status === "expired";
-            const manual = !!ch && ch.status === "manual";
-            const warn = tokenExpiryWarning(ch?.reconnectBefore);
-            // Alleen tonen als "Koppelen" wanneer het platform in de omgeving is
-            // ingesteld. Zonder setup-status (nog aan het laden) niet blokkeren.
-            const available = !setup || !!setup.platforms[id]?.configured;
-            // Meta App Review loopt nog — zie admin/channels.tsx voor dezelfde
-            // toelichting. Pauzeert de OAuth-knop voor Instagram/Facebook en
-            // maakt ruimte voor de handmatige overbrugging.
-            const pausedForReview =
-              META_REVIEW_PENDING &&
-              (META_GATED_PLATFORMS as readonly string[]).includes(id) &&
-              !connectedActive &&
-              !manual;
             return (
               <div
                 key={id}
@@ -231,12 +112,7 @@ function ChannelsPage() {
                 )}
                 {expired && (
                   <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-full px-2 py-0.5">
-                    <AlertTriangle className="h-3 w-3" /> Verlopen — koppel opnieuw
-                  </span>
-                )}
-                {manual && (
-                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gold bg-gold/10 border border-gold/30 rounded-full px-2 py-0.5">
-                    <Link2 className="h-3 w-3" /> Handmatig (tijdelijk)
+                    <AlertTriangle className="h-3 w-3" /> Aandacht nodig
                   </span>
                 )}
                 <div className="flex items-center gap-3">
@@ -258,157 +134,37 @@ function ChannelsPage() {
                   </div>
                 </div>
 
-                {warn && !expired && (
-                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                    {warn.message}
-                  </div>
-                )}
-
                 {/* Geruststelling in plaats van stilte: de klant hoeft niets te
                     doen zolang de koppeling zichzelf vernieuwt. */}
-                {connectedActive && !warn && (
+                {connectedActive && (
                   <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
-                    Blijft actief — je hoeft niets opnieuw te koppelen
+                    Blijft actief — je hoeft hier niets voor te doen
                   </div>
                 )}
 
-                <div className="mt-4 flex items-center gap-2">
-                  {connectedActive ? (
-                    <button
-                      onClick={async () => {
-                        if (
-                          await confirmDialog("Weet je het zeker? Posts vanuit dit kanaal stoppen.")
-                        ) {
-                          disconnectMut.mutate(id);
-                        }
-                      }}
-                      disabled={disconnectMut.isPending}
-                      className="text-xs min-h-11 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
-                    >
-                      {disconnectMut.isPending ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        "Ontkoppelen"
-                      )}
-                    </button>
-                  ) : manual ? (
-                    <div className="w-full space-y-2">
-                      <p className="text-[11px] text-muted-foreground">
-                        Handmatig ingevuld, geen echte koppeling — publiceren kan hier nog niet mee.
-                      </p>
-                      <button
-                        onClick={async () => {
-                          if (await confirmDialog(`${label} ontkoppelen?`)) {
-                            disconnectMut.mutate(id);
-                          }
-                        }}
-                        disabled={disconnectMut.isPending}
-                        className="text-xs min-h-11 px-3 rounded-lg border border-border bg-background/30 hover:bg-background/50 text-muted-foreground inline-flex items-center gap-1.5"
-                      >
-                        {disconnectMut.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          "Ontkoppelen"
-                        )}
-                      </button>
-                    </div>
-                  ) : pausedForReview ? (
-                    manualFormOpen === id ? (
-                      <ManualConnectForm
-                        platformLabel={label}
-                        busy={connectManuallyMut.isPending}
-                        onCancel={() => setManualFormOpen(null)}
-                        onSubmit={(values) =>
-                          connectManuallyMut.mutate({ platform: id, ...values })
-                        }
-                      />
-                    ) : (
-                      <button
-                        onClick={() => setManualFormOpen(id)}
-                        className="text-xs min-h-11 px-3 rounded-lg border border-gold/30 bg-gold/5 text-gold font-medium inline-flex items-center gap-1.5"
-                      >
-                        <Link2 className="h-3.5 w-3.5" /> Koppel handmatig (tijdelijk)
-                      </button>
-                    )
-                  ) : available ? (
-                    <button
-                      onClick={() => setConfirm(id)}
-                      disabled={connectMut.isPending}
-                      className="text-xs min-h-11 px-3 rounded-lg bg-gold/20 text-gold font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      <Link2 className="h-3.5 w-3.5" /> Koppelen
-                    </button>
-                  ) : (
-                    <span className="text-xs min-h-11 px-3 rounded-lg border border-border/60 bg-background/20 text-muted-foreground inline-flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5" /> Nog niet beschikbaar
-                    </span>
-                  )}
-                </div>
+                {expired && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    Neem contact op met je Elevate-team om opnieuw te koppelen.
+                  </div>
+                )}
+
+                {!ch && (
+                  <p className="mt-3 text-[11px] text-muted-foreground">
+                    Nog niet gekoppeld — vraag je Elevate-team om dit kanaal aan te sluiten.
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Confirm sheet/modal */}
-      {confirm &&
-        (() => {
-          const meta = PLATFORMS.find((p) => p.id === confirm)!;
-          const Icon = meta.Icon;
-          return (
-            <div
-              className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
-              onClick={() => setConfirm(null)}
-            >
-              <div
-                className="w-full sm:max-w-md bg-card border border-gold/20 rounded-t-3xl sm:rounded-2xl p-6 space-y-4 shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="h-12 w-12 rounded-2xl bg-gold/15 grid place-items-center text-gold">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <button
-                    onClick={() => setConfirm(null)}
-                    className="h-8 w-8 rounded-full grid place-items-center text-muted-foreground hover:bg-accent/30"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div>
-                  <div className="font-display text-xl">{meta.label} koppelen</div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Je wordt doorgestuurd naar {meta.label} om toegang te geven. Dit duurt maar 30
-                    seconden.
-                  </p>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={() => setConfirm(null)}
-                    className="flex-1 h-10 rounded-xl border border-border text-sm"
-                  >
-                    Annuleren
-                  </button>
-                  <button
-                    onClick={() => connectMut.mutate(confirm)}
-                    disabled={connectMut.isPending}
-                    className="flex-1 h-10 rounded-xl bg-gold text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {connectMut.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Verbinding voorbereiden…
-                      </>
-                    ) : (
-                      "Koppelen"
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+        <Info className="h-3.5 w-3.5 shrink-0 translate-y-0.5" />
+        Kanalen koppelen doe je niet zelf meer op dit scherm — je Elevate-team beheert dit centraal.
+      </p>
     </div>
   );
 }

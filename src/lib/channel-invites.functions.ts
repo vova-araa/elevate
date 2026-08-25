@@ -149,10 +149,7 @@ export const getConnectContext = createServerFn({ method: "POST" })
         return {
           platform,
           available: env[platform].configured,
-          // 'manual' is een tijdelijke, handmatig ingevulde koppeling (zie
-          // connectManuallyByToken) — voor de eigenaar telt die net zo goed als
-          // "gekoppeld"; alleen de publiceer-flow behandelt hem anders.
-          connected: !!conn && (conn.status === "active" || conn.status === "manual"),
+          connected: !!conn && conn.status === "active",
           handle: conn?.account_username ?? null,
           followerCount: conn?.follower_count ?? null,
           status: conn?.status ?? null,
@@ -162,44 +159,6 @@ export const getConnectContext = createServerFn({ method: "POST" })
     );
 
     return { clientName, platforms };
-  });
-
-// ── Handmatige koppeling via token (publiek, geen auth) ──────────────────────
-// Zelfde tijdelijke overbrugging als connectChannelManually in
-// channels.functions.ts, hier voor de eigenaar-zonder-account-flow.
-
-export const connectManuallyByToken = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
-    z
-      .object({
-        token: z.string().min(1).max(200),
-        platform: PLATFORM,
-        accountUsername: z.string().trim().min(1).max(120),
-        followerCount: z.number().int().min(0).max(1_000_000_000).optional(),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data }) => {
-    const { clientId } = await resolveInviteToken(data.token);
-
-    const { error } = await supabaseAdmin.from("social_connections").upsert(
-      {
-        client_id: clientId,
-        platform: data.platform,
-        account_username: data.accountUsername,
-        follower_count: data.followerCount ?? null,
-        status: "manual",
-        access_token: null,
-        refresh_token: null,
-        token_expires_at: null,
-        refresh_expires_at: null,
-        never_expires: false,
-        meta: { provider: "manual" },
-      },
-      { onConflict: "client_id,platform" },
-    );
-    if (error) throw new Error(error.message);
-    return { ok: true };
   });
 
 // ── OAuth-flow starten via token (publiek, geen auth) ────────────────────────

@@ -2211,7 +2211,7 @@ export type Database = {
       report_type: "monthly" | "campaign" | "analytics" | "audit" | "other";
       roadmap_status: "draft" | "active" | "completed" | "archived";
       scheduled_post_status: "draft" | "scheduled" | "publishing" | "published" | "failed";
-      social_connection_status: "active" | "expired" | "error" | "pending" | "manual";
+      social_connection_status: "active" | "expired" | "error" | "pending";
       social_platform: "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
       step_status: "pending" | "in_progress" | "completed";
       task_priority: "low" | "medium" | "high" | "urgent";
@@ -2373,7 +2373,7 @@ export const Constants = {
       report_type: ["monthly", "campaign", "analytics", "audit", "other"],
       roadmap_status: ["draft", "active", "completed", "archived"],
       scheduled_post_status: ["draft", "scheduled", "publishing", "published", "failed"],
-      social_connection_status: ["active", "expired", "error", "pending", "manual"],
+      social_connection_status: ["active", "expired", "error", "pending"],
       social_platform: ["instagram", "tiktok", "linkedin", "youtube", "facebook"],
       step_status: ["pending", "in_progress", "completed"],
       task_priority: ["low", "medium", "high", "urgent"],

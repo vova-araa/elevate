@@ -3,15 +3,31 @@
 Dingen die ik niet kon afronden omdat de gegevens ontbreken, of die bewust
 bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026.
 
-## Migratie voor handmatig koppelen (Meta App Review) — actie nodig
+## Postiz-koppeling — actie nodig, en niet live getest
 
-`supabase/migrations/20260824200000_social_connection_manual_status.sql`
-staat klaar maar is nog niet op de live database toegepast (geen
-DB-toegang in deze sessie) — zet 'm via `supabase db push` of plak de
-inhoud in de SQL-editor van het Supabase-dashboard, net als bij de
-Drive-migratie hieronder. Zonder deze migratie geeft "Koppel handmatig"
-op /admin/channels, /client/channels en /connect/$token een
-database-foutmelding (de status-waarde 'manual' bestaat dan nog niet).
+Kanalen koppelen loopt nu via het bestaande Postiz-account i.p.v. onze eigen
+Meta/TikTok-OAuth (die code blijft ongebruikt in de repo staan als
+terugvaloptie). Voor het werkt:
+
+- [ ] **API-key zetten**: kopieer de API-key uit Postiz (Instellingen →
+  API) en zet 'm als `POSTIZ_API_KEY` in Render. Zonder deze key toont
+  /admin/channels een duidelijke "nog niet gekoppeld"-melding i.p.v. te
+  crashen.
+- [ ] Alleen bij een zelf-gehoste Postiz-instance (niet postiz.com): zet ook
+  `POSTIZ_BASE_URL` (bv. `https://jouw-domein.nl/public/v1`).
+- [ ] **Nieuwe kanalen koppel je in Postiz zelf** (niet in Elevate) — Postiz'
+  publieke API heeft geen "kom terug naar Elevate"-redirect na het
+  autoriseren. Ga daarna naar /admin/channels, kies bij het platform "Koppel
+  via Postiz" en wijs het net gekoppelde kanaal toe aan de juiste klant. Al
+  gekoppelde kanalen in je Postiz-account staan na het zetten van de API-key
+  direct klaar om toegewezen te worden.
+- [ ] **Belangrijk — nog niet live getest**: ik had in deze sessie geen
+  Postiz API-key om tegen te testen. De koppelingen (kanalen ophalen/
+  toewijzen) zijn gebouwd op Postiz' eigen broncode
+  (github.com/gitroomhq/postiz-app), dus die zou moeten kloppen, maar het
+  publiceren via Postiz (`social-publish.server.ts`) kon ik alleen tegen de
+  documentatie/broncode bouwen, niet uitproberen. Doe een test-publicatie
+  naar één kanaal voordat je hier op vertrouwt voor klantwerk.
 
 ## Google Drive-koppeling (/admin/drive) — actie nodig
 
@@ -141,15 +157,10 @@ open.
 - ANTHROPIC_API_KEY vervangen (de oude staat in een chatgesprek)
 - CRON_SECRET genereren + publiceerronde aanzetten
 - TikTok-audit: scopes ophogen na goedkeuring, opnieuw koppelen
-- Meta App Review: zes permissions + bedrijfsverificatie. Tot die goedgekeurd
-  is, staat Instagram/Facebook op /admin/channels, /client/channels en de
-  publieke koppel-link (/connect/$token) op "handmatig koppelen" — de echte
-  OAuth-knop is gepauzeerd zodat hij niet doodloopt voor iedereen buiten de
-  Meta-app-testers. Zet na goedkeuring `VITE_META_REVIEW_PENDING=false` in
-  Render en de OAuth-knop komt vanzelf terug (zie src/config/feature-flags.ts).
-  Handmatige koppelingen (status 'manual' in social_connections) hebben geen
-  token en kunnen dus niet gebruikt worden om te publiceren — vervang ze na
-  goedkeuring gewoon door een echte koppeling via "Ontkoppel" + "Koppelen".
+- Meta App Review: zes permissions + bedrijfsverificatie — inmiddels minder
+  urgent nu koppelen via Postiz loopt (zie "Postiz-koppeling" hierboven),
+  maar nog steeds nodig als je ooit terug wilt naar de eigen directe
+  Meta-OAuth (die code staat er nog, ongebruikt).
 - Leaked password protection aanzetten in Supabase
 - `best_time_benchmarks`-tabel is niet meer in gebruik (zie A03) — kan
   verwijderd worden met een aparte, expliciet bevestigde migratie. Ik laat
