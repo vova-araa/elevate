@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
+import { PwaInstall } from "@/components/pwa-install";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -138,6 +139,10 @@ function AuthLayout() {
           </div>
         </main>
       </div>
+      {/* Klantportaal had geen eigen installatie-ingang — alleen admins kregen
+          de directe "Installeer"-balk te zien. Zelfde component, geen vaste
+          onderbalk hier om vrij te laten (bottom-4 default). */}
+      <PwaInstall />
     </div>
   );
 }

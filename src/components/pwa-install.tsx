@@ -5,8 +5,12 @@ import { useInstallPrompt } from "@/lib/pwa";
 /**
  * Installatiebalk, alleen op mobiel en alleen zolang de app nog niet is
  * geïnstalleerd. Zodra hij geïnstalleerd is (of weggeklikt) verdwijnt hij.
+ *
+ * `bottomClassName`: in het admin-portaal staat er een vaste mobiele
+ * onderbalk (MobileBottomNav) die deze balk moet vrijlaten; het klantportaal
+ * heeft die niet, dus daar mag hij lager staan.
  */
-export function PwaInstall() {
+export function PwaInstall({ bottomClassName = "bottom-4" }: { bottomClassName?: string }) {
   const { canInstall, isIos, isIosSafari, install, dismiss } = useInstallPrompt();
   const [showIosHelp, setShowIosHelp] = useState(false);
 
@@ -15,7 +19,7 @@ export function PwaInstall() {
   return (
     <>
       {/* md:hidden = uitsluitend op telefoon/tablet */}
-      <div className="fixed inset-x-3 bottom-[76px] z-40 md:hidden">
+      <div className={`fixed inset-x-3 z-40 md:hidden ${bottomClassName}`}>
         <div className="flex items-center gap-3 card-surface-lg bg-card/95 p-3 shadow-elegant backdrop-blur">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold">
             <Download className="h-5 w-5" />

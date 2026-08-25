@@ -107,7 +107,7 @@ function AdminLayout() {
       <MobileBottomNav />
       <MobileNavSheet />
       <MobileFab />
-      <PwaInstall />
+      <PwaInstall bottomClassName="bottom-[76px]" />
       <CommandPalette />
     </div>
   );
