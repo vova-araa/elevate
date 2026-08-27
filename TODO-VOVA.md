@@ -3,6 +3,29 @@
 Dingen die ik niet kon afronden omdat de gegevens ontbreken, of die bewust
 bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026.
 
+## Plann als tussenpartij — kon ik niet vinden, actie nodig
+
+Je vroeg om Postiz te vervangen door **Plann** (plannthat.com) voor de
+tijdelijke koppeling. Ik heb gezocht naar een publieke API/developer-
+documentatie voor Plann (via websearch en direct op plannthat.com) en niets
+gevonden — geen API-referentie, geen developer-portal, geen Zapier-app met
+koppel/publiceer-acties. Dat is een wezenlijk verschil met Postiz (dat is
+open-source en API-first, vandaar dat die integratie wél lukte): zonder een
+API is er niets om Elevate programmatisch mee te laten praten.
+
+Ik heb de Postiz-koppeling daarom teruggedraaid (git revert) naar de vorige
+werkende staat: het handmatige-invoerformulier voor Instagram/Facebook
+tijdens Meta App Review, zie hieronder. Twee opties om verder te komen:
+
+- [ ] **Jij checkt of Plann een API heeft** — bijvoorbeeld als betalende
+  agency-klant een developer-portal, API-key-instelling, of contactpersoon
+  bij Plann die dat kan bevestigen. Stuur me de documentatie/toegang, dan
+  bouw ik 'm net zo als bij Postiz.
+- [ ] **Of**: als Plann geen API blijkt te hebben, is een echte koppeling
+  simpelweg niet mogelijk — dan is handmatige boekhouding in Elevate (welk
+  Plann-account hoort bij welke klant, puur ter administratie) het hoogst
+  haalbare, zonder dat er ook echt via Plann gepubliceerd kan worden.
+
 ## Migratie voor handmatig koppelen (Meta App Review) — actie nodig
 
 `supabase/migrations/20260824200000_social_connection_manual_status.sql`
