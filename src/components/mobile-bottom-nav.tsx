@@ -29,7 +29,7 @@ export function MobileBottomNav() {
   });
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 h-[60px] bg-background/95 backdrop-blur-md border-t border-gold/15 flex">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 min-h-[60px] pb-[env(safe-area-inset-bottom)] bg-background/95 backdrop-blur-md border-t border-gold/15 flex">
       {items.map((it) => {
         const active = path === it.to || path.startsWith(it.to + "/");
         return (

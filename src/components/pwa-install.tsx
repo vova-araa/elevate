@@ -10,7 +10,11 @@ import { useInstallPrompt } from "@/lib/pwa";
  * onderbalk (MobileBottomNav) die deze balk moet vrijlaten; het klantportaal
  * heeft die niet, dus daar mag hij lager staan.
  */
-export function PwaInstall({ bottomClassName = "bottom-4" }: { bottomClassName?: string }) {
+export function PwaInstall({
+  bottomClassName = "bottom-[calc(1rem+env(safe-area-inset-bottom))]",
+}: {
+  bottomClassName?: string;
+}) {
   const { canInstall, isIos, isIosSafari, install, dismiss } = useInstallPrompt();
   const [showIosHelp, setShowIosHelp] = useState(false);
 

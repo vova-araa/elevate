@@ -97,7 +97,7 @@ function AdminLayout() {
         )}
       >
         <AdminTopbar />
-        <main className="scroll-surface flex-1 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+        <main className="scroll-surface flex-1 p-4 md:p-6 lg:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8">
           {/* Zachte page-transition bij navigeren tussen admin-schermen. */}
           <div key={pathname} className="page-enter">
             <Outlet />
@@ -107,7 +107,7 @@ function AdminLayout() {
       <MobileBottomNav />
       <MobileNavSheet />
       <MobileFab />
-      <PwaInstall bottomClassName="bottom-[76px]" />
+      <PwaInstall bottomClassName="bottom-[calc(76px+env(safe-area-inset-bottom))]" />
       <CommandPalette />
     </div>
   );
