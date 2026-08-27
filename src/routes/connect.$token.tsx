@@ -1,30 +1,48 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  Link2,
   Instagram,
   Linkedin,
   Youtube,
   Facebook,
   Music2,
+  PartyPopper,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
-import { getConnectContext, type ConnectPlatformStatus } from "@/lib/channel-invites.functions";
+import {
+  getConnectContext,
+  startConnectByToken,
+  connectManuallyByToken,
+  type ConnectPlatformStatus,
+} from "@/lib/channel-invites.functions";
+import { META_REVIEW_PENDING, META_GATED_PLATFORMS } from "@/config/feature-flags";
+import { ManualConnectForm } from "@/components/manual-connect-form";
 
-const searchSchema = z.object({});
+const searchSchema = z.object({
+  connected: z.string().optional(),
+  handle: z.string().optional(),
+  error: z.string().optional(),
+});
 
 export const Route = createFileRoute("/connect/$token")({
   ssr: false,
   validateSearch: searchSchema,
   // Publieke, klant-specifieke link — nooit indexeren.
   head: () => ({
-    meta: [{ title: "Kanalen — Elevate Design" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "Accounts koppelen — Elevate Design" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
   component: ConnectPage,
 });
@@ -81,7 +99,10 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function ConnectPage() {
   const { token } = Route.useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
   const getContext = useServerFn(getConnectContext);
+  const { connected, handle, error } = Route.useSearch();
 
   const {
     data,
@@ -93,6 +114,15 @@ function ConnectPage() {
     queryFn: () => getContext({ data: { token } }),
     retry: false,
   });
+
+  // Toon eenmalig een melding voor de OAuth-callback-redirect, wis daarna de querystring.
+  useEffect(() => {
+    if (!connected && !error) return;
+    if (error) toast.error(error);
+    else if (connected) toast.success(`${handle ?? "Account"} gekoppeld via ${connected}`);
+    qc.invalidateQueries({ queryKey: ["connect-context", token] });
+    navigate({ to: "/connect/$token", params: { token }, search: {}, replace: true });
+  }, [connected, handle, error, navigate, qc, token]);
 
   if (isLoading) {
     return (
@@ -124,20 +154,35 @@ function ConnectPage() {
   }
 
   const platforms = data?.platforms ?? [];
+  const anyConnected = platforms.some((p) => p.connected);
 
   return (
     <Shell>
       <div className="fade-in-up glass-strong rounded-2xl p-6 sm:p-8 text-center">
-        <h1 className="font-display text-3xl text-gold">Social-accounts van {data?.clientName}</h1>
+        <h1 className="font-display text-3xl text-gold">
+          Koppel de social-accounts van {data?.clientName}
+        </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Kanalen koppelen doe je niet zelf via deze link — je Elevate-team sluit ze centraal aan.
-          Hieronder zie je de actuele status.
+          Kies hieronder een platform en log in met het account van je bedrijf. Klaar in een paar
+          klikken — je hoeft nergens voor in te loggen op dit portaal.
         </p>
+        {anyConnected && (
+          <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-300">
+            <PartyPopper className="h-3.5 w-3.5" /> Sommige accounts staan al gekoppeld.
+          </p>
+        )}
       </div>
 
       <div className="space-y-3 pb-8">
         {platforms.map((p) => (
-          <PlatformCard key={p.platform} platform={p} />
+          <PlatformCard
+            key={p.platform}
+            platform={p}
+            token={token}
+            onManuallyConnected={() =>
+              qc.invalidateQueries({ queryKey: ["connect-context", token] })
+            }
+          />
         ))}
       </div>
 
@@ -148,8 +193,60 @@ function ConnectPage() {
   );
 }
 
-function PlatformCard({ platform }: { platform: ConnectPlatformStatus }) {
+function PlatformCard({
+  platform,
+  token,
+  onManuallyConnected,
+}: {
+  platform: ConnectPlatformStatus;
+  token: string;
+  onManuallyConnected: () => void;
+}) {
+  const start = useServerFn(startConnectByToken);
+  const connectManually = useServerFn(connectManuallyByToken);
   const pm = PLATFORM_META[platform.platform] ?? PLATFORM_META.instagram;
+  const [busy, setBusy] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualBusy, setManualBusy] = useState(false);
+
+  async function connect() {
+    setBusy(true);
+    try {
+      const res = await start({
+        data: { token, platform: platform.platform, origin: window.location.origin },
+      });
+      window.location.href = res.redirectUrl;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Koppelen mislukt");
+      setBusy(false);
+    }
+  }
+
+  async function connectManuallySubmit(values: {
+    accountUsername: string;
+    followerCount?: number;
+  }) {
+    setManualBusy(true);
+    try {
+      await connectManually({ data: { token, platform: platform.platform, ...values } });
+      toast.success("Handmatig gekoppeld");
+      setManualOpen(false);
+      onManuallyConnected();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Koppelen mislukt");
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
+  // Meta App Review loopt nog — zie admin/channels.tsx voor dezelfde
+  // toelichting. Pauzeert de OAuth-knop voor Instagram/Facebook hier ook,
+  // zodat de eigenaar niet op een doodlopende koppel-knop stuit.
+  const manual = platform.status === "manual";
+  const pausedForReview =
+    META_REVIEW_PENDING &&
+    (META_GATED_PLATFORMS as readonly string[]).includes(platform.platform) &&
+    !platform.connected;
 
   return (
     <div className="glass-strong rounded-2xl p-4 sm:p-5">
@@ -169,17 +266,52 @@ function PlatformCard({ platform }: { platform: ConnectPlatformStatus }) {
               )}
             </div>
           ) : platform.status === "expired" ? (
-            <div className="text-xs text-amber-600 dark:text-amber-300">Aandacht nodig</div>
-          ) : (
+            <div className="text-xs text-amber-600 dark:text-amber-300">
+              Koppeling verlopen — koppel opnieuw
+            </div>
+          ) : platform.available ? (
             <div className="text-xs text-muted-foreground">Nog niet gekoppeld</div>
+          ) : (
+            <div className="text-xs text-muted-foreground">Nog niet beschikbaar</div>
           )}
         </div>
-        {platform.connected && (
+        {manual ? (
+          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gold bg-gold/10 border border-gold/30 rounded-full px-2 py-1">
+            <Link2 className="h-3 w-3" /> Handmatig
+          </span>
+        ) : platform.connected ? (
           <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-400/30 rounded-full px-2 py-1">
             <CheckCircle2 className="h-3 w-3" /> Gekoppeld
           </span>
+        ) : pausedForReview ? (
+          <button
+            onClick={() => setManualOpen((v) => !v)}
+            className="shrink-0 min-h-11 rounded-lg border border-gold/30 bg-gold/5 px-4 text-sm font-medium text-gold inline-flex items-center justify-center gap-1.5"
+          >
+            <Link2 className="h-4 w-4" />
+            Koppel handmatig
+          </button>
+        ) : platform.available ? (
+          <button
+            onClick={connect}
+            disabled={busy}
+            className="shrink-0 min-h-11 rounded-lg bg-gradient-gold px-4 text-sm font-medium text-primary-foreground disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+            Koppelen
+          </button>
+        ) : (
+          <span className="shrink-0 text-[10px] text-muted-foreground/70">binnenkort</span>
         )}
       </div>
+      {manualOpen && (
+        <ManualConnectForm
+          platformLabel={pm.label}
+          busy={manualBusy}
+          onCancel={() => setManualOpen(false)}
+          onSubmit={connectManuallySubmit}
+        />
+      )}
     </div>
   );
 }

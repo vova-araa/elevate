@@ -11,7 +11,6 @@ import {
   contentRange,
   pickPrivacyLevel,
 } from "@/lib/tiktok-post";
-import { postizCreatePost, postizUploadFromUrl } from "@/lib/postiz.server";
 
 /**
  * Direct publiceren naar de platforms via de eigen OAuth-koppelingen
@@ -301,57 +300,11 @@ export async function fetchTikTokPublishStatus(
   return { status: data.status ?? "UNKNOWN", failReason: data.fail_reason ?? null };
 }
 
-/**
- * Publiceren via Postiz i.p.v. onze eigen platform-code — voor koppelingen
- * die via /admin/channels aan een Postiz-integratie zijn toegewezen (zie
- * postiz.functions.ts). Postiz beheert het access-token zelf; wij geven
- * alleen de content en het al-bekende integration-id door.
- *
- * Let op: Postiz verwerkt dit asynchroon via een eigen achtergrond-queue —
- * een geslaagde aanroep hier betekent "Postiz heeft de opdracht
- * geaccepteerd", niet per se "staat al live op het platform".
- */
-async function publishViaPostiz(
-  integrationId: string,
-  postizIdentifier: string,
-  input: PublishInput,
-): Promise<PublishResult> {
-  const media = input.mediaUrl ? [await postizUploadFromUrl(input.mediaUrl)] : undefined;
-  const { postizPostId } = await postizCreatePost({
-    type: "now",
-    date: new Date().toISOString(),
-    integrationId,
-    postizIdentifier,
-    content: input.caption,
-    media,
-  });
-  return { externalId: postizPostId };
-}
-
 export async function publishToPlatform(
   clientId: string,
   platform: SocialPlatform,
   input: PublishInput,
 ): Promise<PublishResult> {
-  const { data: conn } = await supabaseAdmin
-    .from("social_connections")
-    .select("status, meta")
-    .eq("client_id", clientId)
-    .eq("platform", platform)
-    .maybeSingle();
-  const connMeta: Meta =
-    conn?.meta && typeof conn.meta === "object" && !Array.isArray(conn.meta)
-      ? (conn.meta as Meta)
-      : {};
-  if (
-    conn?.status === "active" &&
-    connMeta.provider === "postiz" &&
-    typeof connMeta.postizIntegrationId === "string" &&
-    typeof connMeta.postizIdentifier === "string"
-  ) {
-    return publishViaPostiz(connMeta.postizIntegrationId, connMeta.postizIdentifier, input);
-  }
-
   switch (platform) {
     case "facebook":
       return publishFacebook(clientId, input);

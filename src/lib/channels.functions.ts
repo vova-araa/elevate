@@ -168,9 +168,6 @@ export const listClientChannels = createServerFn({ method: "POST" })
           pages: toPublicPages(m.pages),
           currentPageId: typeof m.pageId === "string" ? m.pageId : null,
           autoRefresh: !!refresh_token,
-          // 'postiz' voor koppelingen die via Postiz lopen (geen eigen token,
-          // geen refresh-knop nodig) — zie postiz.functions.ts.
-          metaProvider: typeof m.provider === "string" ? m.provider : null,
           neverExpires: c.never_expires,
           reconnectBefore: reconnectDeadline({
             neverExpires: c.never_expires,
@@ -181,6 +178,52 @@ export const listClientChannels = createServerFn({ method: "POST" })
         };
       }),
     };
+  });
+
+/**
+ * Tijdelijke handmatige koppeling terwijl Meta App Review nog loopt (zie
+ * META_REVIEW_PENDING in feature-flags.ts) — geen OAuth, geen token, alleen
+ * de gebruikersnaam (en optioneel een volgersaantal) die de admin zelf
+ * invult. status='manual' i.p.v. 'active': de publiceer-flow
+ * (social-publish.server.ts) accepteert alleen 'active' + een access_token,
+ * dus dit kan nooit per ongeluk gebruikt worden om te publiceren.
+ */
+export const connectChannelManually = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        clientId: z.string().uuid().optional(),
+        platform: PLATFORM,
+        accountUsername: z.string().trim().min(1).max(120),
+        followerCount: z.number().int().min(0).max(1_000_000_000).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const clientId = data.clientId ?? (await getUserClientId(supabase, userId));
+    if (!clientId) throw new Error("Geen client gekoppeld");
+    await assertClientAccess(supabase, userId, clientId);
+
+    const { error } = await supabaseAdmin.from("social_connections").upsert(
+      {
+        client_id: clientId,
+        platform: data.platform,
+        account_username: data.accountUsername,
+        follower_count: data.followerCount ?? null,
+        status: "manual",
+        access_token: null,
+        refresh_token: null,
+        token_expires_at: null,
+        refresh_expires_at: null,
+        never_expires: false,
+        meta: { provider: "manual", connectedBy: userId },
+      },
+      { onConflict: "client_id,platform" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const disconnectChannel = createServerFn({ method: "POST" })
