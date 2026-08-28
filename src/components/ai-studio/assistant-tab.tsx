@@ -226,7 +226,9 @@ export function AssistantTab() {
                     />
                     <button
                       onClick={() => setMedia((p) => p.filter((_, j) => j !== i))}
-                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border grid place-items-center opacity-0 group-hover:opacity-100"
+                      aria-label="Verwijder foto"
+                      title="Verwijder foto"
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border grid place-items-center opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -313,6 +315,8 @@ export function AssistantTab() {
         <button
           onClick={submit}
           disabled={send.isPending || !input.trim()}
+          aria-label="Verstuur bericht"
+          title="Verstuur bericht"
           className="h-9 w-9 rounded-xl bg-gold text-primary-foreground grid place-items-center disabled:opacity-40"
         >
           {send.isPending ? (
