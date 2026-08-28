@@ -2194,7 +2194,7 @@ function FeedTile({ post, ratio, onOpen }: { post: FeedPost; ratio: string; onOp
           })}
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition">
+      <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
         <p className="text-[10px] text-white line-clamp-2">{post.caption || "Geen caption"}</p>
       </div>
     </button>
