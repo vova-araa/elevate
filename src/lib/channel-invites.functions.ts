@@ -13,6 +13,7 @@ import {
   type SocialPlatform,
 } from "@/lib/social-oauth.server";
 import { ALL_PLATFORM_IDS, type Platform } from "@/config/platforms";
+import { allowRequest, requestIp } from "@/lib/rate-limit.server";
 
 /**
  * Deelbare koppel-links: een bedrijfseigenaar koppelt zijn eigen
@@ -94,6 +95,11 @@ interface ResolvedInvite {
 
 async function resolveInviteToken(token: string): Promise<ResolvedInvite> {
   if (!token || token.length < 16) throw new Error("Ongeldige link");
+  // Publieke, ongeauthenticeerde route — zelfde rem als bij approval-links:
+  // geen brute-force-risico (256-bit token), wel een rem op onbeperkt volume.
+  if (!allowRequest(`connect:${requestIp()}`, 30, 60_000)) {
+    throw new Error("Te veel aanvragen — probeer het over een minuut opnieuw");
+  }
   const tokenHash = hashToken(token);
 
   const { data: invite } = await supabaseAdmin

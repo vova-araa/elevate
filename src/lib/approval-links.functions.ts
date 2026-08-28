@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { appUrl } from "@/lib/social-oauth.server";
+import { allowRequest, requestIp } from "@/lib/rate-limit.server";
 
 /**
  * Deelbare goedkeurlinks: klanten keuren concepten goed via een beveiligde
@@ -77,6 +78,13 @@ interface ResolvedLink {
 
 async function resolveToken(token: string): Promise<ResolvedLink> {
   if (!token || token.length < 16) throw new Error("Ongeldige link");
+  // Publieke, ongeauthenticeerde route — zonder rem hier kan iemand deze
+  // functie onbeperkt aanroepen (query-load) of een gelekt token in een
+  // sneltreinvaart misbruiken. Het token zelf is 256-bit, dus raden is
+  // kansloos; dit is puur een rem op volume.
+  if (!allowRequest(`approve:${requestIp()}`, 30, 60_000)) {
+    throw new Error("Te veel aanvragen — probeer het over een minuut opnieuw");
+  }
   const tokenHash = hashToken(token);
 
   const { data: link } = await supabaseAdmin
