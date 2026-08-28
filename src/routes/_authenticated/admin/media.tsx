@@ -616,17 +616,17 @@ function MediaLibrary() {
                       <Folder className="h-5 w-5 text-gold shrink-0" />
                       <span className="text-sm truncate">{f.name}</span>
                     </button>
-                    <div className="absolute right-1 top-1 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <div className="absolute right-1 top-1 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
                       <button
                         onClick={() => renameFolder(f)}
-                        className="rounded-md bg-background/80 p-1 hover:bg-accent"
+                        className="grid min-h-9 min-w-9 place-items-center rounded-md bg-background/80 hover:bg-accent"
                         title="Hernoemen"
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => deleteFolder(f)}
-                        className="rounded-md bg-destructive/80 p-1 text-white hover:bg-destructive"
+                        className="grid min-h-9 min-w-9 place-items-center rounded-md bg-destructive/80 text-white hover:bg-destructive"
                         title="Verwijderen"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -918,15 +918,15 @@ const Tile = memo(function Tile({
       )}
       <button
         onClick={onToggleSelect}
-        className={`absolute left-2 top-2 z-10 rounded-md bg-black/60 p-0.5 text-white transition hover:bg-black/80 ${
-          selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        className={`absolute left-2 top-2 z-10 grid min-h-9 min-w-9 place-items-center rounded-md bg-black/60 text-white transition hover:bg-black/80 ${
+          selected ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
         }`}
         title={selected ? "Deselecteer" : "Selecteer"}
       >
         {selected ? <CheckSquare className="h-4 w-4 text-gold" /> : <Square className="h-4 w-4" />}
       </button>
       <div className="absolute inset-x-0 top-0 flex items-center justify-between p-2 bg-gradient-to-b from-black/70 to-transparent">
-        <span className="text-[10px] uppercase tracking-wider text-white/80 flex items-center gap-1 pl-6">
+        <span className="text-[10px] uppercase tracking-wider text-white/80 flex items-center gap-1 pl-9">
           {isImage ? (
             <ImageIcon className="h-3 w-3" />
           ) : isVideo ? (
@@ -936,11 +936,11 @@ const Tile = memo(function Tile({
           )}
           {u.clients?.name ?? "—"}
         </span>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+        <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
           {onMove && (
             <button
               onClick={onMove}
-              className="rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+              className="grid min-h-9 min-w-9 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
               title="Verplaats naar map"
             >
               <FolderInput className="h-3.5 w-3.5" />
@@ -951,7 +951,7 @@ const Tile = memo(function Tile({
               href={url}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+              className="grid min-h-9 min-w-9 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
               title="Openen"
             >
               <Download className="h-3.5 w-3.5" />
@@ -959,7 +959,7 @@ const Tile = memo(function Tile({
           )}
           <button
             onClick={onDelete}
-            className="rounded-full bg-destructive/80 p-1.5 text-white hover:bg-destructive"
+            className="grid min-h-9 min-w-9 place-items-center rounded-full bg-destructive/80 text-white hover:bg-destructive"
             title="Verwijderen"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -1022,14 +1022,14 @@ function PendingTile({
         <div className="flex gap-1.5">
           <button
             onClick={onApprove}
-            className="flex-1 inline-flex items-center justify-center gap-1 rounded-full bg-emerald-500/90 text-white text-[11px] px-2 py-1 hover:bg-emerald-500"
+            className="flex-1 inline-flex min-h-9 items-center justify-center gap-1 rounded-full bg-emerald-500/90 text-white text-[11px] px-2 hover:bg-emerald-500"
             title="Goedkeuren"
           >
             <Check className="h-3 w-3" /> Goedkeuren
           </button>
           <button
             onClick={onReject}
-            className="inline-flex items-center justify-center rounded-full bg-destructive/80 text-white p-1 hover:bg-destructive"
+            className="grid min-h-9 min-w-9 place-items-center rounded-full bg-destructive/80 text-white hover:bg-destructive"
             title="Afwijzen"
           >
             <XIcon className="h-3.5 w-3.5" />

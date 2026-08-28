@@ -1635,14 +1635,14 @@ function RoadmapStepRow({
       <button
         onClick={() => setEditing(true)}
         aria-label="Stap bewerken"
-        className="shrink-0 text-muted-foreground hover:text-gold p-1"
+        className="grid min-h-9 min-w-9 shrink-0 place-items-center text-muted-foreground hover:text-gold"
       >
         <Pencil className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onDelete}
         aria-label="Stap verwijderen"
-        className="shrink-0 text-muted-foreground hover:text-destructive p-1"
+        className="grid min-h-9 min-w-9 shrink-0 place-items-center text-muted-foreground hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>

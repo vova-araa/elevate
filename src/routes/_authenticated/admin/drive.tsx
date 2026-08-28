@@ -473,7 +473,7 @@ function DrivePage() {
 
       {/* Selectiebalk onderaan */}
       {selectedList.length > 0 && plan.length === 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-gold/15 bg-card/95 backdrop-blur px-4 py-3 md:pl-72">
+        <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-20 border-t border-gold/15 bg-card/95 backdrop-blur px-4 py-3 md:pl-72">
           {!planOpen ? (
             <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
               <div className="text-sm">

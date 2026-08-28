@@ -349,13 +349,16 @@ function PlannedRow({
         </div>
       </div>
       <div className="flex flex-col gap-1 shrink-0">
-        <button onClick={markPublished} className="text-[10px] text-emerald-400 hover:underline">
+        <button
+          onClick={markPublished}
+          className="flex min-h-9 items-center justify-center text-[10px] text-emerald-400 hover:underline"
+        >
           Gepubliceerd
         </button>
         <button
           onClick={del}
           aria-label="Geplande post verwijderen"
-          className="text-muted-foreground hover:text-destructive"
+          className="grid min-h-9 min-w-9 place-items-center text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
