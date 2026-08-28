@@ -236,6 +236,18 @@
     }
   }
 
+  /* iOS Safari zoomt automatisch in op een invoerveld zodra het lettertype
+     bij focus kleiner is dan 16px. Veel formuliervelden gebruiken text-xs/
+     text-sm; op mobiel forceren we hier 16px zodat tikken op een veld niet
+     ongewenst inzoomt. */
+  @media (max-width: 767px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+
   /* Dunne, warme scrollbar — overal */
   * {
     scrollbar-width: thin;
