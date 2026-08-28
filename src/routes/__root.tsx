@@ -63,7 +63,10 @@ const SITE_URL = (
   (typeof process !== "undefined" && process.env?.APP_URL) ||
   "https://www.elevatedesign.nl"
 ).replace(/\/$/, "");
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
+// Zelfde beeld als de homepage (index.tsx) gebruikt — anders krijgt elke
+// andere gedeelde link (contact/terms/privacy/…) het kale logo-plaatje
+// terwijl de homepage het volle, on-brand og.png toont.
+const OG_IMAGE = `${SITE_URL}/og.png`;
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
