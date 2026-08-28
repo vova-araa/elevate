@@ -29,6 +29,7 @@ import { CAPTION_LIMITS, DAY_LABELS_LONG } from "@/lib/social-constants";
 import { computeBestTimeSlots } from "@/lib/best-times";
 import { dutchHolidays } from "@/lib/holidays";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 import {
   AlertTriangle,
   ChevronLeft,
@@ -1079,6 +1080,8 @@ function ComposeModal({
   const captionRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const captionFn = useServerFn(generateCaption);
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModalA11y(modalRef, onClose, true);
 
   const primary = platforms[0] ?? "instagram";
   const limit = CAPTION_LIMITS[primary];
@@ -1440,8 +1443,13 @@ function ComposeModal({
       onClick={onClose}
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={editId ? "Post bewerken" : "Nieuwe post"}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-5xl max-h-[92vh] overflow-y-auto glass-strong rounded-2xl border border-gold/20 p-6"
+        className="w-full max-w-5xl max-h-[92vh] overflow-y-auto glass-strong rounded-2xl border border-gold/20 p-6 outline-none"
       >
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -1614,6 +1622,7 @@ function ComposeModal({
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
+                aria-label="Datum en tijd"
                 className="rounded-lg bg-input/60 hairline px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gold/40"
               />
               {bestTimes && bestTimes.length > 0 && (

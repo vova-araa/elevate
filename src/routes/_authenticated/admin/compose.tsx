@@ -432,6 +432,7 @@ function ComposePage() {
                   value={briefing}
                   onChange={(e) => setBriefing(e.target.value)}
                   placeholder="Waar gaat de post over?"
+                  aria-label="Briefing voor de AI"
                   className="h-9 flex-1 min-w-[180px] rounded-full border border-border bg-transparent px-3.5 text-xs outline-none focus:border-gold/50"
                 />
               )}
@@ -602,6 +603,7 @@ function ComposePage() {
               type="datetime-local"
               value={scheduleAt}
               onChange={(e) => setScheduleAt(e.target.value)}
+              aria-label="Datum en tijd"
               className="rounded-lg border border-border bg-transparent px-3 h-9 text-sm"
             />
           )}

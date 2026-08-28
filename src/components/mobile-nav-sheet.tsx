@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Plus, LogOut, Check, Moon, Sun, Shield, ChevronDown } from "lucide-react";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme";
 import { ADMIN_NAV, badgeClasses, initials, type SidebarCounts } from "@/lib/admin-nav";
 import { clientAvatarStyle } from "@/lib/client-avatar";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 
 // Volwaardig mobiel navigatiemenu dat vanaf links inschuift.
 // Opent via de "Meer"-knop in de onderbalk of de hamburger in de topbar.
@@ -99,13 +100,16 @@ export function MobileNavSheet() {
   // Welke groepen zijn uitgeklapt (secundaire items zichtbaar).
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
+  const asideRef = useRef<HTMLElement>(null);
+  useModalA11y(asideRef, () => setOpen(false), open);
+
   const isActive = (to: string) => {
     if (to === "/admin/clients") return currentPath.startsWith("/admin/clients");
     return currentPath === to || currentPath.startsWith(to + "/");
   };
 
   return (
-    <div className="md:hidden" aria-hidden={!open}>
+    <div className="md:hidden" aria-hidden={!open} inert={!open}>
       {/* Verduisterde achtergrond */}
       <div
         onClick={() => setOpen(false)}
@@ -116,8 +120,13 @@ export function MobileNavSheet() {
       />
       {/* Inschuivend paneel */}
       <aside
+        ref={asideRef}
+        role="dialog"
+        aria-modal={open}
+        aria-label="Navigatiemenu"
+        tabIndex={-1}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[86%] max-w-[320px] flex-col bg-sidebar shadow-2xl",
+          "fixed inset-y-0 left-0 z-50 flex w-[86%] max-w-[320px] flex-col bg-sidebar shadow-2xl outline-none",
           "rounded-r-[22px] border-r border-gold/15 transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "-translate-x-full",
         )}

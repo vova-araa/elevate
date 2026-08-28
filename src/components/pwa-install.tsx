@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Download, X, Share } from "lucide-react";
 import { useInstallPrompt } from "@/lib/pwa";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 
 /**
  * Installatiebalk, alleen op mobiel en alleen zolang de app nog niet is
@@ -17,6 +18,8 @@ export function PwaInstall({
 }) {
   const { canInstall, isIos, isIosSafari, install, dismiss } = useInstallPrompt();
   const [showIosHelp, setShowIosHelp] = useState(false);
+  const iosHelpRef = useRef<HTMLDivElement>(null);
+  useModalA11y(iosHelpRef, () => setShowIosHelp(false), showIosHelp);
 
   if (!canInstall) return null;
 
@@ -55,8 +58,13 @@ export function PwaInstall({
           onClick={() => setShowIosHelp(false)}
         >
           <div
+            ref={iosHelpRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Toevoegen aan beginscherm"
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
-            className="w-full space-y-4 rounded-t-3xl border border-gold/20 bg-card p-6"
+            className="w-full space-y-4 rounded-t-3xl border border-gold/20 bg-card p-6 outline-none"
           >
             <div className="font-display text-xl">Toevoegen aan beginscherm</div>
             <ol className="space-y-3 text-sm text-muted-foreground">
