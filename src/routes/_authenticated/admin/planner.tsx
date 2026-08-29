@@ -55,6 +55,7 @@ import {
   Repeat,
   StickyNote,
   Zap,
+  Copy,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -1071,6 +1072,7 @@ function ComposeModal({
   const uploadAbort = useRef<AbortController | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const existingRecurringRule = existing?.recurring_rule as RecurringRule | null | undefined;
   const [recurring, setRecurring] = useState<"none" | "daily" | "weekly" | "monthly">(
     existingRecurringRule?.freq ?? "none",
@@ -1434,6 +1436,37 @@ function ComposeModal({
       return null;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function duplicate() {
+    if (!existing) return;
+    setDuplicating(true);
+    try {
+      // Kopie een week later inplannen als concept — de datum staat dus zelden
+      // meteen goed, maar de gebruiker hoeft de rest van de post niet opnieuw
+      // in te vullen en kan de datum in het formulier meteen bijstellen.
+      const scheduledAtCopy = new Date(existing.scheduled_at);
+      scheduledAtCopy.setDate(scheduledAtCopy.getDate() + 7);
+      const row: TablesInsert<"scheduled_posts"> = {
+        client_id: existing.client_id,
+        platform: existing.platform,
+        caption: existing.caption,
+        notes: existing.notes,
+        media_path: existing.media_path,
+        media_type: existing.media_type,
+        scheduled_at: scheduledAtCopy.toISOString(),
+        status: "draft",
+        created_by: userId ?? null,
+      };
+      const { error } = await supabase.from("scheduled_posts").insert(row);
+      if (error) throw error;
+      toast.success("Post gedupliceerd als concept — een week later");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDuplicating(false);
     }
   }
 
@@ -1877,6 +1910,21 @@ function ComposeModal({
               className="mr-auto rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 px-4 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
             >
               <Trash2 className="h-4 w-4" /> Verwijder
+            </button>
+          )}
+          {editId && existing && (
+            <button
+              onClick={duplicate}
+              disabled={duplicating}
+              title="Maakt een nieuw concept met dezelfde inhoud, een week later"
+              className="rounded-full glass px-4 py-2 text-sm inline-flex items-center gap-2 hover:bg-accent/30 disabled:opacity-60"
+            >
+              {duplicating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}{" "}
+              Dupliceren
             </button>
           )}
           <button

@@ -5,6 +5,59 @@ bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026, en
 opnieuw op 29 augustus 2026 (feed-indeling in de mediabibliotheek + drie
 migraties rechtstreeks toegepast via de Supabase-koppeling).
 
+## Grote beslissingen — hier heb ik jouw keuze voor nodig
+
+Dit zijn de punten uit de verbeter-ronde van 29 augustus die ik bewust
+**niet** zelf heb gebouwd — te groot, te onomkeerbaar, of ik mis een
+productbeslissing die alleen jij kunt maken. Alle kleinere, veilige
+verbeteringen uit diezelfde ronde (concept dupliceren in de planner,
+bulk herstellen/definitief verwijderen in de prullenbak, ongelezen-
+indicator bij Berichten, uploadvoortgang + verwijderen bij klant-uploads,
+disabled trigger-optie bij automations) zijn al gebouwd en live op de
+branch.
+
+### 1. Facturatie/betalingen voor klanten
+
+Er bestaat nu **niets** voor facturatie — de `deals`-tabel is CRM-
+pipeline-data (voor jouw eigen salesproces), geen facturen. Voor een
+factuur die aan de Belastingdienst-eisen voldoet (art. 3:15d BW) moet
+minimaal aanwezig zijn: doorlopend genummerd zonder gaten, jouw KVK- en
+btw-nummer, klantgegevens, datum, omschrijving, bedrag excl./incl. btw,
+btw-tarief en -bedrag, vervaldatum. `src/config/business.ts` mist op dit
+moment nog KVK/btw/adres (zie de sectie hieronder) — dat moet sowieso
+eerst ingevuld, los van deze keuze.
+
+Open vraag voor jou, vóór ik hier iets bouw:
+
+- **Alleen factuuradministratie** (PDF genereren, status bijhouden:
+  verzonden/betaald/te laat — geen online betalen), of
+- **Ook online betalen** (klant betaalt via een link — dan moet er een
+  betaalprovider bij, bijv. Mollie, met eigen aansluitproces en kosten
+  per transactie)?
+- Of liever **geen eigen bouw**: koppelen aan / doorverwijzen naar een
+  bestaand Nederlands boekhoudpakket (Moneybird, e-Boekhouden, Factuurly)
+  waar je waarschijnlijk toch al iets voor nodig hebt voor de
+  belastingaangifte?
+
+Zeg me welke richting, dan ga ik research doen naar de concrete opzet
+(tabellen, PDF-generatie, eventueel welke API) en bouw ik het.
+
+### 2. Bulk-acties op Klanten en Gebruikers — bewust overgeslagen
+
+Ik heb dit uit de verbeter-ronde gehaald in plaats van gebouwd. Bij
+Gebruikers en Klanten is "verwijderen" de enige actie die je zou willen
+bulken, en dat is precies de actie die nu al met opzet extra beveiligd
+is: bij een gebruiker moet je de naam/e-mail exact overtypen om 'm
+definitief te verwijderen (A09), en het verwijdert in één klap alle
+rollen en klantkoppelingen. Bij een klant bestaat er nog niet eens een
+verwijder-knop of een "archiveren"-status — een klant verwijderen zou nu
+een cascade van geplande posts, uploads, berichten, deals, taken en
+evaluaties meeslepen. Een bulk-verwijderknop zou die bewuste
+per-item-drempel juist ondermijnen. Als je dit toch wilt, denk ik graag
+mee over hoe (bijv. eerst een "archiveren" i.p.v. hard-delete voor
+klanten), maar dat is een aparte, kleinere beslissing dan een simpele
+bulk-knop toevoegen.
+
 ## Lekwoord-bescherming staat uit — kleine, losse verbetering
 
 Supabase's eigen beveiligingscheck meldt dat "Leaked Password Protection"
