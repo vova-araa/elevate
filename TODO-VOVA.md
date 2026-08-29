@@ -2,9 +2,18 @@
 
 Dingen die ik niet kon afronden omdat de gegevens ontbreken, of die bewust
 bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026, en
-opnieuw op 29 augustus 2026 (feed-indeling in de mediabibliotheek).
+opnieuw op 29 augustus 2026 (feed-indeling in de mediabibliotheek + drie
+migraties rechtstreeks toegepast via de Supabase-koppeling).
 
-## Migratie voor de feed-indeling in de mediabibliotheek — actie nodig
+## Lekwoord-bescherming staat uit — kleine, losse verbetering
+
+Supabase's eigen beveiligingscheck meldt dat "Leaked Password Protection"
+uitstaat: nieuwe wachtwoorden worden niet getoetst tegen bekende
+gelekte-wachtwoorden-lijsten (HaveIBeenPwned). Dit raakt het inlogbeleid
+zelf, dus die zet ik niet zomaar zelf om — aan te zetten via het
+Supabase-dashboard: Authentication → Policies → Password Security.
+
+## Feed-indeling in de mediabibliotheek — klaar
 
 Nieuw op /admin/media: een "Feed-indeling"-paneel waarin je bestanden uit de
 bibliotheek naar een raster sleept om te zien hoe de feed er het mooist
@@ -13,12 +22,8 @@ bestaande Instagram/Facebook-koppeling, met terugval op onze eigen
 registratie — zelfde bron als de live-feed-preview op het dashboard en in de
 planner) en een knop om 'm leeg te maken.
 
-- [ ] **Migratie toepassen**: `supabase/migrations/20260829120000_feed_arrangement.sql`
-  staat klaar maar is nog niet op de live database toegepast (geen
-  DB-toegang in deze sessie) — zet 'm via `supabase db push` of plak de
-  inhoud in de SQL-editor van het Supabase-dashboard, net als bij de andere
-  openstaande migraties hieronder. Zonder deze migratie geeft het
-  Feed-indeling-paneel een database-foutmelding zodra je 'm opent.
+- [x] **Migratie toegepast** (29 augustus, via de Supabase MCP-koppeling):
+  `feed_arrangement_slots` staat live. Werkt nu meteen.
 
 ## Plann als tussenpartij — kon ik niet vinden, actie nodig
 
@@ -43,15 +48,11 @@ tijdens Meta App Review, zie hieronder. Twee opties om verder te komen:
   Plann-account hoort bij welke klant, puur ter administratie) het hoogst
   haalbare, zonder dat er ook echt via Plann gepubliceerd kan worden.
 
-## Migratie voor handmatig koppelen (Meta App Review) — actie nodig
+## Migratie voor handmatig koppelen (Meta App Review) — klaar
 
 `supabase/migrations/20260824200000_social_connection_manual_status.sql`
-staat klaar maar is nog niet op de live database toegepast (geen
-DB-toegang in deze sessie) — zet 'm via `supabase db push` of plak de
-inhoud in de SQL-editor van het Supabase-dashboard, net als bij de
-Drive-migratie hieronder. Zonder deze migratie geeft "Koppel handmatig"
-op /admin/channels, /client/channels en /connect/$token een
-database-foutmelding (de status-waarde 'manual' bestaat dan nog niet).
+is toegepast (29 augustus) — "Koppel handmatig" op /admin/channels,
+/client/channels en /connect/$token werkt nu.
 
 ## Google Drive-koppeling (/admin/drive) — actie nodig
 
@@ -63,11 +64,7 @@ bestanden gedownload, geüpload en als concept ingepland.
 
 Voor het werkt:
 
-- [ ] **Migratie toepassen**: `supabase/migrations/20260824190000_drive_admin_connection.sql`
-  staat klaar maar is nog niet op de live database toegepast (ik had hier
-  geen toegang toe in deze sessie) — zet 'm via de Supabase CLI
-  (`supabase db push`) of plak de inhoud in de SQL-editor van het
-  Supabase-dashboard.
+- [x] **Migratie toegepast** (29 augustus): `drive_admin_connection` staat live.
 - [ ] **Drive-scope toevoegen aan de bestaande Google OAuth-app**: de
   koppeling hergebruikt dezelfde `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`
   als de YouTube-koppeling (Google staat meerdere scopes op één OAuth-app
