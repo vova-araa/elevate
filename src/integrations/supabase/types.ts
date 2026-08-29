@@ -1112,6 +1112,90 @@ export type Database = {
         };
         Relationships: [];
       };
+      email_log: {
+        Row: {
+          body: string;
+          client_id: string | null;
+          created_at: string;
+          error: string | null;
+          id: string;
+          sent_by: string | null;
+          status: string;
+          subject: string;
+          template_id: string | null;
+          to_email: string;
+        };
+        Insert: {
+          body: string;
+          client_id?: string | null;
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          sent_by?: string | null;
+          status?: string;
+          subject: string;
+          template_id?: string | null;
+          to_email: string;
+        };
+        Update: {
+          body?: string;
+          client_id?: string | null;
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          sent_by?: string | null;
+          status?: string;
+          subject?: string;
+          template_id?: string | null;
+          to_email?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "email_log_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "email_log_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "email_templates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      email_templates: {
+        Row: {
+          body: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          subject: string;
+          updated_at: string;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          subject: string;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          subject?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       feed_arrangement_slots: {
         Row: {
           client_id: string;

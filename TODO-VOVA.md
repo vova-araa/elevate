@@ -156,6 +156,21 @@ blijft gewoon werken, `bun run build` print een waarschuwing.
 Vul ze in `src/config/business.ts` (bij `RAW`) en de waarschuwing verdwijnt
 vanzelf.
 
+## E-mailsjablonen naar klanten — klaar, wacht op RESEND_API_KEY
+
+Nieuw: onder Instellingen → **E-mailsjablonen** maak je herbruikbare
+sjablonen (onderwerp + tekst, met `{{klant_naam}}`/`{{vandaag}}`-variabelen).
+Vanuit een klantdossier (tab **E-mail**) kies je een sjabloon, vul je de
+ontvanger in (voorgesteld uit gekoppelde klant-gebruikers) en verstuur je
+'m — met een verzendgeschiedenis (gelukt/mislukt) direct in het dossier.
+
+- [x] **Migratie toegepast** (29 augustus): `email_templates` + `email_log`
+  staan live.
+- Gebruikt dezelfde `RESEND_API_KEY` als de leadnotificatie hieronder — als
+  die al gezet staat, werkt versturen meteen. Zonder de sleutel toont de
+  UI een duidelijke foutmelding bij het versturen (in plaats van stil te
+  falen), sjablonen aanmaken/bewerken werkt sowieso al.
+
 ## Leadnotificatie (S01 — contactformulier)
 
 `/contact` slaat aanvragen op in de nieuwe `leads`-tabel, maar stuurt nog

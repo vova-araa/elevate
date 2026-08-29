@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { InstallAppSetting } from "@/components/admin/install-app-setting";
+import { EmailTemplatesPanel } from "@/components/admin/email-templates-panel";
 import { confirmDialog } from "@/components/ui/confirm";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,12 +25,13 @@ import {
   Plug,
   Key,
   ArrowRight,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
   clientId: z.string().uuid().optional(),
-  tab: z.enum(["bedrijf", "social", "team", "notificaties"]).optional(),
+  tab: z.enum(["bedrijf", "social", "team", "notificaties", "email"]).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
@@ -82,6 +84,7 @@ function SettingsPage() {
     { k: "social", label: "Social accounts", icon: Link2 },
     { k: "team", label: "Team & rollen", icon: Users },
     { k: "notificaties", label: "Notificaties", icon: Bell },
+    { k: "email", label: "E-mailsjablonen", icon: Mail },
   ] as const;
 
   return (
@@ -170,6 +173,7 @@ function SettingsPage() {
           {activeTab === "social" && <SocialTab clientId={activeId} />}
           {activeTab === "team" && <TeamTab clientId={activeId} />}
           {activeTab === "notificaties" && <NotificationsTab />}
+          {activeTab === "email" && <EmailTemplatesPanel />}
         </>
       )}
     </div>

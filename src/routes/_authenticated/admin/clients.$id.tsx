@@ -43,6 +43,7 @@ import {
   Target,
   PackageCheck,
   KeyRound,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 import type { Tables, TablesUpdate, Enums } from "@/integrations/supabase/types";
@@ -52,6 +53,7 @@ import { ClientTimeline } from "@/components/client-timeline";
 import { InstagramScheduler } from "@/components/instagram-scheduler";
 import { DeliveryRequestsPanel } from "@/components/admin/delivery-requests-panel";
 import { ClientAccessPanel } from "@/components/admin/client-access-panel";
+import { SendEmailPanel } from "@/components/admin/send-email-panel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$id")({
@@ -71,7 +73,8 @@ type TabKey =
   | "tasks"
   | "deliverables"
   | "socials"
-  | "access";
+  | "access"
+  | "email";
 
 type TabItem = { k: TabKey; label: string; icon: LucideIcon };
 const TAB_GROUPS: { group: string; items: TabItem[] }[] = [
@@ -87,6 +90,7 @@ const TAB_GROUPS: { group: string; items: TabItem[] }[] = [
     group: "Communicatie",
     items: [
       { k: "messages", label: "Berichten", icon: MessageSquare },
+      { k: "email", label: "E-mail", icon: Mail },
       { k: "calendar", label: "Kalender", icon: Calendar },
       { k: "socials", label: "Socials", icon: Link2 },
     ],
@@ -219,6 +223,7 @@ function ClientDetail() {
       {tab === "deliverables" && <DeliveryRequestsPanel clientId={id} />}
       {tab === "socials" && <SocialsPanel client={client} />}
       {tab === "access" && <ClientAccessPanel clientId={id} clientName={client.name} />}
+      {tab === "email" && <SendEmailPanel clientId={id} clientName={client.name} />}
     </div>
   );
 }
