@@ -240,7 +240,7 @@ export function AdminSidebar() {
         <Link
           to="/admin/compose"
           className={cn(
-            "flex items-center gap-2 rounded-xl bg-gradient-gold text-sm font-medium text-primary-foreground shadow-sm transition-all duration-200 hover:brightness-105 hover:shadow-md active:scale-[0.98]",
+            "flex items-center gap-2 rounded-xl bg-gold text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-105 active:scale-[0.98]",
             collapsed ? "mx-auto h-9 w-9 justify-center p-0" : "h-9 w-full justify-center px-3",
           )}
           title="Nieuwe post"
