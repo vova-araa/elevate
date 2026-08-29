@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -401,8 +401,15 @@ export const getPublishedFeed = createServerFn({ method: "POST" })
     return withPlanned(clientId, platform, limit, await sourceFeed(clientId, platform, limit));
   });
 
-/** Haalt de feed op bij de beste beschikbare bron voor dit platform. */
-async function sourceFeed(
+/**
+ * Haalt de feed op bij de beste beschikbare bron voor dit platform. Ook
+ * gebruikt door feed-arrangement.functions.ts ("Vul met live feed" in de
+ * mediabibliotheek) — vandaar exported. createServerOnlyFn (i.p.v. een
+ * gewone export) zodat de bundler 'm — en de supabaseAdmin-aanroepen erin —
+ * uit de clientbundel kan houden; dit bestand wordt namelijk ook vanuit
+ * routes geïmporteerd voor getPublishedFeed.
+ */
+export const sourceFeed = createServerOnlyFn(async function sourceFeed(
   clientId: string,
   platform: FeedPlatform,
   limit: number,
@@ -485,4 +492,4 @@ async function sourceFeed(
     // foutmelding op het dashboard. De tokenbewaking meldt het probleem apart.
     return fallback(clientId, platform, limit);
   }
-}
+});

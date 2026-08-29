@@ -1,7 +1,24 @@
 # TODO voor Vova
 
 Dingen die ik niet kon afronden omdat de gegevens ontbreken, of die bewust
-bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026.
+bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026, en
+opnieuw op 29 augustus 2026 (feed-indeling in de mediabibliotheek).
+
+## Migratie voor de feed-indeling in de mediabibliotheek — actie nodig
+
+Nieuw op /admin/media: een "Feed-indeling"-paneel waarin je bestanden uit de
+bibliotheek naar een raster sleept om te zien hoe de feed er het mooist
+uitziet, met een knop om 'm te vullen met wat er al live staat (via de
+bestaande Instagram/Facebook-koppeling, met terugval op onze eigen
+registratie — zelfde bron als de live-feed-preview op het dashboard en in de
+planner) en een knop om 'm leeg te maken.
+
+- [ ] **Migratie toepassen**: `supabase/migrations/20260829120000_feed_arrangement.sql`
+  staat klaar maar is nog niet op de live database toegepast (geen
+  DB-toegang in deze sessie) — zet 'm via `supabase db push` of plak de
+  inhoud in de SQL-editor van het Supabase-dashboard, net als bij de andere
+  openstaande migraties hieronder. Zonder deze migratie geeft het
+  Feed-indeling-paneel een database-foutmelding zodra je 'm opent.
 
 ## Plann als tussenpartij — kon ik niet vinden, actie nodig
 

@@ -50,6 +50,8 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from "@/lib/upload-limits";
 import { useSignedUrls } from "@/lib/use-signed-url";
+import { FeedArrangementPanel } from "@/components/admin/feed-arrangement-panel";
+import { feedDragProps } from "@/lib/feed-drag";
 
 export const Route = createFileRoute("/_authenticated/admin/media")({
   component: MediaLibrary,
@@ -104,6 +106,7 @@ function MediaLibrary() {
   // Selectie voor bulk-acties (opruimen na publicatie).
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [purging, setPurging] = useState(false);
+  const [feedOpen, setFeedOpen] = useState(false);
 
   useEffect(() => {
     setFolderId(null);
@@ -574,6 +577,10 @@ function MediaLibrary() {
         </div>
       )}
 
+      {clientId && (
+        <FeedArrangementPanel clientId={clientId} open={feedOpen} onOpenChange={setFeedOpen} />
+      )}
+
       <div
         onDragOver={(e) => {
           if (!clientId) return;
@@ -898,9 +905,10 @@ const Tile = memo(function Tile({
 
   return (
     <div
+      {...feedDragProps({ id: u.id, url, fileName: u.file_name, isVideo: !!isVideo })}
       className={`group relative aspect-square overflow-hidden rounded-xl glass ${
         selected ? "ring-2 ring-gold" : ""
-      }`}
+      } ${url ? "cursor-grab active:cursor-grabbing" : ""}`}
     >
       {url && isImage && (
         <img

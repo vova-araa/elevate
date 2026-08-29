@@ -1112,6 +1112,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      feed_arrangement_slots: {
+        Row: {
+          client_id: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          platform: string;
+          position: number;
+          snapshot_caption: string | null;
+          snapshot_is_video: boolean;
+          snapshot_media_url: string | null;
+          upload_id: string | null;
+        };
+        Insert: {
+          client_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          platform: string;
+          position: number;
+          snapshot_caption?: string | null;
+          snapshot_is_video?: boolean;
+          snapshot_media_url?: string | null;
+          upload_id?: string | null;
+        };
+        Update: {
+          client_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          platform?: string;
+          position?: number;
+          snapshot_caption?: string | null;
+          snapshot_is_video?: boolean;
+          snapshot_media_url?: string | null;
+          upload_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "feed_arrangement_slots_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "feed_arrangement_slots_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: false;
+            referencedRelation: "uploads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       leads: {
         Row: {
           bedrijf: string | null;
