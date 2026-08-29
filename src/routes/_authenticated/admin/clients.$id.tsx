@@ -1,4 +1,5 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
+import { Reveal } from "@/components/reveal";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -294,7 +295,7 @@ function Overview({ client }: { client: Tables<"clients"> }) {
           </div>
         ))}
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <Reveal className="grid gap-4 md:grid-cols-2">
         <div className="glass rounded-2xl p-6">
           <h3 className="font-display text-2xl">Over het merk</h3>
           <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
@@ -307,7 +308,7 @@ function Overview({ client }: { client: Tables<"clients"> }) {
             {client.notes || "—"}
           </p>
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { Reveal } from "@/components/reveal";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -168,7 +169,7 @@ function SuperAdminDashboard() {
       </div>
 
       {/* Klanten + team */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <Reveal className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 card-surface bg-card p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-xl">Klanten</h2>
@@ -239,7 +240,7 @@ function SuperAdminDashboard() {
             <Plus className="h-3.5 w-3.5" /> Account toevoegen
           </Link>
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

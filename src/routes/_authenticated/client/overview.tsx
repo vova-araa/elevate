@@ -585,8 +585,8 @@ function StatTile({
       to={to}
       search={search}
       className={cn(
-        "card-lift group rounded-xl border bg-card p-4",
-        accent ? "border-gold/40 gold-ring" : "border-gold/10",
+        "card-lift group card-surface bg-card p-4",
+        accent && "border-gold/40 gold-ring",
       )}
     >
       <div

@@ -162,8 +162,8 @@ export function AssistantTab() {
           handleFiles(e.dataTransfer.files);
         }}
         className={cn(
-          "flex-1 overflow-y-auto rounded-2xl border bg-card p-4 space-y-4 transition",
-          dragOver ? "border-gold ring-2 ring-gold/30" : "border-gold/15",
+          "flex-1 overflow-y-auto card-surface-lg bg-card p-4 space-y-4 transition",
+          dragOver && "border-gold ring-2 ring-gold/30",
         )}
       >
         {messages.map((m, i) => (

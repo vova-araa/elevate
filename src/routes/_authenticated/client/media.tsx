@@ -277,7 +277,7 @@ function PendingTile({ upload }: { upload: PendingUpload }) {
   const kind = guessKind(upload.file_path, upload.file_type);
 
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-xl border border-amber-400/30 bg-card opacity-80">
+    <div className="group relative aspect-square overflow-hidden card-surface border-amber-400/30 bg-card opacity-80">
       {url && kind === "image" && (
         <img src={url} alt={upload.file_name} className="h-full w-full object-cover" />
       )}

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { todayLocalISO } from "@/lib/dates";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -12,6 +13,7 @@ import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Sparkles, Loader2, CalendarPlus, Copy, Check, Wand2 } from "lucide-react";
 import { PLATFORMS } from "@/components/planner/planner-shared";
+import { Reveal } from "@/components/reveal";
 import { DatePicker } from "@/components/ui/date-picker";
 import { formatForwardDateRange } from "@/lib/date-range";
 import {
@@ -281,7 +283,7 @@ function CampaignsPage() {
 
       {/* Resultaat */}
       {posts.length > 0 && (
-        <div className="space-y-4">
+        <Reveal className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-luxe/80 backdrop-blur py-2">
             <div className="text-sm text-muted-foreground">
               {selectedCount} van {posts.length} geselecteerd
@@ -316,10 +318,10 @@ function CampaignsPage() {
                     return (
                       <div
                         key={p.id}
-                        className={
-                          "rounded-xl border bg-card p-4 transition " +
-                          (p.include ? "border-gold/30" : "border-border/40 opacity-60")
-                        }
+                        className={cn(
+                          "card-surface bg-card p-4 transition",
+                          p.include ? "border-gold/30" : "border-border/40 opacity-60",
+                        )}
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="inline-flex items-center gap-2 text-sm">
@@ -377,7 +379,7 @@ function CampaignsPage() {
               </div>
             );
           })}
-        </div>
+        </Reveal>
       )}
     </div>
   );

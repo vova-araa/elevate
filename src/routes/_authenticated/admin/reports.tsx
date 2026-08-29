@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Reveal } from "@/components/reveal";
 import { PageTabs } from "@/components/page-tabs";
 import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -132,7 +133,7 @@ function ReportsPage() {
           </p>
         </div>
 
-        <div className="card-surface bg-card p-4">
+        <Reveal className="card-surface bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
             Geschiedenis
           </div>
@@ -270,7 +271,7 @@ function ReportsPage() {
               })}
             </div>
           )}
-        </div>
+        </Reveal>
       </div>
     </div>
   );

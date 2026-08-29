@@ -213,8 +213,8 @@ export function DeliveryRequestsPanel({ clientId }: { clientId: string }) {
               <li
                 key={r.id}
                 className={cn(
-                  "flex items-start gap-3 rounded-xl border p-3.5",
-                  done ? "border-border/60 bg-muted/20" : "border-gold/10 bg-card",
+                  "card-surface flex items-start gap-3 p-3.5",
+                  done ? "border-border/60 bg-muted/20" : "bg-card",
                 )}
               >
                 <button

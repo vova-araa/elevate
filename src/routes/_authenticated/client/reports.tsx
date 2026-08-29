@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveClient } from "@/hooks/use-active-client";
 import { ReportCard } from "@/components/client-portal/report-card";
+import { Reveal } from "@/components/reveal";
 import { EmptyState } from "@/components/empty-state";
 import { FileBarChart, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
@@ -66,21 +67,23 @@ function ClientReports() {
         />
       )}
 
-      {byYear.map(([year, items]) => (
-        <section key={year} className="space-y-4">
-          <div className="flex items-center gap-3">
-            <h2 className="font-display text-2xl text-gold">{year}</h2>
-            <div className="h-px flex-1 bg-gold/10" />
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              {items.length} rapport{items.length === 1 ? "" : "en"}
-            </span>
-          </div>
-          <div className="space-y-4">
-            {items.map((r) => (
-              <ReportCard key={r.id} report={r} />
-            ))}
-          </div>
-        </section>
+      {byYear.map(([year, items], i) => (
+        <Reveal key={year} className="space-y-4" delay={Math.min(i * 60, 240)}>
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <h2 className="font-display text-2xl text-gold">{year}</h2>
+              <div className="h-px flex-1 bg-gold/10" />
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                {items.length} rapport{items.length === 1 ? "" : "en"}
+              </span>
+            </div>
+            <div className="space-y-4">
+              {items.map((r) => (
+                <ReportCard key={r.id} report={r} />
+              ))}
+            </div>
+          </section>
+        </Reveal>
       ))}
     </div>
   );
