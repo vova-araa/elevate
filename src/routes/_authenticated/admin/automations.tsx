@@ -48,7 +48,11 @@ interface RuleForm {
 const TRIGGERS = [
   { value: "schedule", label: "Op tijd (terugkerend)" },
   { value: "post_published", label: "Wanneer een post gepubliceerd wordt" },
-  { value: "post_metric_threshold", label: "Wanneer post drempel bereikt (binnenkort)" },
+  {
+    value: "post_metric_threshold",
+    label: "Wanneer post drempel bereikt (binnenkort)",
+    disabled: true,
+  },
   { value: "new_upload", label: "Bij nieuwe upload" },
   { value: "new_message", label: "Bij nieuw bericht" },
 ];
@@ -323,7 +327,7 @@ function RuleModal({ onClose }: { onClose: () => void }) {
                 }
               >
                 {TRIGGERS.map((t) => (
-                  <option key={t.value} value={t.value}>
+                  <option key={t.value} value={t.value} disabled={t.disabled}>
                     {t.label}
                   </option>
                 ))}

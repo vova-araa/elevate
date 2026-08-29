@@ -33,17 +33,22 @@ function AdminMessages() {
     queryFn: async () => {
       const { data } = await supabase
         .from("messages")
-        .select("client_id, body, created_at, sender_role")
+        .select("client_id, body, created_at, sender_role, read_at")
         .order("created_at", { ascending: false })
         .limit(200);
       return data ?? [];
     },
   });
 
-  type LastMessage = Pick<Tables<"messages">, "client_id" | "body" | "created_at" | "sender_role">;
+  type LastMessage = Pick<
+    Tables<"messages">,
+    "client_id" | "body" | "created_at" | "sender_role" | "read_at"
+  >;
   const lastByClient = new Map<string, LastMessage>();
+  const unreadClients = new Set<string>();
   lastMessages?.forEach((m) => {
     if (!lastByClient.has(m.client_id)) lastByClient.set(m.client_id, m);
+    if (m.sender_role === "client" && !m.read_at) unreadClients.add(m.client_id);
   });
 
   const filtered = (clients ?? []).filter((c) =>
@@ -88,6 +93,7 @@ function AdminMessages() {
             {filtered.map((c) => {
               const last = lastByClient.get(c.id);
               const isActive = c.id === activeId;
+              const unread = unreadClients.has(c.id);
               return (
                 <button
                   key={c.id}
@@ -110,19 +116,39 @@ function AdminMessages() {
                     />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">{c.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
+                    <div
+                      className={cn(
+                        "text-sm truncate",
+                        unread ? "font-semibold text-foreground" : "font-medium",
+                      )}
+                    >
+                      {c.name}
+                    </div>
+                    <div
+                      className={cn(
+                        "text-xs truncate",
+                        unread ? "text-foreground/80 font-medium" : "text-muted-foreground",
+                      )}
+                    >
                       {last
                         ? (last.sender_role === "admin" ? "Jij: " : "") + (last.body ?? "")
                         : "Geen berichten"}
                     </div>
                   </div>
                   {last && (
-                    <div className="text-[10px] text-muted-foreground shrink-0">
-                      {new Date(last.created_at).toLocaleDateString("nl-NL", {
-                        day: "numeric",
-                        month: "short",
-                      })}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {unread && (
+                        <span
+                          className="h-2 w-2 rounded-full bg-gold"
+                          aria-label="Ongelezen bericht"
+                        />
+                      )}
+                      <div className="text-[10px] text-muted-foreground">
+                        {new Date(last.created_at).toLocaleDateString("nl-NL", {
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </div>
                     </div>
                   )}
                 </button>

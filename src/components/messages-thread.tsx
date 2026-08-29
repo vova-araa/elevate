@@ -76,6 +76,26 @@ export function MessagesThread({ clientId, clientName, asRole }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages?.length]);
 
+  // Ongelezen-indicator in de admin-berichtenlijst: zodra een admin een
+  // klant-conversatie opent, markeren we de klant-berichten daarin als
+  // gelezen. Ook opnieuw bij elk nieuw bericht (messages?.length) zodat een
+  // bericht dat binnenkomt terwijl de admin de thread al open heeft staan
+  // niet als ongelezen in de zijbalk blijft hangen. Gedeeld voor het hele
+  // team (één inbox, geen per-gebruiker leesstatus) — bewust geen effect
+  // voor de klant zelf (asRole "client").
+  useEffect(() => {
+    if (asRole !== "admin") return;
+    supabase
+      .from("messages")
+      .update({ read_at: new Date().toISOString() })
+      .eq("client_id", clientId)
+      .eq("sender_role", "client")
+      .is("read_at", null)
+      .then(({ error }) => {
+        if (!error) qc.invalidateQueries({ queryKey: ["last-messages"] });
+      });
+  }, [asRole, clientId, qc, messages?.length]);
+
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");

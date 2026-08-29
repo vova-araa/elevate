@@ -1306,6 +1306,7 @@ export type Database = {
           due_date: string | null;
           id: string;
           priority: Database["public"]["Enums"]["task_priority"];
+          read_at: string | null;
           sender_id: string | null;
           sender_role: Database["public"]["Enums"]["message_sender_role"];
           subject: string | null;
@@ -1319,6 +1320,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           priority?: Database["public"]["Enums"]["task_priority"];
+          read_at?: string | null;
           sender_id?: string | null;
           sender_role: Database["public"]["Enums"]["message_sender_role"];
           subject?: string | null;
@@ -1332,6 +1334,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           priority?: Database["public"]["Enums"]["task_priority"];
+          read_at?: string | null;
           sender_id?: string | null;
           sender_role?: Database["public"]["Enums"]["message_sender_role"];
           subject?: string | null;
