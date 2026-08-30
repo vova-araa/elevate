@@ -1,19 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { lazy, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { useActiveClient } from "@/hooks/use-active-client";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import {
   Users,
   Share2,
@@ -25,7 +16,6 @@ import {
   Send,
   FileBarChart,
   Link2,
-  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,12 +26,17 @@ import { ReportCard } from "@/components/client-portal/report-card";
 import { DeliveryChecklist } from "@/components/client-portal/delivery-checklist";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/reveal";
+import { ChartInView } from "@/components/charts/chart-in-view";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/client/overview")({
   component: ClientOverview,
 });
+
+// Recharts (~375KB) pas ophalen zodra de "Volgersgroei"-kaart in beeld
+// scrolt — zie ChartInView.
+const FollowerGrowthCard = lazy(() => import("@/components/charts/client-follower-growth-chart"));
 
 // Kleurtoon per platform is puur presentatie voor dit scherm; identiteit
 // (label, icoon, welke platforms er zijn) komt uit src/config/platforms.ts.
@@ -269,7 +264,9 @@ function ClientOverview() {
 
       {/* Volgersgroei — echte metingen uit snapshots */}
       <Reveal>
-        <FollowerGrowthCard series={followerGrowth ?? []} loading={loadingGrowth} />
+        <ChartInView height={320}>
+          <FollowerGrowthCard series={followerGrowth ?? []} loading={loadingGrowth} />
+        </ChartInView>
       </Reveal>
 
       {/* Twee kolommen: eerstvolgende posts + stappenplan */}
@@ -483,86 +480,6 @@ function aggregateFollowerGrowth(
       date: format(new Date(day), "d MMM", { locale: nl }),
       total: Array.from(platforms.values()).reduce((a, b) => a + b, 0),
     }));
-}
-
-/** Volgersgroei-grafiek op basis van echte metingen (geen verzonnen cijfers). */
-function FollowerGrowthCard({
-  series,
-  loading,
-}: {
-  series: FollowerGrowthPoint[];
-  loading: boolean;
-}) {
-  return (
-    <div className="card-surface bg-card p-5 sm:p-6">
-      <div className="flex items-center gap-2">
-        <TrendingUp className="h-4 w-4 text-gold" />
-        <h2 className="font-display text-xl">Volgersgroei</h2>
-      </div>
-
-      {loading ? (
-        <Skeleton className="mt-4 h-56 w-full rounded-lg" />
-      ) : series.length < 2 ? (
-        <EmptyState
-          icon={<TrendingUp className="h-5 w-5" />}
-          title="Nog niet genoeg data"
-          description="Volgersgroei verschijnt zodra we langer meten."
-          className="mt-4 py-8"
-        />
-      ) : (
-        <div className="mt-4 h-56">
-          <ResponsiveContainer>
-            <AreaChart data={series} margin={{ top: 6, right: 8, left: -8, bottom: 0 }}>
-              <defs>
-                <linearGradient id="follower-growth-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.32} />
-                  <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                stroke="var(--muted-foreground)"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                interval={Math.max(0, Math.ceil(series.length / 8) - 1)}
-              />
-              <YAxis
-                stroke="var(--muted-foreground)"
-                fontSize={10}
-                allowDecimals={false}
-                tickLine={false}
-                axisLine={false}
-                width={48}
-                tickFormatter={(value) => Number(value).toLocaleString("nl-NL")}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  color: "var(--foreground)",
-                }}
-                labelStyle={{ color: "var(--foreground)" }}
-                formatter={(value) => [Number(value).toLocaleString("nl-NL"), "Volgers"]}
-              />
-              <Area
-                type="monotone"
-                dataKey="total"
-                stroke="var(--gold)"
-                strokeWidth={2.5}
-                fill="url(#follower-growth-fill)"
-                dot={false}
-                activeDot={{ r: 4, fill: "var(--gold)", stroke: "var(--card)", strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function StatTile({

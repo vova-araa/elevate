@@ -1,21 +1,13 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { lazy, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, getISOWeek } from "date-fns";
 import { nl } from "date-fns/locale";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { ChartInView } from "@/components/charts/chart-in-view";
 import {
   getClientAnalytics,
   getAgencyAnalytics,
@@ -43,16 +35,17 @@ import {
   CalendarCheck,
   FileText,
   Loader2,
-  Minus,
   Plug,
   Sparkles,
-  TrendingDown,
   TrendingUp,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import { PLATFORMS as PLATFORM_CONFIG } from "@/config/platforms";
 import { cn } from "@/lib/utils";
+
+// Recharts (~375KB) pas ophalen zodra de "Bereik"-kaart onderaan de pagina
+// in beeld scrolt — zie ChartInView.
+const ReachChart = lazy(() => import("@/components/charts/dashboard-reach-chart"));
 
 const searchSchema = z.object({ clientId: z.string().uuid().optional() });
 
@@ -248,12 +241,14 @@ function DashboardContent({
           icon={TrendingUp}
           link={{ to: "/admin/reach", label: "Volledige analyse" }}
         >
-          <ReachChart
-            series={reachSeries}
-            loading={reachLoading}
-            followersTotal={reachAnalytics?.followersTotal ?? null}
-            followerGrowth={reachAnalytics?.followerGrowth ?? null}
-          />
+          <ChartInView height={260}>
+            <ReachChart
+              series={reachSeries}
+              loading={reachLoading}
+              followersTotal={reachAnalytics?.followersTotal ?? null}
+              followerGrowth={reachAnalytics?.followerGrowth ?? null}
+            />
+          </ChartInView>
         </Card>
       </Reveal>
     </>
@@ -263,33 +258,6 @@ function DashboardContent({
 /* ------------------------------------------------------------------ */
 /* Grafische stat-tegelband                                            */
 /* ------------------------------------------------------------------ */
-
-function Sparkline({ series, tint }: { series: { date: string; count: number }[]; tint: string }) {
-  if (series.length < 2) return null;
-  return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 opacity-70">
-      <ResponsiveContainer>
-        <AreaChart data={series} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id={`spark-${tint}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={tint} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={tint} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey="count"
-            stroke={tint}
-            strokeWidth={1.5}
-            fill={`url(#spark-${tint})`}
-            dot={false}
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 function StatTile({
   icon: Icon,
@@ -504,129 +472,6 @@ function FocusRow({ item }: { item: FocusItem }) {
         {item.actionLabel} <ArrowRight className="h-3 w-3" />
       </Link>
     </li>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Bereik — brede kaart onderaan                                       */
-/* ------------------------------------------------------------------ */
-
-function ReachChart({
-  series,
-  loading,
-  followersTotal,
-  followerGrowth,
-}: {
-  series: { date: string; count: number }[];
-  loading: boolean;
-  followersTotal: number | null;
-  followerGrowth: number | null;
-}) {
-  if (loading) return <Skeleton className="h-48 w-full rounded-lg" />;
-  const total = series.reduce((sum, p) => sum + p.count, 0);
-
-  const GrowthIcon =
-    followerGrowth == null || followerGrowth === 0
-      ? Minus
-      : followerGrowth > 0
-        ? TrendingUp
-        : TrendingDown;
-  const growthTint =
-    followerGrowth == null
-      ? "text-foreground"
-      : followerGrowth > 0
-        ? "text-emerald-400"
-        : followerGrowth < 0
-          ? "text-red-400"
-          : "text-foreground";
-
-  return (
-    <div>
-      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-        <span>
-          <span className="font-display text-lg tabular-nums lining-nums text-foreground">
-            {total}
-          </span>{" "}
-          gepubliceerd (30d)
-        </span>
-        <span>
-          <span className="font-display text-lg tabular-nums lining-nums text-foreground">
-            {(total / 30).toFixed(1)}
-          </span>{" "}
-          gem./dag
-        </span>
-        <span className="flex items-center gap-1">
-          <Users className="h-3.5 w-3.5" />
-          <span className="font-display text-lg tabular-nums lining-nums text-foreground">
-            {followersTotal != null ? followersTotal.toLocaleString("nl-NL") : "—"}
-          </span>{" "}
-          volgers
-        </span>
-        <span className="flex items-center gap-1">
-          <GrowthIcon className={cn("h-3.5 w-3.5", growthTint)} />
-          <span className={cn("font-display text-lg tabular-nums lining-nums", growthTint)}>
-            {followerGrowth != null
-              ? `${followerGrowth > 0 ? "+" : ""}${followerGrowth.toLocaleString("nl-NL")}`
-              : "—"}
-          </span>{" "}
-          volgersgroei
-        </span>
-      </div>
-      {total === 0 ? (
-        <Empty body="Nog geen gepubliceerde posts in de afgelopen 30 dagen." />
-      ) : (
-        <div className="h-[220px]">
-          <ResponsiveContainer>
-            <AreaChart data={series} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
-              <defs>
-                <linearGradient id="reach-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.32} />
-                  <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="oklch(0.85 0.015 75 / 30%)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="date"
-                stroke="oklch(0.48 0.018 65)"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                interval={Math.max(0, Math.ceil(series.length / 8) - 1)}
-              />
-              <YAxis
-                stroke="oklch(0.48 0.018 65)"
-                fontSize={10}
-                allowDecimals={false}
-                tickLine={false}
-                axisLine={false}
-                width={28}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="count"
-                stroke="var(--gold)"
-                strokeWidth={2.5}
-                fill="url(#reach-fill)"
-                dot={false}
-                activeDot={{ r: 4, fill: "var(--gold)", stroke: "var(--card)", strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </div>
   );
 }
 

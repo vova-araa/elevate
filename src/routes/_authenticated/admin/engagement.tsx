@@ -4,28 +4,22 @@ import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientStore } from "@/lib/stores/client-store";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import { Sparkles, Video } from "lucide-react";
-import { useState } from "react";
+import { lazy, useState } from "react";
 import { subDays } from "date-fns";
 import { formatDateRange } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 import { Reveal } from "@/components/reveal";
+import { ChartInView } from "@/components/charts/chart-in-view";
 
 export const Route = createFileRoute("/_authenticated/admin/engagement")({
   component: EngagementPage,
 });
+
+// Recharts (~375KB) pas ophalen zodra deze grafieken in beeld scrollen —
+// zie ChartInView.
+const PlatformBarChart = lazy(() => import("@/components/charts/engagement-platform-bar-chart"));
+const ContentTypeChart = lazy(() => import("@/components/charts/engagement-content-type-chart"));
 
 const COLORS = ["var(--gold)", "var(--gold-soft)", "var(--gold-deep)", "oklch(0.78 0.13 78)"];
 
@@ -109,65 +103,18 @@ function EngagementPage() {
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
             Posts per platform
           </div>
-          <div className="h-[260px]">
-            <ResponsiveContainer>
-              <BarChart data={platformData} layout="vertical" margin={{ left: 0, right: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.85 0.015 75 / 30%)" />
-                <XAxis
-                  type="number"
-                  stroke="oklch(0.48 0.018 65)"
-                  fontSize={11}
-                  allowDecimals={false}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="platform"
-                  stroke="oklch(0.48 0.018 65)"
-                  fontSize={11}
-                  width={80}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                  }}
-                />
-                <Bar dataKey="count" fill="var(--gold)" radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartInView height={260}>
+            <PlatformBarChart data={platformData} />
+          </ChartInView>
         </div>
 
         <div className="card-surface bg-card p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
             Content-types
           </div>
-          <div className="h-[260px]">
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={typeData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={50}
-                  outerRadius={90}
-                  paddingAngle={2}
-                >
-                  {typeData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartInView height={260}>
+            <ContentTypeChart data={typeData} />
+          </ChartInView>
           <div className="flex justify-center gap-4 text-xs mt-2">
             {typeData.map((t, i) => (
               <div key={t.name} className="flex items-center gap-1.5">
