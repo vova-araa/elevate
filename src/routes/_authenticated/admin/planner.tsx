@@ -69,6 +69,7 @@ import {
   type PostStatus,
 } from "@/components/planner/planner-shared";
 import { PostChip } from "@/components/planner/post-chip";
+import { PlatformPreviewCard } from "@/components/planner/platform-preview";
 import { WeekView } from "@/components/planner/week-view";
 import { ClientLegend } from "@/components/planner/client-legend";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -137,7 +138,7 @@ function PlannerPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id,name,brand_color,industry")
+        .select("id,name,brand_color,industry,logo_url")
         .order("name");
       // supabase-js gooit niet uit zichzelf. Slikken we de fout, dan toont de
       // planner "nog geen klanten" terwijl er gewoon iets stuk is.
@@ -563,6 +564,8 @@ function PlannerPage() {
           clientId={activeId}
           clientName={selected?.name ?? ""}
           industry={selected?.industry ?? ""}
+          brandColor={selected?.brand_color ?? null}
+          logoUrl={selected?.logo_url ?? null}
           defaultDate={composeDate ?? selectedDate}
           editId={editId}
           existing={editId ? ((posts ?? []).find((p) => p.id === editId) ?? null) : null}
@@ -1031,6 +1034,8 @@ function ComposeModal({
   clientId,
   clientName,
   industry,
+  brandColor,
+  logoUrl,
   defaultDate,
   editId,
   existing,
@@ -1042,6 +1047,8 @@ function ComposeModal({
   clientId: string;
   clientName: string;
   industry: string;
+  brandColor?: string | null;
+  logoUrl?: string | null;
   defaultDate: Date;
   editId: string | null;
   existing: ScheduledPost | null;
@@ -1134,6 +1141,23 @@ function ComposeModal({
         (data ?? []).map((p) => p.published_at),
         3,
       );
+    },
+  });
+
+  // Duplicaatcontrole (postvenster-verbetering #3): recente, niet-verwijderde
+  // posts van deze klant om onbedoelde herhaling te signaleren — bijv. na
+  // "Dupliceren" de datum aangepast maar de tekst vergeten.
+  const { data: recentClientPosts } = useQuery({
+    queryKey: ["compose-recent-posts", clientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("scheduled_posts")
+        .select("id, platform, caption, media_path")
+        .eq("client_id", clientId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      return data ?? [];
     },
   });
 
@@ -1257,13 +1281,27 @@ function ComposeModal({
           platform: p,
           hasMedia: !!mediaPath,
           mediaType,
+          mediaPath,
           caption,
           connected: isConnected(p),
           scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+          excludeId: editId,
+          recentPosts: (recentClientPosts ?? [])
+            .filter((rp) => rp.platform === p)
+            .map((rp) => ({ id: rp.id, caption: rp.caption, mediaPath: rp.media_path })),
         }),
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [platforms, mediaPath, mediaType, caption, scheduledAt, connectedPlatforms],
+    [
+      platforms,
+      mediaPath,
+      mediaType,
+      caption,
+      scheduledAt,
+      connectedPlatforms,
+      recentClientPosts,
+      editId,
+    ],
   );
   const blocked = preflight.some((p) => hasBlocker(p.issues));
 
@@ -1830,30 +1868,18 @@ function ComposeModal({
                         {meta.ratio}
                       </span>
                     </div>
-                    <div
-                      className="rounded-lg overflow-hidden bg-surface/40 border border-border/30"
-                      style={{ aspectRatio: meta.ratio }}
-                    >
-                      {mediaUrl ? (
-                        mediaType?.startsWith("video") ? (
-                          <video src={mediaUrl} controls className="h-full w-full object-cover" />
-                        ) : (
-                          <img src={mediaUrl} alt="" className="h-full w-full object-cover" />
-                        )
-                      ) : (
-                        <div
-                          className={cn(
-                            "h-full w-full bg-gradient-to-br grid place-items-center",
-                            meta.color,
-                          )}
-                        >
-                          <meta.Icon className="h-10 w-10 text-white/80" />
-                        </div>
-                      )}
-                    </div>
-                    {caption && (
-                      <p className="text-xs mt-2 whitespace-pre-wrap line-clamp-6">{caption}</p>
-                    )}
+                    <PlatformPreviewCard
+                      platform={id}
+                      ratio={meta.ratio}
+                      mediaUrl={mediaUrl}
+                      mediaType={mediaType}
+                      caption={caption}
+                      clientName={clientName}
+                      brandColor={brandColor}
+                      logoUrl={logoUrl}
+                      fallbackIcon={meta.Icon}
+                      fallbackGradient={meta.color}
+                    />
                   </div>
                 );
               })}

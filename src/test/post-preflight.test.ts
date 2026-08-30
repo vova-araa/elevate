@@ -110,6 +110,51 @@ describe("Kanaal en moment", () => {
   });
 });
 
+describe("Duplicaatcontrole", () => {
+  it("waarschuwt bij een identieke caption op hetzelfde platform", () => {
+    const issues = preflightPost({
+      ...basis,
+      platform: "instagram",
+      caption: "Nieuwe collectie is binnen!",
+      recentPosts: [{ id: "p1", caption: "Nieuwe collectie is binnen!", mediaPath: null }],
+    });
+    expect(hasBlocker(issues)).toBe(false);
+    expect(issues.some((i) => /staat al eerder klaar/i.test(i.message))).toBe(true);
+  });
+
+  it("waarschuwt bij identieke media, ook met een andere caption", () => {
+    const issues = preflightPost({
+      ...basis,
+      platform: "instagram",
+      caption: "Andere tekst",
+      mediaPath: "client-1/foto.jpg",
+      recentPosts: [{ id: "p1", caption: "Iets anders", mediaPath: "client-1/foto.jpg" }],
+    });
+    expect(issues.some((i) => /staat al eerder klaar/i.test(i.message))).toBe(true);
+  });
+
+  it("telt de post die je nu bewerkt niet als duplicaat van zichzelf", () => {
+    const issues = preflightPost({
+      ...basis,
+      platform: "instagram",
+      caption: "Nieuwe collectie is binnen!",
+      excludeId: "p1",
+      recentPosts: [{ id: "p1", caption: "Nieuwe collectie is binnen!", mediaPath: null }],
+    });
+    expect(issues.some((i) => /staat al eerder klaar/i.test(i.message))).toBe(false);
+  });
+
+  it("zegt niets als er geen overlap is", () => {
+    const issues = preflightPost({
+      ...basis,
+      platform: "instagram",
+      caption: "Unieke tekst",
+      recentPosts: [{ id: "p1", caption: "Compleet andere tekst", mediaPath: null }],
+    });
+    expect(issues.some((i) => /staat al eerder klaar/i.test(i.message))).toBe(false);
+  });
+});
+
 describe("YouTube", () => {
   it("blokkeert, want publiceren wordt nog niet ondersteund", () => {
     const issues = preflightPost({ ...basis, platform: "youtube" });

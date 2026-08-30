@@ -22,16 +22,33 @@ export interface PreflightIssue {
   fix?: string;
 }
 
+export interface RecentPostRef {
+  id: string;
+  caption: string | null;
+  mediaPath: string | null;
+}
+
 export interface PreflightInput {
   platform: string;
   /** MIME-type van de media, bv. "image/png" of "video/mp4". */
   mediaType?: string | null;
+  /** Storage-pad van de media — voor de duplicaatcontrole hieronder. */
+  mediaPath?: string | null;
   hasMedia: boolean;
   caption: string;
   /** Of het kanaal voor deze klant gekoppeld en actief is. */
   connected: boolean;
   /** Gekozen publicatiemoment. */
   scheduledAt?: Date | null;
+  /**
+   * Andere (niet-verwijderde) posts van dezelfde klant op dit platform, om
+   * onbedoelde duplicaten te signaleren — bijv. dezelfde caption twee keer
+   * ingepland omdat je "dupliceren" gebruikte en de tekst vergat aan te
+   * passen. Optioneel: zonder deze lijst wordt er niets gecontroleerd.
+   */
+  recentPosts?: RecentPostRef[];
+  /** Post-id die je nu bewerkt — telt niet mee als "duplicaat van zichzelf". */
+  excludeId?: string | null;
   /** Nu, injecteerbaar zodat de test niet van de klok afhangt. */
   now?: Date;
 }
@@ -123,6 +140,22 @@ export function preflightPost(input: PreflightInput): PreflightIssue[] {
       level: "let-op",
       message:
         "Het gekozen moment ligt in het verleden — deze post gaat bij de eerstvolgende ronde meteen live.",
+    });
+  }
+
+  const captionNorm = input.caption.trim().toLowerCase();
+  const duplicate = input.recentPosts?.find((p) => {
+    if (input.excludeId && p.id === input.excludeId) return false;
+    const sameCaption =
+      captionNorm.length > 0 && (p.caption ?? "").trim().toLowerCase() === captionNorm;
+    const sameMedia = !!input.mediaPath && !!p.mediaPath && p.mediaPath === input.mediaPath;
+    return sameCaption || sameMedia;
+  });
+  if (duplicate) {
+    issues.push({
+      level: "let-op",
+      message: `Deze caption of media staat al eerder klaar of gepubliceerd op ${label(input.platform)}.`,
+      fix: "Check of dit een bewuste herhaling is (bijv. evergreen-content) — anders past de tekst of media aan.",
     });
   }
 
