@@ -6,11 +6,9 @@ import {
   ArrowRight,
   CalendarClock,
   CheckCircle2,
-  Facebook,
   FileText,
   Image as ImageIcon,
   Instagram,
-  Music2,
   Plug,
   Sparkles,
   type LucideIcon,
@@ -19,13 +17,8 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { useSignedUrls } from "@/lib/use-signed-url";
+import { platformMeta } from "@/config/platforms";
 import type { PostingOverview, UpcomingPost } from "@/lib/posting-overview.functions";
-
-const PLATFORM_ICON: Record<string, LucideIcon> = {
-  instagram: Instagram,
-  facebook: Facebook,
-  tiktok: Music2,
-};
 
 /** Groepeer de komende posts per dag, zodat je per dag ziet wat er live gaat. */
 function groupByDay(
@@ -268,7 +261,7 @@ export function PostingBoard({
                     </span>
                     <span className="flex shrink-0 gap-1">
                       {c.channels.map((ch) => {
-                        const Icon = PLATFORM_ICON[ch];
+                        const Icon = platformMeta(ch)?.Icon;
                         return Icon ? (
                           <Icon key={ch} className="h-3.5 w-3.5 text-muted-foreground/60" />
                         ) : null;
@@ -286,7 +279,7 @@ export function PostingBoard({
 }
 
 function UpcomingRow({ post, url }: { post: UpcomingPost; url: string }) {
-  const Icon = PLATFORM_ICON[post.platform] ?? Instagram;
+  const Icon = platformMeta(post.platform)?.Icon ?? Instagram;
   const isVideo = post.mediaType?.startsWith("video");
   return (
     <Link

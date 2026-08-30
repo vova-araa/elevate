@@ -12,6 +12,7 @@
  */
 
 import type { Platform } from "@/config/platforms";
+import { CAPTION_LIMITS } from "@/lib/social-constants";
 
 export type { Platform };
 
@@ -19,25 +20,46 @@ export type { Platform };
  * Wat elk platform van een tekst vraagt. Kort en operationeel: een limiet, waar
  * de aandacht valt, en hoeveel hashtags er werken. Geen sfeerbeschrijvingen —
  * die maken de output juist vager.
+ *
+ * De harde "max X tekens" komt uit CAPTION_LIMITS (social-constants.ts) — dat
+ * is dezelfde bron als de teller/waarschuwing in het postvenster. Los
+ * daarvan hardcoden leidde ertoe dat dit de AI ooit "TikTok max 300 tekens"
+ * voorhield terwijl de UI pas bij 2200 blokkeerde: de AI kreeg een onjuiste,
+ * te strenge limiet mee die niets met de echte grens te maken had. De
+ * kortere "in de praktijk"-richtlijn is bewust wél losse schrijfadvies-tekst
+ * — dat is een stijlkeuze, geen technische grens, en hoort niet uit
+ * CAPTION_LIMITS te komen.
  */
-const PLATFORM_BRIEFS: Record<Platform, string> = {
+const PLATFORM_STYLE_NOTES: Record<Platform, string> = {
   instagram:
-    "Instagram — max 2200 tekens, maar houd het onder de 600 tenzij het verhaal meer nodig heeft. " +
+    "houd het onder de 600 tenzij het verhaal meer nodig heeft. " +
     "Alleen de eerste zin is zichtbaar vóór 'meer lezen': daar staat de kern, niet de aanloop. " +
     "3 tot 5 hashtags, onderaan. Emoji mag, spaarzaam en functioneel.",
   facebook:
-    "Facebook — max 1500 tekens, in de praktijk korter. Schrijf zoals je het zou vertellen. " +
+    "houd het in de praktijk ver onder de limiet. Schrijf zoals je het zou vertellen. " +
     "Hooguit twee hashtags; op Facebook doen ze weinig.",
   tiktok:
-    "TikTok — max 300 tekens, in de praktijk één of twee zinnen. De video doet het werk, " +
+    "houd het in de praktijk op één of twee zinnen. De video doet het werk, " +
     "het bijschrift geeft context of een reden om te blijven kijken. 2 tot 4 hashtags. Spreektaal.",
   youtube:
-    "YouTube — eerste regel is de titelzin en moet los te lezen zijn. " +
+    "zet de titelzin op de eerste regel — die moet los te lezen zijn. " +
     "Daaronder twee of drie zinnen context. Hashtags onderaan, maximaal drie.",
   linkedin:
-    "LinkedIn — max 3000 tekens, in de praktijk onder de 800. Open met de observatie of het " +
+    "houd het in de praktijk onder de 800. Open met de observatie of het " +
     "resultaat, niet met een aankondiging. Maximaal 3 hashtags.",
 };
+
+function buildPlatformBrief(platform: Platform): string {
+  const limit = CAPTION_LIMITS[platform];
+  const label = limit?.label ?? platform;
+  const note = PLATFORM_STYLE_NOTES[platform];
+  const maxNote = limit ? `max ${limit.hard} tekens, maar ${note}` : note;
+  return `${label} — ${maxNote}`;
+}
+
+const PLATFORM_BRIEFS: Record<Platform, string> = Object.fromEntries(
+  (Object.keys(PLATFORM_STYLE_NOTES) as Platform[]).map((p) => [p, buildPlatformBrief(p)]),
+) as Record<Platform, string>;
 
 export function platformBrief(platform: string): string {
   return (

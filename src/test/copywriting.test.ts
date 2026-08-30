@@ -56,10 +56,15 @@ describe("HOUSE_RULES", () => {
 });
 
 describe("platformBrief", () => {
-  it("geeft per platform een concrete limiet", () => {
+  it("geeft per platform de echte harde limiet uit CAPTION_LIMITS", () => {
+    // Dezelfde bron als de teller/waarschuwing in het postvenster
+    // (social-constants.ts) — anders krijgt de AI een andere limiet
+    // voorgehouden dan de UI daadwerkelijk afdwingt.
     expect(platformBrief("instagram")).toMatch(/2200/);
-    expect(platformBrief("tiktok")).toMatch(/300/);
-    expect(platformBrief("facebook")).toMatch(/1500/);
+    expect(platformBrief("tiktok")).toMatch(/2200/);
+    expect(platformBrief("facebook")).toMatch(/63206/);
+    expect(platformBrief("linkedin")).toMatch(/3000/);
+    expect(platformBrief("youtube")).toMatch(/5000/);
   });
 
   it("loopt niet stuk op een onbekend platform", () => {
