@@ -58,6 +58,32 @@ mee over hoe (bijv. eerst een "archiveren" i.p.v. hard-delete voor
 klanten), maar dat is een aparte, kleinere beslissing dan een simpele
 bulk-knop toevoegen.
 
+## Video-eisen per platform in het postvenster — bewust niet hard gemaakt
+
+Postvenster-verbetering #5, punt 4 vroeg om video-eisen (duur, verhouding,
+bestandsgrootte) te meten bij het uploaden en tegen platformlimieten aan te
+houden. Ik heb dat bewust **niet** als blokkerende controle gebouwd: ik heb
+de actuele officiële limieten van TikTok's Content Posting API, Instagram
+Reels en Facebook's video-API opgezocht en kreeg per platform tegenstrijdige
+cijfers uit verschillende delen van hun eigen documentatie (bijv. voor
+Instagram Reels liepen bestandsgrootte-vermeldingen uiteen van 8MB tot 4GB
+al naar gelang welke pagina). Een verzonnen limiet is erger dan geen limiet
+— die blokkeert ten onrechte een geldige upload, of geeft ten onrechte een
+vinkje aan een ongeldige, precies het probleem dat deze postvenster-controle
+juist moet voorkomen.
+
+Wat ik wél gebouwd heb: het postvenster toont nu de echte, lokaal gemeten
+eigenschappen van elke upload (afmetingen, videoduur, bestandsgrootte) direct
+onder de mediaknop, met een duidelijke oproep om dat zelf tegen de eisen van
+elk gekozen platform te houden.
+
+- [ ] Als je harde limieten wilt: open de officiële pagina's zelf in een
+  browser (die kon ik vanuit deze omgeving niet bereiken) en geef me de
+  exacte cijfers door — dan bouw ik de blokkerende controle alsnog:
+  - TikTok: developers.tiktok.com/doc/content-posting-api-reference-direct-post
+  - Instagram Reels: developers.facebook.com/docs/video-api/guides/reels-publishing
+  - Facebook video: developers.facebook.com/docs/graph-api/reference/video-upload-limits
+
 ## Lekwoord-bescherming staat uit — kleine, losse verbetering
 
 Supabase's eigen beveiligingscheck meldt dat "Leaked Password Protection"

@@ -1061,6 +1061,12 @@ function ComposeModal({
     existing ? [existing.platform as Platform] : ["instagram"],
   );
   const [caption, setCaption] = useState<string>(existing?.caption ?? "");
+  // Postvenster-verbetering #2: bij meerdere platforms tegelijk kreeg elk
+  // kanaal dezelfde caption — een TikTok-caption is nu eenmaal geen goede
+  // LinkedIn-caption. Overschrijft per platform, alleen als je op "AI
+  // aanpassen" drukt; zonder overschrijving blijft de gedeelde caption gelden.
+  const [captionOverrides, setCaptionOverrides] = useState<Partial<Record<Platform, string>>>({});
+  const [adaptingPlatform, setAdaptingPlatform] = useState<Platform | null>(null);
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
   const [mediaPath, setMediaPath] = useState<string | null>(existing?.media_path ?? null);
   const [mediaType, setMediaType] = useState<string | null>(existing?.media_type ?? null);
@@ -1093,11 +1099,59 @@ function ComposeModal({
   useModalA11y(modalRef, onClose, true);
 
   const primary = platforms[0] ?? "instagram";
+  const primaryCaption = captionOverrides[primary] ?? caption;
   const limit = CAPTION_LIMITS[primary];
-  const overSoft = limit && caption.length > limit.soft;
-  const overHard = limit && caption.length > limit.hard;
+  const overSoft = limit && primaryCaption.length > limit.soft;
+  const overHard = limit && primaryCaption.length > limit.hard;
 
   const mediaUrl = useSignedUrl(mediaPath);
+
+  // Postvenster-verbetering #4: technische eigenschappen van de media tonen
+  // (afmetingen, duur, bestandsgrootte) zodra ze bekend zijn — puur
+  // informatief. Bewust GEEN harde pas/faal-controle tegen platformlimieten:
+  // TikTok/Instagram/Facebook's actuele duur- en bestandsgrootte-eisen zijn
+  // niet betrouwbaar te achterhalen zonder ze in hun eigen documentatie na te
+  // slaan, en een verzonnen limiet is erger dan geen limiet — die blokkeert
+  // ten onrechte een geldige upload, of geeft ten onrechte een vinkje aan een
+  // ongeldige. De admin ziet de feiten en controleert zelf.
+  const [mediaMeta, setMediaMeta] = useState<{
+    width: number;
+    height: number;
+    durationSec: number | null;
+  } | null>(null);
+  const [pickedFileSize, setPickedFileSize] = useState<number | null>(null);
+  useEffect(() => {
+    if (!mediaUrl) {
+      setMediaMeta(null);
+      return;
+    }
+    let cancelled = false;
+    if (mediaType?.startsWith("video")) {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => {
+        if (!cancelled)
+          setMediaMeta({ width: v.videoWidth, height: v.videoHeight, durationSec: v.duration });
+      };
+      v.onerror = () => {
+        if (!cancelled) setMediaMeta(null);
+      };
+      v.src = mediaUrl;
+    } else {
+      const img = new Image();
+      img.onload = () => {
+        if (!cancelled)
+          setMediaMeta({ width: img.naturalWidth, height: img.naturalHeight, durationSec: null });
+      };
+      img.onerror = () => {
+        if (!cancelled) setMediaMeta(null);
+      };
+      img.src = mediaUrl;
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [mediaUrl, mediaType]);
 
   // Welke kanalen zijn daadwerkelijk gekoppeld voor deze klant? Alleen daar
   // kun je naartoe plannen; de rest tonen we uitgeschakeld met uitleg.
@@ -1199,6 +1253,7 @@ function ComposeModal({
   }
 
   async function onPickFile(file: File) {
+    setPickedFileSize(file.size);
     setUploading(true);
     setUploadProgress({ loaded: 0, total: file.size, percent: 0 });
     const controller = new AbortController();
@@ -1249,6 +1304,35 @@ function ComposeModal({
     }
   }
 
+  /**
+   * Herschrijft de huidige caption (gedeeld of al eerder overschreven) voor
+   * één specifiek platform — lengte, hashtag-aantal en toon uit platformBrief()
+   * in copywriting.ts. Alleen zinvol bij meerdere geselecteerde platforms.
+   */
+  async function adaptForPlatform(p: Platform) {
+    const source = (captionOverrides[p] ?? caption).trim();
+    if (!source) return toast.error("Schrijf eerst een caption om aan te passen");
+    setAdaptingPlatform(p);
+    try {
+      const res = await captionFn({
+        data: {
+          brief: source,
+          platform: p,
+          tone,
+          brand: `${clientName}${industry ? " — " + industry : ""}`,
+        },
+      });
+      const text = (res.caption ?? "").trim();
+      const tags = (res.hashtags ?? []).join(" ");
+      setCaptionOverrides((prev) => ({ ...prev, [p]: text + (tags ? `\n\n${tags}` : "") }));
+      toast.success(`Caption aangepast voor ${PLATFORMS.find((x) => x.id === p)?.label ?? p}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAdaptingPlatform(null);
+    }
+  }
+
   function expandRecurring(base: Date): Date[] {
     if (recurring === "none") return [base];
     const dates: Date[] = [];
@@ -1282,7 +1366,7 @@ function ComposeModal({
           hasMedia: !!mediaPath,
           mediaType,
           mediaPath,
-          caption,
+          caption: captionOverrides[p] ?? caption,
           connected: isConnected(p),
           scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
           excludeId: editId,
@@ -1297,6 +1381,7 @@ function ComposeModal({
       mediaPath,
       mediaType,
       caption,
+      captionOverrides,
       scheduledAt,
       connectedPlatforms,
       recentClientPosts,
@@ -1641,6 +1726,7 @@ function ComposeModal({
                     onClick={() => {
                       setMediaPath(null);
                       setMediaType(null);
+                      setPickedFileSize(null);
                     }}
                     className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
                   >
@@ -1681,6 +1767,14 @@ function ComposeModal({
                     </button>
                   </div>
                 </div>
+              )}
+              {!uploading && mediaMeta && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  {mediaMeta.width}×{mediaMeta.height}px
+                  {mediaMeta.durationSec != null && ` · ${mediaMeta.durationSec.toFixed(1)}s`}
+                  {pickedFileSize != null && ` · ${formatBytes(pickedFileSize)}`} — controleer dit
+                  tegen de eisen van elk gekozen platform.
+                </p>
               )}
             </div>
 
@@ -1864,6 +1958,14 @@ function ComposeModal({
                   <div key={id} className="glass rounded-xl p-3">
                     <div className="flex items-center gap-2 mb-2 text-xs">
                       <meta.Icon className="h-3.5 w-3.5" /> {meta.label}
+                      {captionOverrides[id] && (
+                        <span
+                          className="rounded-full bg-gold/15 text-gold px-1.5 py-0.5 text-[9px] uppercase tracking-wider"
+                          title="Deze caption is per platform aangepast"
+                        >
+                          aangepast
+                        </span>
+                      )}
                       <span className="text-[10px] text-muted-foreground ml-auto">
                         {meta.ratio}
                       </span>
@@ -1873,13 +1975,28 @@ function ComposeModal({
                       ratio={meta.ratio}
                       mediaUrl={mediaUrl}
                       mediaType={mediaType}
-                      caption={caption}
+                      caption={captionOverrides[id] ?? caption}
                       clientName={clientName}
                       brandColor={brandColor}
                       logoUrl={logoUrl}
                       fallbackIcon={meta.Icon}
                       fallbackGradient={meta.color}
                     />
+                    {platforms.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => adaptForPlatform(id)}
+                        disabled={adaptingPlatform !== null}
+                        className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-gold/20 py-1.5 text-[11px] text-gold hover:bg-gold/10 disabled:opacity-50"
+                      >
+                        {adaptingPlatform === id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" />
+                        )}
+                        AI aanpassen voor {meta.label}
+                      </button>
+                    )}
                   </div>
                 );
               })}
