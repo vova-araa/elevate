@@ -58,6 +58,35 @@ mee over hoe (bijv. eerst een "archiveren" i.p.v. hard-delete voor
 klanten), maar dat is een aparte, kleinere beslissing dan een simpele
 bulk-knop toevoegen.
 
+## Ideeën voor later — nog niet gebouwd (op mijn aanbeveling gesorteerd)
+
+Losse lijst mocht je vragen "wat kan er verder nog bij" — geen van deze is
+gebouwd, dit zijn voorstellen. Punt 2 is inmiddels wél gebouwd (zie
+hieronder), de rest staat open:
+
+1. **Map → maand**: upload media, AI bekijkt het beeld (vision), schrijft
+   captions in de tone-of-voice van de klant, verdeelt over de beste tijden
+   — admin keurt het geheel in één scherm goed in plaats van los per post.
+2. ~~Swipe-goedkeuren op mobiel voor klanten~~ — **gebouwd**: elke
+   conceptkaart op de goedkeurlink (`/approve/$token`) reageert nu ook op
+   een swipe (rechts = goedkeuren, links = wijziging vragen), naast de
+   bestaande knoppen.
+3. **Reactie-inbox**: comments van alle gekoppelde platforms in één lijst,
+   met AI-antwoordvoorstellen.
+4. **Evergreen-motor**: best presterende posts automatisch opnieuw inplannen
+   na 3-6 maanden. Dit raakt "automatisch namens de klant publiceren zonder
+   dat iemand het nog een keer bekijkt" — expliciet iets om eerst met jou te
+   bespreken vóór het gebouwd wordt.
+5. **Concurrentieradar**: per klant 3 concurrenten volgen, wekelijkse
+   samenvatting. Vereist het monitoren van accounts die niet van de klant
+   zijn — juridisch/ToS-kant eerst uitzoeken.
+6. **Onboarding in een link**: intake + socials koppelen + eerste
+   aanlevering, zonder dat de klant een account hoeft aan te maken.
+
+(WhatsApp-aanlevering is destijds afgewezen — comprimeert media. Drive-import
+is de vervanger en is al gebouwd. Een losse native iOS-app staat on hold tot
+de site/het platform zelf verder af is.)
+
 ## Video-eisen per platform in het postvenster — bewust niet hard gemaakt
 
 Postvenster-verbetering #5, punt 4 vroeg om video-eisen (duur, verhouding,
