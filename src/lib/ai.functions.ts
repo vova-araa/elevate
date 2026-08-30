@@ -115,48 +115,81 @@ const tools: Anthropic.Tool[] = [
   },
 ];
 
-interface CreateTaskArgs {
-  client_id: string;
-  title: string;
-  description?: string;
-  priority?: Enums<"task_priority">;
-  status?: Enums<"task_status">;
-  due_date?: string;
-}
+// Runtime-validatie van tool-argumenten die het AI-model teruggeeft: die
+// komen niet uit een geschema-afgedwongen UI-formulier maar uit een
+// function-calling-respons, dus dezelfde discipline als elders in de app
+// (zod .safeParse) in plaats van een ongecontroleerde cast.
+const taskPriorityEnum = z.enum([
+  "low",
+  "medium",
+  "high",
+  "urgent",
+] as const satisfies readonly Enums<"task_priority">[]);
+const taskStatusEnum = z.enum([
+  "todo",
+  "in_progress",
+  "done",
+] as const satisfies readonly Enums<"task_status">[]);
+const deliverableTypeEnum = z.enum([
+  "image",
+  "video",
+  "copy",
+  "document",
+  "other",
+] as const satisfies readonly Enums<"deliverable_type">[]);
 
-interface CreateCalendarItemArgs {
-  client_id: string;
-  title: string;
-  date: string;
-  deliverable_type?: Enums<"deliverable_type">;
-  description?: string;
-}
+const createTaskSchema = z.object({
+  client_id: z.string().uuid(),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  priority: taskPriorityEnum.optional(),
+  status: taskStatusEnum.optional(),
+  due_date: z.string().optional(),
+});
 
-interface CreateStrategyNoteArgs {
-  client_id: string;
-  title: string;
-  body?: string;
-  category?: string;
-}
+const createCalendarItemSchema = z.object({
+  client_id: z.string().uuid(),
+  title: z.string().min(1),
+  date: z.string().min(1),
+  deliverable_type: deliverableTypeEnum.optional(),
+  description: z.string().optional(),
+});
 
-interface GenerateCaptionArgs {
-  client_id?: string;
-  briefing: string;
-  tone?: string;
-  platforms?: string[];
-}
+const createStrategyNoteSchema = z.object({
+  client_id: z.string().uuid(),
+  title: z.string().min(1),
+  body: z.string().optional(),
+  category: z.string().optional(),
+});
 
-interface SchedulePostArgs {
-  client_id?: string;
-  content: string;
-  integration_ids?: string[];
-  date: string;
-  type?: "schedule" | "now" | "draft";
+const generateCaptionSchema = z.object({
+  client_id: z.string().uuid().optional(),
+  briefing: z.string().min(1),
+  tone: z.string().optional(),
+  platforms: z.array(z.string()).optional(),
+});
+
+const schedulePostSchema = z.object({
+  client_id: z.string().uuid().optional(),
+  content: z.string().min(1),
+  integration_ids: z.array(z.string()).optional(),
+  date: z.string().min(1),
+  type: z.enum(["schedule", "now", "draft"]).optional(),
+});
+
+/** Vertaalt de eerste zod-fout naar een korte, voor het model bruikbare melding. */
+function firstIssue(result: z.SafeParseReturnType<unknown, unknown>): string {
+  if (result.success) return "";
+  const issue = result.error.issues[0];
+  const path = issue?.path.join(".");
+  return path ? `${path}: ${issue.message}` : (issue?.message ?? "Ongeldige argumenten");
 }
 
 async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
   if (name === "create_task") {
-    const args = rawArgs as unknown as CreateTaskArgs;
+    const parsed = createTaskSchema.safeParse(rawArgs);
+    if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+    const args = parsed.data;
     const { error, data } = await supabaseAdmin
       .from("tasks")
       .insert({
@@ -173,7 +206,9 @@ async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
     return { ok: true, id: data.id };
   }
   if (name === "create_calendar_item") {
-    const args = rawArgs as unknown as CreateCalendarItemArgs;
+    const parsed = createCalendarItemSchema.safeParse(rawArgs);
+    if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+    const args = parsed.data;
     const { error, data } = await supabaseAdmin
       .from("calendar_items")
       .insert({
@@ -189,7 +224,9 @@ async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
     return { ok: true, id: data.id };
   }
   if (name === "create_strategy_note") {
-    const args = rawArgs as unknown as CreateStrategyNoteArgs;
+    const parsed = createStrategyNoteSchema.safeParse(rawArgs);
+    if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+    const args = parsed.data;
     const { error, data } = await supabaseAdmin
       .from("strategy_notes")
       .insert({
@@ -204,7 +241,9 @@ async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
     return { ok: true, id: data.id };
   }
   if (name === "generate_caption") {
-    const args = rawArgs as unknown as GenerateCaptionArgs;
+    const parsed = generateCaptionSchema.safeParse(rawArgs);
+    if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+    const args = parsed.data;
     try {
       const results: { platform: string; text: string }[] = [];
       for (const platform of args.platforms ?? []) {
@@ -233,7 +272,9 @@ async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
     }
   }
   if (name === "schedule_post") {
-    const args = rawArgs as unknown as SchedulePostArgs;
+    const parsed = schedulePostSchema.safeParse(rawArgs);
+    if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+    const args = parsed.data;
     try {
       if (!args.client_id) return { ok: false, error: "client_id ontbreekt" };
       const first = (args.integration_ids?.[0] ?? "instagram") as string;

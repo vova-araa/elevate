@@ -105,23 +105,41 @@ const tools: Anthropic.Tool[] = [
   },
 ];
 
-interface CreateDraftPostsArgs {
-  clientId: string;
-  posts: { date: string; platform: CampaignPlatform; caption: string }[];
-}
+// Runtime-validatie van tool-argumenten die het AI-model teruggeeft: die
+// komen niet uit een geschema-afgedwongen UI-formulier maar uit een
+// function-calling-respons, dus dezelfde discipline als elders in de app
+// (zod .safeParse) in plaats van een ongecontroleerde cast — een post zonder
+// geldige datum crashte anders pas op `new Date(...)`, of kwam als "Invalid
+// Date" in de database terecht.
+const platformEnum = z.enum(PLATFORM_ENUM as [CampaignPlatform, ...CampaignPlatform[]]);
 
-interface CreateTaskArgs {
-  clientId: string;
-  title: string;
-  description?: string;
-}
+const createDraftPostsSchema = z.object({
+  clientId: z.string().uuid(),
+  posts: z
+    .array(
+      z.object({
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Datum moet YYYY-MM-DD zijn"),
+        platform: platformEnum,
+        caption: z.string().min(1),
+      }),
+    )
+    .min(1),
+});
 
-interface GetClientStatsArgs {
-  clientId: string;
-}
+const createTaskSchema = z.object({
+  clientId: z.string().uuid(),
+  title: z.string().min(1),
+  description: z.string().optional(),
+});
 
-interface GetClientOverviewArgs {
-  clientId: string;
+const clientIdOnlySchema = z.object({ clientId: z.string().uuid() });
+
+/** Vertaalt de eerste zod-fout naar een korte, voor het model bruikbare melding. */
+function firstIssue(result: z.SafeParseReturnType<unknown, unknown>): string {
+  if (result.success) return "";
+  const issue = result.error.issues[0];
+  const path = issue?.path.join(".");
+  return path ? `${path}: ${issue.message}` : (issue?.message ?? "Ongeldige argumenten");
 }
 
 const ALL_PLATFORMS = [...PLATFORM_ENUM] as CampaignPlatform[];
@@ -396,9 +414,9 @@ export const runAssistant = createServerFn({ method: "POST" })
       }
 
       if (name === "create_draft_posts") {
-        const args = rawArgs as unknown as CreateDraftPostsArgs;
-        if (!args.clientId) return { ok: false, error: "clientId ontbreekt" };
-        if (!args.posts?.length) return { ok: false, error: "Geen posts opgegeven" };
+        const parsed = createDraftPostsSchema.safeParse(rawArgs);
+        if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+        const args = parsed.data;
 
         const rows: TablesInsert<"scheduled_posts">[] = args.posts.map((p) => {
           const platform = p.platform;
@@ -427,9 +445,9 @@ export const runAssistant = createServerFn({ method: "POST" })
       }
 
       if (name === "create_task") {
-        const args = rawArgs as unknown as CreateTaskArgs;
-        if (!args.clientId) return { ok: false, error: "clientId ontbreekt" };
-        if (!args.title) return { ok: false, error: "title ontbreekt" };
+        const parsed = createTaskSchema.safeParse(rawArgs);
+        if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+        const args = parsed.data;
 
         const { error, data: task } = await supabaseAdmin
           .from("tasks")
@@ -449,8 +467,9 @@ export const runAssistant = createServerFn({ method: "POST" })
       }
 
       if (name === "get_client_stats") {
-        const args = rawArgs as unknown as GetClientStatsArgs;
-        if (!args.clientId) return { ok: false, error: "clientId ontbreekt" };
+        const parsed = clientIdOnlySchema.safeParse(rawArgs);
+        if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+        const args = parsed.data;
 
         const { data: posts, error } = await supabaseAdmin
           .from("scheduled_posts")
@@ -478,8 +497,9 @@ export const runAssistant = createServerFn({ method: "POST" })
       }
 
       if (name === "get_client_overview") {
-        const args = rawArgs as unknown as GetClientOverviewArgs;
-        if (!args.clientId) return { ok: false, error: "clientId ontbreekt" };
+        const parsed = clientIdOnlySchema.safeParse(rawArgs);
+        if (!parsed.success) return { ok: false, error: firstIssue(parsed) };
+        const args = parsed.data;
         return buildClientOverview(args.clientId, clientName(args.clientId));
       }
 
