@@ -55,7 +55,7 @@ export interface DriveReleaseItem {
 
 export const generateDriveReleasePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -161,7 +161,7 @@ export interface CommitDriveReleaseResult {
 
 export const commitDriveReleasePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

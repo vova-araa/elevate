@@ -61,7 +61,7 @@ export interface PostCopyAdvice {
 
 export const suggestPostCopy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid().nullable().optional(),

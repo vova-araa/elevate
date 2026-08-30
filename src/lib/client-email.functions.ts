@@ -46,7 +46,7 @@ const templateSchema = z.object({
 
 export const upsertEmailTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => templateSchema.parse(d))
+  .validator((d) => templateSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     if (data.id) {
@@ -78,7 +78,7 @@ export const upsertEmailTemplate = createServerFn({ method: "POST" })
 
 export const deleteEmailTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { error } = await supabaseAdmin.from("email_templates").delete().eq("id", data.id);
@@ -106,7 +106,7 @@ const sendSchema = z.object({
 
 export const sendClientEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => sendSchema.parse(d))
+  .validator((d) => sendSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -155,7 +155,7 @@ export const sendClientEmail = createServerFn({ method: "POST" })
 
 export const listClientEmailLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { data: rows, error } = await supabaseAdmin

@@ -21,7 +21,7 @@ export interface ActiveClientContext {
 
 export const getActiveClientContext = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ asClient: z.string().uuid().optional() }).parse(d))
+  .validator((d) => z.object({ asClient: z.string().uuid().optional() }).parse(d))
   .handler(async ({ context, data }): Promise<ActiveClientContext> => {
     const { supabase, userId } = context;
     const { data: adminCheck } = await supabase.rpc("is_admin", { _user_id: userId });

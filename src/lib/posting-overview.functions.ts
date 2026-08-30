@@ -68,7 +68,7 @@ export interface PostingOverview {
 
 export const getPostingOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         days: z.number().int().min(1).max(60).default(7),

@@ -55,7 +55,7 @@ export interface DashboardSummary {
 
 export const getDashboardSummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
+  .validator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }): Promise<DashboardSummary> => {
     await assertAdmin(context);
     const { clientId } = data;

@@ -45,7 +45,7 @@ export interface FeedArrangementSlot {
 
 export const getFeedArrangement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid(), platform: PLATFORM }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid(), platform: PLATFORM }).parse(d))
   .handler(async ({ data, context }): Promise<FeedArrangementSlot[]> => {
     await assertClientAccess(context.supabase, context.userId, data.clientId);
 
@@ -114,7 +114,7 @@ const SlotInput = z
 
 export const saveFeedArrangement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -178,7 +178,7 @@ export const saveFeedArrangement = createServerFn({ method: "POST" })
 
 export const clearFeedArrangement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid(), platform: PLATFORM }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid(), platform: PLATFORM }).parse(d))
   .handler(async ({ data, context }) => {
     await assertClientAccess(context.supabase, context.userId, data.clientId);
     const { error } = await supabaseAdmin
@@ -194,7 +194,7 @@ export const clearFeedArrangement = createServerFn({ method: "POST" })
 
 export const fillFeedArrangementFromLive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

@@ -125,7 +125,7 @@ export interface PlanItem {
 
 export const generateContentPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -200,7 +200,7 @@ Zorg voor variatie in invalshoek (educatief, storytelling, promotie, engagement)
 
 export const createPlanPosts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

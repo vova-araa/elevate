@@ -38,7 +38,7 @@ function hashToken(token: string): string {
 
 export const createApprovalLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -126,7 +126,7 @@ export interface ApprovalQueuePost {
 }
 
 export const getApprovalQueueByToken = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ token: z.string().min(1).max(200) }).parse(d))
+  .validator((d) => z.object({ token: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
     const { clientId, clientName } = await resolveToken(data.token);
 
@@ -167,7 +167,7 @@ export const getApprovalQueueByToken = createServerFn({ method: "POST" })
 // ── Goedkeuren / wijziging aanvragen via token (publiek, geen auth) ─────────
 
 export const actOnPostByToken = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         token: z.string().min(1).max(200),

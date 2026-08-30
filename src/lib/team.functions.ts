@@ -53,7 +53,7 @@ const setRoleSchema = z.object({
 
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => setRoleSchema.parse(input))
+  .validator((input) => setRoleSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     if (data.userId === context.userId && data.role !== "admin") {
@@ -89,7 +89,7 @@ const assignClientSchema = z.object({
 
 export const assignClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => assignClientSchema.parse(input))
+  .validator((input) => assignClientSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -119,7 +119,7 @@ const unassignClientSchema = z.object({
 
 export const unassignClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => unassignClientSchema.parse(input))
+  .validator((input) => unassignClientSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -143,7 +143,7 @@ const listActivitySchema = z.object({
 
 export const listActivity = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => listActivitySchema.parse(input ?? {}))
+  .validator((input) => listActivitySchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 

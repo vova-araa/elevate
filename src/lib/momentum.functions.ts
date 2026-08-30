@@ -63,7 +63,7 @@ export interface MomentumOverview {
 
 export const getMomentum = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
+  .validator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }): Promise<MomentumOverview> => {
     await assertAdmin(context);
 
@@ -273,7 +273,7 @@ export const getMomentum = createServerFn({ method: "POST" })
 /** Een voorgestelde taak omzetten naar een echte taak. */
 export const acceptSuggestedTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

@@ -25,7 +25,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
 
 export const inviteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => inviteSchema.parse(input))
+  .validator((input) => inviteSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -90,7 +90,7 @@ const testAccountSchema = z.object({
  */
 export const createTestAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => testAccountSchema.parse(input ?? {}))
+  .validator((input) => testAccountSchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -130,7 +130,7 @@ const demoClientSchema = z.object({
  */
 export const createDemoClientAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => demoClientSchema.parse(input ?? {}))
+  .validator((input) => demoClientSchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -193,7 +193,7 @@ async function assertSuperAdmin(ctx: { supabase: SupabaseClient<Database>; userI
 
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => roleSchema.parse(input))
+  .validator((input) => roleSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     // De super-admin-rol is de hoogste rechten in het systeem: uitsluitend een
@@ -226,7 +226,7 @@ const memberSchema = z.object({
 
 export const setClientMembership = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => memberSchema.parse(input))
+  .validator((input) => memberSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     if (data.link) {
@@ -252,7 +252,7 @@ const deleteSchema = z.object({ userId: z.string().uuid() });
 
 export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => deleteSchema.parse(input))
+  .validator((input) => deleteSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     if (data.userId === context.userId) {

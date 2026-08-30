@@ -36,7 +36,7 @@ export type BulkRow = z.infer<typeof bulkRowSchema>;
 
 export const bulkCreatePosts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => bulkCreateInputSchema.parse(d))
+  .validator((d) => bulkCreateInputSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -84,7 +84,7 @@ export type BestTimeResult = Record<string, string>;
 
 export const getBestTimes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => getBestTimesInputSchema.parse(d))
+  .validator((d) => getBestTimesInputSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 

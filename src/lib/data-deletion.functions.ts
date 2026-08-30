@@ -9,7 +9,7 @@ import { allowRequest, requestIp } from "@/lib/rate-limit.server";
  * komt geen persoonsgegeven uit (alleen status + aantal verwijderde koppelingen).
  */
 export const getDeletionStatus = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ code: z.string().regex(/^[a-f0-9]{8,64}$/, "Ongeldige code") }).parse(d),
   )
   .handler(async ({ data }): Promise<DeletionStatus> => {

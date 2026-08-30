@@ -106,7 +106,7 @@ export const getStorageUsage = createServerFn({ method: "POST" })
  */
 export const purgePostedMedia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ uploadIds: z.array(z.string().uuid()).min(1) }).parse(d))
+  .validator((d) => z.object({ uploadIds: z.array(z.string().uuid()).min(1) }).parse(d))
   .handler(async ({ data, context }): Promise<{ purged: number; skipped: number }> => {
     await assertAdmin(context);
     const now = new Date().toISOString();

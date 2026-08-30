@@ -64,7 +64,7 @@ export type IntakeAnswers = z.infer<typeof intakeAnswersSchema>;
 
 export const getIntake = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { data: intake, error } = await supabaseAdmin
@@ -78,7 +78,7 @@ export const getIntake = createServerFn({ method: "POST" })
 
 export const saveIntake = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -109,7 +109,7 @@ export const saveIntake = createServerFn({ method: "POST" })
 // hierboven, alleen met assertClientAccess i.p.v. assertAdmin.
 export const getClientIntake = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertClientAccess(context, data.clientId);
     const { data: intake, error } = await supabaseAdmin
@@ -123,7 +123,7 @@ export const getClientIntake = createServerFn({ method: "POST" })
 
 export const saveClientIntake = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -163,7 +163,7 @@ export type Cadence = Partial<Record<CampaignPlatform, number>>;
 
 export const getStrategy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { data: strategy, error } = await supabaseAdmin
@@ -177,7 +177,7 @@ export const getStrategy = createServerFn({ method: "POST" })
 
 export const saveStrategy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -278,7 +278,7 @@ Wat niet past: ${answers.donts || "—"}`;
 
 export const generateStrategy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -359,7 +359,7 @@ export interface WeekPlanDay {
 
 export const generateWeekPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

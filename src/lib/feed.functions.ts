@@ -386,7 +386,7 @@ async function fallback(
 
 export const getPublishedFeed = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

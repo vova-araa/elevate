@@ -131,7 +131,7 @@ async function fetchClientContext(clientId: string): Promise<string> {
 
 export const getToneOfVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const note = await fetchToneNote(data.clientId);
@@ -141,7 +141,7 @@ export const getToneOfVoice = createServerFn({ method: "POST" })
 
 export const saveToneOfVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -181,7 +181,7 @@ export const saveToneOfVoice = createServerFn({ method: "POST" })
 
 export const suggestToneOfVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -255,7 +255,7 @@ export interface CaptionVariant {
 
 export const generateCaptionVariants = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         briefing: z.string().min(3).max(4000),
@@ -323,7 +323,7 @@ Benoem per variant de invalshoek kort in het veld "angle" (bv. "storytelling", "
 
 export const saveCaptionVariant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid().optional().nullable(),
@@ -359,7 +359,7 @@ export interface RepurposedPost {
 
 export const repurposeContent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         source: z.string().min(20).max(20000),

@@ -56,7 +56,7 @@ function hashToken(token: string): string {
 
 export const createChannelInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -137,7 +137,7 @@ export interface ConnectPlatformStatus {
 }
 
 export const getConnectContext = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ token: z.string().min(1).max(200) }).parse(d))
+  .validator((d) => z.object({ token: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
     const { clientId, clientName } = await resolveInviteToken(data.token);
 
@@ -175,7 +175,7 @@ export const getConnectContext = createServerFn({ method: "POST" })
 // channels.functions.ts, hier voor de eigenaar-zonder-account-flow.
 
 export const connectManuallyByToken = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         token: z.string().min(1).max(200),
@@ -211,7 +211,7 @@ export const connectManuallyByToken = createServerFn({ method: "POST" })
 // ── OAuth-flow starten via token (publiek, geen auth) ────────────────────────
 
 export const startConnectByToken = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         token: z.string().min(1).max(200),

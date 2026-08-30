@@ -117,7 +117,7 @@ const ANALYSIS_SCHEMA = {
 
 export const analyzeIntakeDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

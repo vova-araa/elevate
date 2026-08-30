@@ -43,7 +43,7 @@ async function mediaSignedUrl(mediaPath: string | null, clientId: string): Promi
 
 export const publishScheduledPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ postId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ postId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 

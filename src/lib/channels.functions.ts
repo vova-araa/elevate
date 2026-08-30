@@ -83,7 +83,7 @@ export const getSocialSetupStatus = createServerFn({ method: "POST" })
 /** Start de OAuth-flow: geeft de authorize-URL terug om te openen. */
 export const startSocialConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid().optional(),
@@ -120,7 +120,7 @@ export const startSocialConnect = createServerFn({ method: "POST" })
 /** Kanalen van een klant (zonder tokens — die blijven server-side). */
 export const listClientChannels = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const clientId = data.clientId ?? (await getUserClientId(supabase, userId));
@@ -190,7 +190,7 @@ export const listClientChannels = createServerFn({ method: "POST" })
  */
 export const connectChannelManually = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid().optional(),
@@ -228,7 +228,7 @@ export const connectChannelManually = createServerFn({ method: "POST" })
 
 export const disconnectChannel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ clientId: z.string().uuid().optional(), platform: PLATFORM }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -254,7 +254,7 @@ export const disconnectChannel = createServerFn({ method: "POST" })
  */
 export const selectFacebookPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid().optional(),
@@ -338,7 +338,7 @@ export const selectFacebookPage = createServerFn({ method: "POST" })
  */
 export const refreshChannel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ clientId: z.string().uuid().optional(), platform: PLATFORM }).parse(d),
   )
   .handler(async ({ data, context }) => {

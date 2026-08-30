@@ -69,7 +69,7 @@ function fileNameFromUrl(url: string): string {
 
 export const importMediaFromUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

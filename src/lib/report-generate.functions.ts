@@ -127,7 +127,7 @@ async function computeFollowerGrowth(clientId: string, sinceIso: string): Promis
  */
 export const createReportFromAnalytics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => inputSchema.parse(d))
+  .validator((d) => inputSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 

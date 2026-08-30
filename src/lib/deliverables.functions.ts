@@ -82,7 +82,7 @@ function isOverdue(due: string | null): boolean {
 
 export const getDeliveryOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<DeliveryOverview> => {
     await assertClientAccess(context, data.clientId);
     const { clientId } = data;
@@ -248,7 +248,7 @@ export const getDeliveryOverview = createServerFn({ method: "POST" })
 
 export const createDeliveryRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),
@@ -296,7 +296,7 @@ export const createDeliveryRequest = createServerFn({ method: "POST" })
 
 export const setDeliveryRequestStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         id: z.string().uuid(),
@@ -327,7 +327,7 @@ export const setDeliveryRequestStatus = createServerFn({ method: "POST" })
 
 export const deleteDeliveryRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { error } = await supabaseAdmin.from("delivery_requests").delete().eq("id", data.id);

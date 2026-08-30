@@ -50,7 +50,7 @@ export const getDriveConnectionStatus = createServerFn({ method: "POST" })
 
 export const getDriveAuthorizeUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ returnTo: z.string().max(500), origin: z.string().max(500).optional() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ url: string }> => {

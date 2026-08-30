@@ -41,7 +41,7 @@ const DAY_NAMES = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vri
 
 export const getInsights = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
+  .validator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }): Promise<Insight[]> => {
     await assertAdmin(context);
 

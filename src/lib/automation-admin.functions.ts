@@ -24,7 +24,7 @@ async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: st
 // Generate API key — returns plain token only this once.
 export const createApiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     z.object({
       name: z.string().min(1).max(100),
       client_id: z.string().uuid().nullable().optional(),
@@ -64,7 +64,7 @@ export const createApiKey = createServerFn({ method: "POST" })
 
 export const testWebhook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ url: z.string().url(), secret: z.string().optional() }))
+  .validator(z.object({ url: z.string().url(), secret: z.string().optional() }))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     await assertSafeExternalUrl(data.url);

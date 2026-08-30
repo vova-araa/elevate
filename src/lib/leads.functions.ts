@@ -33,7 +33,7 @@ const submitLeadSchema = z.object({
 });
 
 export const submitLead = createServerFn({ method: "POST" })
-  .inputValidator((d) => submitLeadSchema.parse(d))
+  .validator((d) => submitLeadSchema.parse(d))
   .handler(async ({ data }) => {
     // Honeypot ingevuld, of formulier "sneller dan menselijk" verstuurd: doe
     // alsof het gelukt is, sla niets op.

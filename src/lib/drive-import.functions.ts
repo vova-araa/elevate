@@ -142,7 +142,7 @@ export interface DrivePreview {
 
 export const previewDriveImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ clientId: z.string().uuid(), url: z.string().trim().min(5).max(2000) }).parse(d),
   )
   .handler(async ({ data, context }): Promise<DrivePreview> => {
@@ -191,7 +191,7 @@ export interface DriveImportResult {
 
 export const importDriveBatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         clientId: z.string().uuid(),

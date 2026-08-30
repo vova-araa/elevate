@@ -211,7 +211,7 @@ const clientInputSchema = z.object({
 
 export const getClientAnalytics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => clientInputSchema.parse(d))
+  .validator((d) => clientInputSchema.parse(d))
   .handler(async ({ data, context }): Promise<ClientAnalytics> => {
     await assertAdmin(context);
     const { clientId, days } = data;
@@ -254,7 +254,7 @@ const agencyInputSchema = z.object({
 
 export const getAgencyAnalytics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => agencyInputSchema.parse(d))
+  .validator((d) => agencyInputSchema.parse(d))
   .handler(async ({ data, context }): Promise<AgencyAnalytics> => {
     await assertAdmin(context);
     const { days } = data;

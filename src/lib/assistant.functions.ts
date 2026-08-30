@@ -364,7 +364,7 @@ async function buildClientOverview(clientId: string, clientName: string): Promis
 
 export const runAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => inputSchema.parse(d))
+  .validator((d) => inputSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 

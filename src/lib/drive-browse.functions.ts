@@ -33,7 +33,7 @@ export type DriveBrowseItem = DriveSharedItem & { isMedia: boolean };
 /** Doorzoekt alles wat met het gekoppelde account gedeeld is (leeg = meest recente). */
 export const searchDriveShared = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ query: z.string().trim().max(200).optional() }).parse(d ?? {}))
+  .validator((d) => z.object({ query: z.string().trim().max(200).optional() }).parse(d ?? {}))
   .handler(async ({ data, context }): Promise<{ items: DriveBrowseItem[] }> => {
     await assertAdmin(context);
     const accessToken = await getValidDriveAccessToken();
@@ -44,7 +44,7 @@ export const searchDriveShared = createServerFn({ method: "POST" })
 /** Eén map, één niveau diep — voor doorklikken vanuit de zoekresultaten. */
 export const browseDriveFolder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ folderId: z.string().min(1) }).parse(d))
+  .validator((d) => z.object({ folderId: z.string().min(1) }).parse(d))
   .handler(async ({ data, context }): Promise<{ folderName: string; items: DriveBrowseItem[] }> => {
     await assertAdmin(context);
     const accessToken = await getValidDriveAccessToken();

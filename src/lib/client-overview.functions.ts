@@ -74,7 +74,7 @@ const EMPTY_SUMMARY: ClientOverviewSummary = {
 
 export const getClientOverviewSummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
+  .validator((d) => z.object({ clientId: z.string().uuid().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }): Promise<ClientOverviewSummary> => {
     const { supabase, userId } = context;
     const clientId = data.clientId ?? (await getUserClientId(supabase, userId));

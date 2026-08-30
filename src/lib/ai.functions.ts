@@ -265,7 +265,7 @@ async function runTool(name: string, rawArgs: ToolArgs): Promise<JsonValue> {
 
 export const aiAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => inputSchema.parse(input))
+  .validator((input) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 

@@ -32,7 +32,7 @@ const generateCaptionInput = z.object({
 
 export const generateCaption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => generateCaptionInput.parse(i))
+  .validator((i) => generateCaptionInput.parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -76,7 +76,7 @@ const ideaInput = z.object({
 
 export const generateContentIdeas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => ideaInput.parse(i))
+  .validator((i) => ideaInput.parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -142,7 +142,7 @@ const hooksInput = z.object({
 
 export const generateHooks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => hooksInput.parse(i))
+  .validator((i) => hooksInput.parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
@@ -168,7 +168,7 @@ const hashtagsInput = z.object({
 
 export const generateHashtags = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => hashtagsInput.parse(i))
+  .validator((i) => hashtagsInput.parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
 
