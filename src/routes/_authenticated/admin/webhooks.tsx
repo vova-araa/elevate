@@ -74,8 +74,21 @@ function WebhooksPage() {
     qc.invalidateQueries({ queryKey: key });
   }
   async function toggle(id: string, is_active: boolean) {
-    await supabase.from("webhook_endpoints").update({ is_active: !is_active }).eq("id", id);
-    qc.invalidateQueries({ queryKey: ["webhooks"] });
+    const key = ["webhooks"];
+    const previous = qc.getQueryData<Array<{ id: string; is_active: boolean }>>(key);
+    qc.setQueryData<Array<{ id: string; is_active: boolean }>>(key, (old) =>
+      (old ?? []).map((x) => (x.id === id ? { ...x, is_active: !is_active } : x)),
+    );
+    const { error } = await supabase
+      .from("webhook_endpoints")
+      .update({ is_active: !is_active })
+      .eq("id", id);
+    if (error) {
+      qc.setQueryData(key, previous);
+      toast.error("Bijwerken mislukt: " + error.message);
+      return;
+    }
+    qc.invalidateQueries({ queryKey: key });
   }
   async function runTest(ep: WebhookEndpointWithClient) {
     setTesting(ep.id);

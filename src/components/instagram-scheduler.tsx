@@ -275,24 +275,43 @@ function PlannedRow({
   async function swap(otherId: string) {
     const other = allPlanned.find((p) => p.id === otherId);
     if (!other || other.id === post.id) return;
-    // ruil de scheduled_at om
-    await supabase
+    // Twee losse updates, dus geen echte transactie — bij een mislukking van
+    // de tweede draaien we de eerste terug. Anders staan beide posts
+    // stilzwijgend op hetzelfde moment terwijl de UI "geruild" meldt.
+    const { error: err1 } = await supabase
       .from("scheduled_posts")
       .update({ scheduled_at: other.scheduled_at })
       .eq("id", post.id);
-    await supabase
+    if (err1) {
+      toast.error("Ruilen mislukt: " + err1.message);
+      return;
+    }
+    const { error: err2 } = await supabase
       .from("scheduled_posts")
       .update({ scheduled_at: post.scheduled_at })
       .eq("id", other.id);
+    if (err2) {
+      await supabase
+        .from("scheduled_posts")
+        .update({ scheduled_at: post.scheduled_at })
+        .eq("id", post.id);
+      toast.error("Ruilen mislukt: " + err2.message);
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
     toast.success("Postmoment geruild");
   }
   async function markPublished() {
-    await supabase
+    const { error } = await supabase
       .from("scheduled_posts")
       .update({ status: "published", published_at: new Date().toISOString() })
       .eq("id", post.id);
+    if (error) {
+      toast.error("Markeren als gepubliceerd mislukt: " + error.message);
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["scheduled-posts", post.client_id] });
+    toast.success("Gemarkeerd als gepubliceerd");
   }
 
   const dt = new Date(post.scheduled_at);

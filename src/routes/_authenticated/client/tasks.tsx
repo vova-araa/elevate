@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useActiveClient } from "@/hooks/use-active-client";
 import { EmptyState } from "@/components/empty-state";
 import { ListChecks, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/client/tasks")({ component: ClientTasks });
 
@@ -24,7 +25,11 @@ function ClientTasks() {
   });
 
   async function setStatus(id: string, status: "todo" | "in_progress" | "done") {
-    await supabase.from("tasks").update({ status }).eq("id", id);
+    const { error } = await supabase.from("tasks").update({ status }).eq("id", id);
+    if (error) {
+      toast.error("Status bijwerken mislukt: " + error.message);
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["client-tasks", clientId] });
   }
 

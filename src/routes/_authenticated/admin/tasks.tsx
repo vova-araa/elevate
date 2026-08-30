@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { confirmDialog } from "@/components/ui/confirm";
 import { Plus, Trash2, Flag, Calendar, ListChecks, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -72,11 +73,15 @@ function AdminTasks() {
   }
 
   async function setStatus(id: string, status: Status) {
-    await supabase.from("tasks").update({ status }).eq("id", id);
+    const { error } = await supabase.from("tasks").update({ status }).eq("id", id);
+    if (error) return toast.error("Status bijwerken mislukt: " + error.message);
     qc.invalidateQueries({ queryKey: ["admin-tasks"] });
   }
-  async function del(id: string) {
-    await supabase.from("tasks").delete().eq("id", id);
+  async function del(id: string, title: string) {
+    if (!(await confirmDialog(`Taak "${title}" verwijderen? Dit kan niet ongedaan worden.`)))
+      return;
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    if (error) return toast.error("Verwijderen mislukt: " + error.message);
     qc.invalidateQueries({ queryKey: ["admin-tasks"] });
   }
 
@@ -193,7 +198,7 @@ function AdminTasks() {
                         )}
                       </div>
                       <button
-                        onClick={() => del(t.id)}
+                        onClick={() => del(t.id, t.title)}
                         className="text-muted-foreground hover:text-destructive shrink-0"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
