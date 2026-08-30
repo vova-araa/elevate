@@ -2,7 +2,9 @@ import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { Reveal } from "@/components/reveal";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getClientOverviewStats } from "@/lib/client-stats.functions";
 import { uploadMedia, resetFileInput } from "@/lib/upload-media";
 import { useSignedUrl } from "@/lib/use-signed-url";
 import { clientAvatarStyle } from "@/lib/client-avatar";
@@ -231,52 +233,10 @@ function ClientDetail() {
 /* ───── Overview met KPI's ───── */
 
 function Overview({ client }: { client: Tables<"clients"> }) {
+  const getStats = useServerFn(getClientOverviewStats);
   const { data: stats } = useQuery({
     queryKey: ["client-stats", client.id],
-    queryFn: async () => {
-      const [m, d, r, t, u, c, e, s] = await Promise.all([
-        supabase
-          .from("meetings")
-          .select("id", { count: "exact", head: true })
-          .eq("client_id", client.id),
-        supabase.from("deals").select("value_cents,stage").eq("client_id", client.id),
-        supabase
-          .from("reports")
-          .select("id", { count: "exact", head: true })
-          .eq("client_id", client.id),
-        supabase.from("tasks").select("status").eq("client_id", client.id),
-        supabase
-          .from("uploads")
-          .select("id", { count: "exact", head: true })
-          .eq("client_id", client.id),
-        supabase.from("content_items").select("status").eq("client_id", client.id),
-        supabase.from("evaluations").select("score").eq("client_id", client.id),
-        supabase
-          .from("strategy_notes")
-          .select("id", { count: "exact", head: true })
-          .eq("client_id", client.id),
-      ]);
-      const openTasks = (t.data ?? []).filter((x) => x.status !== "done").length;
-      const wonDeals = (d.data ?? []).filter((x) => x.stage === "won");
-      const pipeline = (d.data ?? []).filter((x) => !["won", "lost"].includes(x.stage));
-      const wonValue = wonDeals.reduce((acc: number, x) => acc + (x.value_cents ?? 0), 0) / 100;
-      const pipeValue = pipeline.reduce((acc: number, x) => acc + (x.value_cents ?? 0), 0) / 100;
-      const lastScore = (e.data ?? []).slice(-1)[0]?.score ?? null;
-      const liveContent = (c.data ?? []).filter(
-        (x) => x.status === "scheduled" || x.status === "published",
-      ).length;
-      return {
-        meetings: m.count ?? 0,
-        reports: r.count ?? 0,
-        uploads: u.count ?? 0,
-        strategy: s.count ?? 0,
-        openTasks,
-        wonValue,
-        pipeValue,
-        lastScore,
-        liveContent,
-      };
-    },
+    queryFn: () => getStats({ data: { clientId: client.id } }),
   });
 
   const cards = [
