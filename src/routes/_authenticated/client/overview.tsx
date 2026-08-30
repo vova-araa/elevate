@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { useActiveClient } from "@/hooks/use-active-client";
 import {
@@ -18,8 +18,8 @@ import {
   Link2,
   type LucideIcon,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { listClientChannels } from "@/lib/channels.functions";
+import { getClientOverviewSummary } from "@/lib/client-overview.functions";
 import { PLATFORMS, type Platform } from "@/config/platforms";
 import { EmptyState } from "@/components/empty-state";
 import { ReportCard } from "@/components/client-portal/report-card";
@@ -28,7 +28,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/reveal";
 import { ChartInView } from "@/components/charts/chart-in-view";
 import { cn } from "@/lib/utils";
-import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/client/overview")({
   component: ClientOverview,
@@ -70,116 +69,26 @@ function ClientOverview() {
     queryFn: () => listChannels({ data: previewing ? { clientId } : {} }),
   });
 
-  // Volgersgroei: echte metingen uit social_metrics_snapshots (klant mag zijn
-  // eigen client lezen via RLS — user_has_client_access). Laatste ~90 dagen,
-  // per dag de som van de laatste meting per platform.
-  const ninetyDaysAgoIso = useMemo(() => subDays(new Date(), 90).toISOString(), []);
-
-  const { data: followerGrowth, isLoading: loadingGrowth } = useQuery({
-    queryKey: ["overview-follower-growth", clientId],
+  // A07-aanpak: volgersgroei, aankomende posts + geplande-teller,
+  // goedkeur-teller, open taken, stappenplan en laatste rapport kwamen uit
+  // zeven losse aanroepen — nu één server-aanroep (client-overview.functions.ts).
+  const getSummary = useServerFn(getClientOverviewSummary);
+  const { data: summary, isLoading: loadingSummary } = useQuery({
+    queryKey: ["overview-summary", clientId],
     enabled: !!clientId,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("social_metrics_snapshots")
-        .select("platform, followers, captured_at")
-        .eq("client_id", clientId!)
-        .gte("captured_at", ninetyDaysAgoIso)
-        .order("captured_at", { ascending: true });
-      return aggregateFollowerGrowth(data ?? []);
-    },
+    queryFn: () => getSummary({ data: previewing ? { clientId: clientId! } : {} }),
   });
 
-  // Eerstvolgende geplande posts (+ totaal-count)
-  const nowIso = useMemo(() => new Date().toISOString(), []);
-
-  const { data: upcoming, isLoading: loadingUpcoming } = useQuery({
-    queryKey: ["overview-upcoming-posts", clientId],
-    enabled: !!clientId,
-    queryFn: async () =>
-      (
-        await supabase
-          .from("scheduled_posts")
-          .select("id, platform, caption, scheduled_at, status, media_path, media_type")
-          .eq("client_id", clientId!)
-          .eq("status", "scheduled")
-          .is("deleted_at", null)
-          .gte("scheduled_at", nowIso)
-          .order("scheduled_at")
-          .limit(5)
-      ).data ?? [],
-  });
-
-  const { data: scheduledCount, isLoading: loadingScheduledCount } = useQuery({
-    queryKey: ["overview-scheduled-count", clientId],
-    enabled: !!clientId,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("scheduled_posts")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", clientId!)
-        .eq("status", "scheduled")
-        .is("deleted_at", null)
-        .gte("scheduled_at", nowIso);
-      return count ?? 0;
-    },
-  });
-
-  // Wacht op jouw akkoord (kalender-items: pending/delivered)
-  const { data: approvalCount, isLoading: loadingApprovalCount } = useQuery({
-    queryKey: ["overview-approval-count", clientId],
-    enabled: !!clientId,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("calendar_items")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", clientId!)
-        .in("status", ["pending", "delivered"]);
-      return count ?? 0;
-    },
-  });
-
-  // Open taken (alles wat niet 'done' is)
-  const { data: openTasks, isLoading: loadingTasks } = useQuery({
-    queryKey: ["overview-open-tasks", clientId],
-    enabled: !!clientId,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("tasks")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", clientId!)
-        .neq("status", "done");
-      return count ?? 0;
-    },
-  });
-
-  // Stappenplan-voortgang
-  const { data: roadmaps, isLoading: loadingRoadmaps } = useQuery({
-    queryKey: ["overview-roadmaps", clientId],
-    enabled: !!clientId,
-    queryFn: async () =>
-      ((
-        await supabase
-          .from("roadmaps")
-          .select("*, roadmap_steps(*)")
-          .eq("client_id", clientId!)
-          .order("created_at")
-      ).data ?? []) as (Tables<"roadmaps"> & { roadmap_steps: Tables<"roadmap_steps">[] })[],
-  });
-
-  // Laatste rapport
-  const { data: latestReport, isLoading: loadingReport } = useQuery({
-    queryKey: ["overview-latest-report", clientId],
-    enabled: !!clientId,
-    queryFn: async () =>
-      (
-        await supabase
-          .from("reports")
-          .select("*")
-          .eq("client_id", clientId!)
-          .order("created_at", { ascending: false })
-          .limit(1)
-      ).data?.[0] ?? null,
-  });
+  const followerGrowth = useMemo(
+    () => aggregateFollowerGrowth(summary?.followerGrowthRaw ?? []),
+    [summary?.followerGrowthRaw],
+  );
+  const upcoming = summary?.upcoming ?? [];
+  const scheduledCount = summary?.scheduledCount ?? 0;
+  const approvalCount = summary?.approvalCount ?? 0;
+  const openTasks = summary?.openTasks ?? 0;
+  const roadmaps = summary?.roadmaps ?? [];
+  const latestReport = summary?.latestReport ?? null;
 
   // Afgeleide waarden
   const channels = channelData?.channels ?? [];
@@ -191,12 +100,12 @@ function ClientOverview() {
   const connectedChannels = channels.filter((c) => c.status === "active").length;
 
   const roadmapProgress = useMemo(() => {
-    const steps = (roadmaps ?? []).flatMap((r) => r.roadmap_steps ?? []);
+    const steps = (summary?.roadmaps ?? []).flatMap((r) => r.roadmap_steps ?? []);
     const total = steps.length;
     const completed = steps.filter((s) => s.status === "completed").length;
     const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { total, completed, pct };
-  }, [roadmaps]);
+  }, [summary?.roadmaps]);
 
   return (
     <div className="space-y-8">
@@ -239,22 +148,22 @@ function ClientOverview() {
           to="/client/calendar"
           Icon={CalendarClock}
           label="Geplande posts"
-          value={loadingScheduledCount ? null : (scheduledCount ?? 0).toLocaleString("nl-NL")}
+          value={loadingSummary ? null : scheduledCount.toLocaleString("nl-NL")}
         />
         <StatTile
           search={previewSearch}
           to="/client/calendar"
           Icon={Inbox}
           label="Wacht op akkoord"
-          value={loadingApprovalCount ? null : (approvalCount ?? 0).toLocaleString("nl-NL")}
-          accent={(approvalCount ?? 0) > 0}
+          value={loadingSummary ? null : approvalCount.toLocaleString("nl-NL")}
+          accent={approvalCount > 0}
         />
         <StatTile
           search={previewSearch}
           to="/client/tasks"
           Icon={ListChecks}
           label="Open taken"
-          value={loadingTasks ? null : (openTasks ?? 0).toLocaleString("nl-NL")}
+          value={loadingSummary ? null : openTasks.toLocaleString("nl-NL")}
         />
       </div>
 
@@ -265,7 +174,7 @@ function ClientOverview() {
       {/* Volgersgroei — echte metingen uit snapshots */}
       <Reveal>
         <ChartInView height={320}>
-          <FollowerGrowthCard series={followerGrowth ?? []} loading={loadingGrowth} />
+          <FollowerGrowthCard series={followerGrowth} loading={loadingSummary} />
         </ChartInView>
       </Reveal>
 
@@ -288,13 +197,13 @@ function ClientOverview() {
           </div>
 
           <div className="mt-4 space-y-2">
-            {loadingUpcoming ? (
+            {loadingSummary ? (
               <>
                 <Skeleton className="h-14 w-full rounded-lg" />
                 <Skeleton className="h-14 w-full rounded-lg" />
                 <Skeleton className="h-14 w-full rounded-lg" />
               </>
-            ) : (upcoming?.length ?? 0) === 0 ? (
+            ) : upcoming.length === 0 ? (
               <EmptyState
                 icon={<CalendarClock className="h-5 w-5" />}
                 title="Nog niets ingepland"
@@ -302,7 +211,7 @@ function ClientOverview() {
                 className="py-8"
               />
             ) : (
-              upcoming!.map((p) => {
+              upcoming.map((p) => {
                 const meta = PLATFORM_META[p.platform as Platform];
                 const Icon = meta?.Icon ?? Send;
                 return (
@@ -339,7 +248,7 @@ function ClientOverview() {
           </div>
 
           <div className="mt-4 flex flex-1 flex-col items-center justify-center text-center">
-            {loadingRoadmaps ? (
+            {loadingSummary ? (
               <Skeleton className="h-32 w-32 rounded-full" />
             ) : roadmapProgress.total === 0 ? (
               <p className="text-sm text-muted-foreground py-6">
@@ -436,7 +345,7 @@ function ClientOverview() {
             Alle rapporten <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        {loadingReport ? (
+        {loadingSummary ? (
           <Skeleton className="h-40 w-full rounded-xl" />
         ) : latestReport ? (
           <ReportCard report={latestReport} />
