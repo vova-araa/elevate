@@ -1,9 +1,12 @@
 # TODO voor Vova
 
 Dingen die ik niet kon afronden omdat de gegevens ontbreken, of die bewust
-bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026, en
+bij jou liggen. Bijgewerkt tijdens de audit-ronde van 24 augustus 2026,
 opnieuw op 29 augustus 2026 (feed-indeling in de mediabibliotheek + drie
-migraties rechtstreeks toegepast via de Supabase-koppeling).
+migraties rechtstreeks toegepast via de Supabase-koppeling), en opnieuw op
+30 augustus 2026 (postvenster-verbeteringen, e-mailsjablonen, analytics
+opgeschoond, performance, swipe-goedkeuren, opruimronde — zie de secties
+hieronder).
 
 ## Grote beslissingen — hier heb ik jouw keuze voor nodig
 
