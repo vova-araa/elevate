@@ -417,7 +417,12 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
 function ThemeToggle() {
   const { theme, toggle } = useTheme();
   return (
-    <button onClick={toggle} title="Thema wisselen" className="rounded-full p-2 hover:bg-accent/40">
+    <button
+      onClick={toggle}
+      title="Thema wisselen"
+      aria-label="Thema wisselen"
+      className="rounded-full p-2 hover:bg-accent/40"
+    >
       {theme === "dark" ? (
         <Sun className="h-5 w-5 text-gold" />
       ) : (

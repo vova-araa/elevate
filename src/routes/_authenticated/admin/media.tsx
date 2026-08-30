@@ -876,6 +876,7 @@ const Tile = memo(function Tile({
           onClick={onToggleSelect}
           className="absolute left-2 top-2 z-10 rounded-md bg-background/80 p-0.5 text-gold hover:bg-background"
           title={selected ? "Deselecteer" : "Selecteer"}
+          aria-label={selected ? "Deselecteer" : "Selecteer"}
         >
           {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
         </button>
@@ -930,6 +931,7 @@ const Tile = memo(function Tile({
           selected ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
         }`}
         title={selected ? "Deselecteer" : "Selecteer"}
+        aria-label={selected ? "Deselecteer" : "Selecteer"}
       >
         {selected ? <CheckSquare className="h-4 w-4 text-gold" /> : <Square className="h-4 w-4" />}
       </button>
@@ -950,6 +952,7 @@ const Tile = memo(function Tile({
               onClick={onMove}
               className="grid min-h-9 min-w-9 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
               title="Verplaats naar map"
+              aria-label="Verplaats naar map"
             >
               <FolderInput className="h-3.5 w-3.5" />
             </button>
@@ -961,6 +964,7 @@ const Tile = memo(function Tile({
               rel="noreferrer"
               className="grid min-h-9 min-w-9 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
               title="Openen"
+              aria-label="Openen"
             >
               <Download className="h-3.5 w-3.5" />
             </a>
@@ -969,6 +973,7 @@ const Tile = memo(function Tile({
             onClick={onDelete}
             className="grid min-h-9 min-w-9 place-items-center rounded-full bg-destructive/80 text-white hover:bg-destructive"
             title="Verwijderen"
+            aria-label="Verwijderen"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>

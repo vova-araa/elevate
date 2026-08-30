@@ -2,9 +2,8 @@
    Puur CSS/SVG/markup — geen externe libs of afbeeldingen.
    De keyframes leven in een lokaal <style>-blok zodat styles.css onaangeroerd blijft. */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { prefersReducedMotion, useInView } from "@/components/landing-motion";
-import { cn } from "@/lib/utils";
 
 /** Herbruikbaar scroll-reveal-blok: faadt + schuift zacht in beeld. `delay` in ms voor stagger. */
 export function Reveal({
@@ -26,90 +25,6 @@ export function Reveal({
     >
       {children}
     </div>
-  );
-}
-
-/** Meetellend cijfer: telt op van 0 naar de eindwaarde zodra het in beeld komt.
-   Behoudt prefix/suffix (bv. "%") en niet-numerieke waarden (bv. "AI") ongewijzigd. */
-export function CountUp({
-  value,
-  duration = 1600,
-  className,
-}: {
-  value: string;
-  duration?: number;
-  className?: string;
-}) {
-  const match = value.match(/^(\D*)(\d[\d.]*)(\D*)$/);
-  const prefix = match ? match[1] : "";
-  const numStr = match ? match[2] : "";
-  const suffix = match ? match[3] : "";
-  const target = numStr ? Number(numStr) : 0;
-  const decimals = numStr.includes(".") ? numStr.split(".")[1].length : 0;
-
-  const { ref, inView } = useInView<HTMLSpanElement>({ threshold: 0.4 });
-  const [current, setCurrent] = useState(0);
-  const done = useRef(false);
-
-  // `match` is elke render een nieuw object. Stond het in de dependencies, dan
-  // draaide dit effect bij iedere render opnieuw — en omdat `done` dan al true
-  // was, deed de opruiming wél zijn werk (cancelAnimationFrame) en de start
-  // niet. Het cijfer bleef zo op 0 of 1 hangen. Vandaar een stabiele boolean.
-  const hasMatch = !!match;
-
-  /*
-   * Kleine getallen tellen niet op.
-   *
-   * De band toont claims als "3 kanalen" en "100% in jouw huisstijl". Tijdens
-   * het optellen las dat als "0 kanalen" en "1% in jouw huisstijl" — precies het
-   * tegenovergestelde van wat er staat, en voor een socialbureau de slechtst
-   * denkbare eerste indruk. Onder de tien is er ook niets te beleven aan een
-   * teller, dus die zetten we meteen op de eindwaarde.
-   */
-  const worthAnimating = target >= 10;
-
-  useEffect(() => {
-    if (!hasMatch || !inView || done.current) return;
-    done.current = true;
-    if (prefersReducedMotion() || !worthAnimating) {
-      setCurrent(target);
-      return;
-    }
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setCurrent(target * eased);
-      if (t < 1) raf = requestAnimationFrame(tick);
-      else setCurrent(target);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [inView, hasMatch, target, duration, worthAnimating]);
-
-  // S13: cijfers die tijdens het optellen van breedte wisselen (proportionele
-  // nullen zijn smaller dan andere cijfers) laten de hele stat-tegel wiebelen.
-  const numericClassName = cn("tabular-nums lining-nums", className);
-
-  if (!match) {
-    return (
-      <span ref={ref} className={numericClassName}>
-        {value}
-      </span>
-    );
-  }
-
-  const formatted = current.toLocaleString("nl-NL", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-  return (
-    <span ref={ref} className={numericClassName}>
-      {prefix}
-      {formatted}
-      {suffix}
-    </span>
   );
 }
 

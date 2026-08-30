@@ -15,8 +15,9 @@ import {
 import { invalidateClientLists } from "@/lib/client-cache";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
-import { Check, Copy, FlaskConical, Rocket, Shield } from "lucide-react";
+import { Check, Copy, FlaskConical, Rocket, Shield, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { EmptyState } from "@/components/empty-state";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -497,9 +498,15 @@ function UsersAdmin() {
           );
         })}
         {filtered.length === 0 && (
-          <div className="text-sm text-muted-foreground text-center py-8">
-            Geen gebruikers gevonden.
-          </div>
+          <EmptyState
+            icon={<Users className="h-5 w-5" />}
+            title="Geen gebruikers gevonden"
+            description={
+              query
+                ? "Geen gebruikers passen bij deze zoekopdracht."
+                : "Nodig hierboven je eerste teamlid of klant-login uit."
+            }
+          />
         )}
       </div>
     </div>

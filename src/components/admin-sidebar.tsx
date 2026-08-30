@@ -152,6 +152,7 @@ export function AdminSidebar() {
             collapsed && "absolute -right-3 top-5 bg-background",
           )}
           title={collapsed ? "Uitklappen" : "Inklappen"}
+          aria-label={collapsed ? "Zijbalk uitklappen" : "Zijbalk inklappen"}
         >
           {collapsed ? (
             <ChevronRight className="h-3.5 w-3.5" />
