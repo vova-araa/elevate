@@ -29,6 +29,7 @@ import {
   Wand2,
   Bot,
   HardDrive,
+  BarChart3,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -99,10 +100,16 @@ const NAV_ITEMS = [
   },
   { to: "/admin/besttime", label: "Beste tijd", icon: Clock, keywords: "beste tijd posten" },
   {
+    to: "/admin/analytics",
+    label: "Overzicht",
+    icon: BarChart3,
+    keywords: "analytics pipeline status succesratio",
+  },
+  {
     to: "/admin/reach",
     label: "Bereik & groei",
     icon: TrendingUp,
-    keywords: "analytics statistieken",
+    keywords: "volgers groei statistieken",
   },
   {
     to: "/admin/engagement",

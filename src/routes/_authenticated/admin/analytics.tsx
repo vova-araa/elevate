@@ -1,16 +1,20 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { PageTabs } from "@/components/page-tabs";
+import { ANALYSE_TABS } from "@/lib/page-tabs";
 import { ErrorState } from "@/components/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getClientAnalytics } from "@/lib/analytics.functions";
-import { FEATURE_PAID_ADS } from "@/config/feature-flags";
-import { z } from "zod";
 import {
-  BarChart,
-  Bar,
+  getClientAnalytics,
+  getAgencyAnalytics,
+  type ClientAnalytics,
+  type AgencyAnalytics,
+} from "@/lib/analytics.functions";
+import { FEATURE_PAID_ADS } from "@/config/feature-flags";
+import { useState } from "react";
+import {
   XAxis,
   YAxis,
   Tooltip,
@@ -26,13 +30,10 @@ import {
 import { formatDateRange } from "@/lib/date-range";
 import { Reveal } from "@/components/reveal";
 import {
-  TrendingUp,
-  TrendingDown,
-  Minus,
   CheckCircle2,
   AlertCircle,
   Clock,
-  Users,
+  TrendingUp,
   Instagram,
   Music2,
   Linkedin,
@@ -41,17 +42,11 @@ import {
   BarChart3,
   type LucideIcon,
 } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { useClientStore } from "@/lib/stores/client-store";
 import { cn } from "@/lib/utils";
 
-const searchSchema = z.object({
-  clientId: z.string().uuid().optional(),
-  range: z.enum(["7d", "30d", "90d"]).optional(),
-});
-
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
-  validateSearch: searchSchema,
-  component: AnalyticsPage,
+  component: OverviewPage,
 });
 
 const PLATFORM_ICONS: Record<string, LucideIcon> = {
@@ -71,73 +66,54 @@ const PLATFORM_COLORS: Record<string, string> = {
   facebook: "#1877F2",
 };
 
-function rangeToDays(r?: string) {
-  return r === "7d" ? 7 : r === "90d" ? 90 : 30;
-}
+const PERIODS = [
+  { id: "7", label: "7 dagen" },
+  { id: "30", label: "30 dagen" },
+  { id: "90", label: "90 dagen" },
+];
 
-function AnalyticsPage() {
-  const search = Route.useSearch();
-  const navigate = useNavigate();
-  const range = search.range ?? "30d";
-  const days = rangeToDays(range);
+/**
+ * "Overzicht" gaat over de post-pipeline: wat is er verstuurd, wat mislukte,
+ * wat staat er nog klaar. Volgersgroei en platformverdeling staan al op
+ * Bereik en Engagement — dat hier herhalen was precies het probleem (A12):
+ * drie schermen die alle drie hetzelfde lieten zien.
+ */
+function OverviewPage() {
+  const { activeClient } = useClientStore();
+  const [period, setPeriod] = useState("30");
+  const days = Number(period);
 
-  const { data: clients } = useQuery({
-    queryKey: ["clients-analytics"],
-    queryFn: async () =>
-      (await supabase.from("clients").select("id,name,brand_color").order("name")).data ?? [],
-  });
+  const getClient = useServerFn(getClientAnalytics);
+  const getAgency = useServerFn(getAgencyAnalytics);
 
-  const selected = clients?.find((c) => c.id === search.clientId) ?? clients?.[0];
-  const clientId = selected?.id;
-
-  // Zet een default clientId in de URL — in een effect, niet tijdens render
-  // (geen state-update tijdens render).
-  useEffect(() => {
-    if (!search.clientId && clientId) {
-      navigate({ to: "/admin/analytics", search: { clientId, range }, replace: true });
-    }
-  }, [search.clientId, clientId, range, navigate]);
-
-  const getAnalytics = useServerFn(getClientAnalytics);
   const {
     data: analytics,
     isLoading,
     error: analyticsError,
     refetch: refetchAnalytics,
-  } = useQuery({
-    enabled: !!clientId,
-    queryKey: ["client-analytics", clientId, days],
-    queryFn: () => getAnalytics({ data: { clientId: clientId!, days } }),
+  } = useQuery<ClientAnalytics | AgencyAnalytics>({
+    queryKey: ["overview-analytics", activeClient?.id ?? "all", days],
+    queryFn: () =>
+      activeClient?.id
+        ? getClient({ data: { clientId: activeClient.id, days } })
+        : getAgency({ data: { days } }),
   });
 
   // Alleen voor de "Recent gepubliceerd"-lijst — echte, recente posts met caption.
   const { data: recentPublished } = useQuery({
-    enabled: !!clientId,
-    queryKey: ["analytics-recent-published", clientId],
+    queryKey: ["analytics-recent-published", activeClient?.id ?? "all"],
     queryFn: async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("scheduled_posts")
         .select("id, caption, platform, published_at, scheduled_at")
-        .eq("client_id", clientId!)
         .eq("status", "published")
         .order("published_at", { ascending: false })
         .limit(8);
+      if (activeClient?.id) q = q.eq("client_id", activeClient.id);
+      const { data } = await q;
       return data ?? [];
     },
   });
-
-  if (!clients) return <AnalyticsSkeleton />;
-  if (clients.length === 0) {
-    return (
-      <div className="max-w-2xl">
-        <EmptyState
-          icon={<Users className="h-5 w-5" />}
-          title="Nog geen klanten"
-          description="Voeg eerst een klant toe om analytics per bedrijf te zien."
-        />
-      </div>
-    );
-  }
 
   const posts = analytics?.posts;
   const total = posts?.total ?? 0;
@@ -146,8 +122,6 @@ function AnalyticsPage() {
   const failed = posts?.failed ?? 0;
   const draft = posts?.draft ?? 0;
   const successRate = total > 0 ? Math.round((published / total) * 100) : 0;
-
-  const platformData = analytics?.postsByPlatform ?? [];
   const timeSeries = analytics?.timeSeries ?? [];
 
   const statusData = [
@@ -159,48 +133,38 @@ function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
+      <PageTabs tabs={ANALYSE_TABS} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Per klant</p>
-          <h1 className="font-display text-4xl sm:text-5xl mt-2">Analytics</h1>
+          <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Post-pipeline</p>
+          <h1 className="font-display text-4xl sm:text-5xl mt-2">Overzicht</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Inzicht in posting performance, platforms en trends per klant.
+            Wat is er verstuurd, wat mislukte en wat staat er nog klaar
+            {activeClient ? ` voor ${activeClient.name}` : " voor alle klanten"}. Volgersgroei staat
+            op Bereik, platformverdeling op Engagement.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={clientId ?? ""}
-            onChange={(e) =>
-              navigate({ to: "/admin/analytics", search: { clientId: e.target.value, range } })
-            }
-            className="rounded-lg border border-gold/20 bg-background/60 px-3 py-2 text-sm"
-          >
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <div className="flex rounded-lg border border-gold/20 overflow-hidden">
-            {(["7d", "30d", "90d"] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => navigate({ to: "/admin/analytics", search: { clientId, range: r } })}
-                className={cn(
-                  "px-3 py-2 text-xs uppercase tracking-wider",
-                  range === r ? "bg-gold/20 text-gold" : "text-muted-foreground hover:bg-accent/40",
-                )}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
+        <div className="flex rounded-lg border border-gold/20 overflow-hidden h-9">
+          {PERIODS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={cn(
+                "px-3 text-xs uppercase tracking-wider",
+                period === p.id
+                  ? "bg-gold/20 text-gold"
+                  : "text-muted-foreground hover:bg-accent/40",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
       </div>
       <p className="text-xs text-muted-foreground -mt-4">{formatDateRange(days)}</p>
 
       {isLoading ? (
-        <AnalyticsSkeleton />
+        <OverviewSkeleton />
       ) : analyticsError ? (
         // Zonder deze tak stond hier een compleet ingevuld dashboard vol
         // nullen, alsof er niets gepubliceerd was.
@@ -230,70 +194,11 @@ function AnalyticsPage() {
             />
           </div>
 
-          {/* Echte volgerscijfers + posts per week */}
-          <div className="grid md:grid-cols-3 gap-3">
-            <StatCard
-              icon={Users}
-              label="Volgers totaal"
-              value={
-                analytics?.followersTotal != null
-                  ? analytics.followersTotal.toLocaleString("nl-NL")
-                  : "—"
-              }
-              hint={
-                analytics?.followersTotal != null
-                  ? "Som van bekende volgersaantallen over gekoppelde kanalen."
-                  : "Nog geen kanaal gekoppeld met een leverbaar volgersaantal."
-              }
-            />
-            <FollowerGrowthCard growth={analytics?.followerGrowth ?? null} days={days} />
-            <StatCard
-              icon={BarChart3}
-              label="Posts per week"
-              value={(total / (days / 7)).toFixed(1)}
-              hint={`Gemiddeld over de laatste ${days} dagen.`}
-            />
-          </div>
-
-          {analytics && analytics.followersByPlatform.length > 0 && (
-            <div className="glass-strong rounded-xl p-5">
-              <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
-                Volgers per platform
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {analytics.followersByPlatform.map((f) => {
-                  const Icon = PLATFORM_ICONS[f.platform];
-                  return (
-                    <div key={f.platform} className="rounded-lg border border-gold/15 p-3">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground capitalize">
-                        {Icon && (
-                          <Icon
-                            className="h-3.5 w-3.5"
-                            style={{ color: PLATFORM_COLORS[f.platform] }}
-                          />
-                        )}
-                        {f.platform}
-                      </div>
-                      <div className="mt-1 text-xl font-display">
-                        {f.followers != null ? f.followers.toLocaleString("nl-NL") : "—"}
-                      </div>
-                      {f.followers == null && (
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          Platform levert geen volgersaantal via de API.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Time series */}
+          {/* Pipeline over tijd */}
           <div className="glass-strong rounded-xl p-5">
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <div className="text-sm uppercase tracking-[0.2em] text-gold/70">
-                Activiteit over tijd
+                Pipeline over tijd
               </div>
               <div className="text-xs text-muted-foreground">{formatDateRange(days)}</div>
             </div>
@@ -386,65 +291,6 @@ function AnalyticsPage() {
           </div>
 
           <Reveal className="grid lg:grid-cols-2 gap-4">
-            {/* Platform breakdown */}
-            <div className="glass-strong rounded-xl p-5">
-              <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
-                Per platform
-              </div>
-              {platformData.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nog geen posts in deze periode.</p>
-              ) : (
-                <>
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={platformData}>
-                        <CartesianGrid stroke="rgba(212,185,122,0.08)" />
-                        <XAxis dataKey="platform" stroke="#9ca3af" fontSize={11} />
-                        <YAxis stroke="#9ca3af" fontSize={11} allowDecimals={false} />
-                        <Tooltip
-                          contentStyle={{
-                            background: "var(--card)",
-                            border: "1px solid var(--border)",
-                            borderRadius: 8,
-                            color: "var(--foreground)",
-                          }}
-                        />
-                        <Bar dataKey="total" name="Totaal" radius={[6, 6, 0, 0]}>
-                          {platformData.map((p) => (
-                            <Cell
-                              key={p.platform}
-                              fill={PLATFORM_COLORS[p.platform] ?? "#D4B97A"}
-                            />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    {platformData.map((p) => {
-                      const Icon = PLATFORM_ICONS[p.platform];
-                      return (
-                        <div key={p.platform} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            {Icon && (
-                              <Icon
-                                className="h-4 w-4"
-                                style={{ color: PLATFORM_COLORS[p.platform] }}
-                              />
-                            )}
-                            <span className="capitalize">{p.platform}</span>
-                          </div>
-                          <div className="text-muted-foreground">
-                            {p.published}/{p.total} gepubliceerd
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-
             {/* Status pie */}
             <div className="glass-strong rounded-xl p-5">
               <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
@@ -482,38 +328,38 @@ function AnalyticsPage() {
                 </div>
               )}
             </div>
-          </Reveal>
 
-          {/* Recent published */}
-          <Reveal className="glass-strong rounded-xl p-5" delay={80}>
-            <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
-              Recent gepubliceerd
-            </div>
-            <div className="divide-y divide-gold/10">
-              {(recentPublished ?? []).map((p) => {
-                const Icon = PLATFORM_ICONS[p.platform];
-                return (
-                  <div key={p.id} className="flex items-start gap-3 py-3">
-                    {Icon && (
-                      <Icon
-                        className="h-4 w-4 mt-1"
-                        style={{ color: PLATFORM_COLORS[p.platform] }}
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm line-clamp-1">{p.caption || "Geen caption"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(p.published_at ?? p.scheduled_at).toLocaleString("nl-NL")}
+            {/* Recent published */}
+            <div className="glass-strong rounded-xl p-5">
+              <div className="text-sm uppercase tracking-[0.2em] text-gold/70 mb-4">
+                Recent gepubliceerd
+              </div>
+              <div className="divide-y divide-gold/10">
+                {(recentPublished ?? []).map((p) => {
+                  const Icon = PLATFORM_ICONS[p.platform];
+                  return (
+                    <div key={p.id} className="flex items-start gap-3 py-3">
+                      {Icon && (
+                        <Icon
+                          className="h-4 w-4 mt-1"
+                          style={{ color: PLATFORM_COLORS[p.platform] }}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm line-clamp-1">{p.caption || "Geen caption"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(p.published_at ?? p.scheduled_at).toLocaleString("nl-NL")}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              {(recentPublished ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground py-2">
-                  Nog niets gepubliceerd in deze periode.
-                </p>
-              )}
+                  );
+                })}
+                {(recentPublished ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">
+                    Nog niets gepubliceerd in deze periode.
+                  </p>
+                )}
+              </div>
             </div>
           </Reveal>
 
@@ -546,23 +392,15 @@ function AnalyticsPage() {
   );
 }
 
-function AnalyticsSkeleton() {
+function OverviewSkeleton() {
   return (
     <div className="space-y-6">
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {Array.from({ length: 5 }, (_, i) => (
           <Skeleton key={i} className="h-24 w-full rounded-xl" />
         ))}
       </div>
-      {/* Stat cards */}
-      <div className="grid md:grid-cols-3 gap-3">
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-xl" />
-        ))}
-      </div>
-      {/* Grafiek */}
-      <Skeleton className="h-80 w-full rounded-xl" />
+      <Skeleton className="h-64 w-full rounded-xl" />
       <div className="grid lg:grid-cols-2 gap-4">
         <Skeleton className="h-72 w-full rounded-xl" />
         <Skeleton className="h-72 w-full rounded-xl" />
@@ -595,54 +433,6 @@ function Kpi({
       >
         {value}
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  hint,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  hint: string;
-}) {
-  return (
-    <div className="glass-strong rounded-xl p-5">
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
-        <Icon className="h-3.5 w-3.5" /> {label}
-      </div>
-      <div className="mt-2 text-3xl font-display tabular-nums lining-nums text-gold">{value}</div>
-      <div className="text-xs text-muted-foreground mt-2">{hint}</div>
-    </div>
-  );
-}
-
-function FollowerGrowthCard({ growth, days }: { growth: number | null; days: number }) {
-  const Icon = growth == null || growth === 0 ? Minus : growth > 0 ? TrendingUp : TrendingDown;
-  const tint =
-    growth == null
-      ? "text-gold"
-      : growth > 0
-        ? "text-emerald-400"
-        : growth < 0
-          ? "text-red-400"
-          : "text-gold";
-  const value = growth == null ? "—" : `${growth > 0 ? "+" : ""}${growth.toLocaleString("nl-NL")}`;
-  const hint =
-    growth == null
-      ? `Beschikbaar zodra er minstens 2 metingen zijn (na koppelen/verversen van een kanaal). Nog geen historie over de laatste ${days} dagen.`
-      : `Verschil tussen de oudste en nieuwste meting in de laatste ${days} dagen.`;
-  return (
-    <div className="glass-strong rounded-xl p-5">
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gold/70">
-        <Icon className={cn("h-3.5 w-3.5", tint)} /> Volgersgroei
-      </div>
-      <div className={cn("mt-2 text-3xl font-display tabular-nums lining-nums", tint)}>{value}</div>
-      <div className="text-xs text-muted-foreground mt-2">{hint}</div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ export const CONTENT_TABS: PageTab[] = [
 ];
 
 export const ANALYSE_TABS: PageTab[] = [
+  { to: "/admin/analytics", label: "Overzicht" },
   { to: "/admin/reach", label: "Bereik" },
   { to: "/admin/engagement", label: "Engagement" },
   { to: "/admin/reports", label: "Rapporten" },
