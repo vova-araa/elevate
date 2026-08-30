@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { prefersReducedMotion } from "@/components/landing-motion";
 import elevateLogoUrl from "@/assets/elevate-logo.png";
 import { PLATFORMS, type Platform } from "@/config/platforms";
 import {
@@ -161,6 +162,51 @@ function PostCard({
   const [busy, setBusy] = useState<"approve" | "change" | null>(null);
   const [done, setDone] = useState<"approved" | "change_requested" | null>(null);
 
+  // Swipe-goedkeuren op mobiel: extra, geen vervanging — de knoppen hieronder
+  // blijven de primaire manier en werken op elk apparaat. Alleen horizontaal
+  // slepen wordt overgenomen (touchAction: pan-y), verticaal scrollen van de
+  // pagina blijft gewoon werken.
+  const SWIPE_THRESHOLD = 90;
+  const dragState = useRef<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    locked: "x" | "y" | null;
+  }>({ active: false, startX: 0, startY: 0, locked: null });
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const swipeDisabled = busy !== null || done !== null || requesting;
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (swipeDisabled) return;
+    dragState.current = { active: true, startX: e.clientX, startY: e.clientY, locked: null };
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    const s = dragState.current;
+    if (!s.active) return;
+    const dx = e.clientX - s.startX;
+    const dy = e.clientY - s.startY;
+    if (s.locked === null) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      s.locked = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    }
+    if (s.locked === "x") {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      setDragging(true);
+      setDragX(dx);
+    }
+  }
+  function onPointerUp() {
+    const s = dragState.current;
+    if (s.locked === "x") {
+      if (dragX > SWIPE_THRESHOLD) void approve();
+      else if (dragX < -SWIPE_THRESHOLD) setRequesting(true);
+    }
+    dragState.current = { active: false, startX: 0, startY: 0, locked: null };
+    setDragging(false);
+    setDragX(0);
+  }
+
   async function approve() {
     setBusy("approve");
     try {
@@ -209,13 +255,41 @@ function PostCard({
   }
 
   return (
-    <div className="glass-strong rounded-2xl p-4 sm:p-5">
+    <div
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      style={{
+        touchAction: "pan-y",
+        transform: prefersReducedMotion()
+          ? undefined
+          : `translateX(${dragX}px) rotate(${dragX / 24}deg)`,
+        transition: dragging ? "none" : "transform 200ms ease",
+      }}
+      className="glass-strong rounded-2xl p-4 sm:p-5 relative select-none"
+    >
+      {dragging && dragX !== 0 && (
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl font-display text-lg",
+            dragX > 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-gold/15 text-gold",
+          )}
+          style={{ opacity: Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1) }}
+        >
+          {dragX > 0 ? "Goedkeuren" : "Wijziging vragen"}
+        </div>
+      )}
       <div className="flex flex-col gap-4">
         {post.mediaUrl ? (
           post.mediaType?.startsWith("video") ? (
             <video
               src={post.mediaUrl}
               controls
+              // Anders kaapt de swipe-gebaar-handler op de kaart het slepen op
+              // de eigen seekbalk van de video.
+              onPointerDown={(e) => e.stopPropagation()}
               className="w-full aspect-square rounded-xl object-cover bg-black"
             />
           ) : (
@@ -319,6 +393,11 @@ function PostCard({
               <MessageSquarePlus className="h-4 w-4" /> Wijziging vragen
             </button>
           </div>
+        )}
+        {!requesting && (
+          <p className="text-center text-[11px] text-muted-foreground/70 sm:hidden">
+            Tip: swipe naar rechts om goed te keuren, naar links voor een wijziging.
+          </p>
         )}
       </div>
     </div>
