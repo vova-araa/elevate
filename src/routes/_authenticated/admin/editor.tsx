@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 import {
   Upload,
   ImageIcon,
@@ -160,6 +161,8 @@ function EditorPage() {
 function MediaPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: Source) => void }) {
   const [clientId, setClientId] = useState("");
   const [folderId, setFolderId] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModalA11y(modalRef, onClose, true);
 
   const { data: clients } = useQuery({
     queryKey: ["admin-clients-list"],
@@ -194,8 +197,13 @@ function MediaPicker({ onClose, onPick }: { onClose: () => void; onPick: (s: Sou
       onClick={onClose}
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Bestandskiezer"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="glass-strong rounded-2xl w-full max-w-5xl max-h-[85vh] flex flex-col"
+        className="glass-strong rounded-2xl w-full max-w-5xl max-h-[85vh] flex flex-col outline-none"
       >
         <div className="flex items-center justify-between p-4 border-b border-gold/10">
           <div className="font-display text-xl">Kies bestand</div>

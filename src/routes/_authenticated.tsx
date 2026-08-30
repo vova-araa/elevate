@@ -6,7 +6,8 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -55,6 +56,8 @@ function AuthLayout() {
   const { role, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileDrawerRef = useRef<HTMLDivElement>(null);
+  useModalA11y(mobileDrawerRef, () => setMobileOpen(false), mobileOpen);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Admins mogen het klantportaal bekijken zolang ze expliciet een klant
   // meegeven (?asClient=…) — dat is de "bekijk als klant"-preview.
@@ -109,11 +112,17 @@ function AuthLayout() {
         <div className="fixed inset-0 z-50 md:hidden" onClick={() => setMobileOpen(false)}>
           <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
           <div
+            ref={mobileDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigatiemenu"
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
-            className="absolute left-0 top-0 bottom-0 w-72 bg-sidebar border-r border-gold/15 p-5 overflow-y-auto"
+            className="absolute left-0 top-0 bottom-0 w-72 bg-sidebar border-r border-gold/15 p-5 overflow-y-auto outline-none"
           >
             <button
               onClick={() => setMobileOpen(false)}
+              aria-label="Menu sluiten"
               className="mb-4 rounded-full p-2 hover:bg-accent/40"
             >
               <X className="h-5 w-5" />
